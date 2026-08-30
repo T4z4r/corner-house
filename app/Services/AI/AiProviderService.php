@@ -41,6 +41,19 @@ class AiProviderService
         };
     }
 
+    /**
+     * Accept a pre-built messages array (system + history + user).
+     *
+     * @param  array<int, array{role: string, content: string}>  $messages
+     */
+    public function completeMessages(array $messages): ?string
+    {
+        return match ($this->provider()) {
+            'claude' => $this->completeWithClaudeMessages($messages),
+            default => $this->completeWithOpenAiMessages($messages),
+        };
+    }
+
     public function openaiKey(): ?string
     {
         return $this->filledSecret(Setting::getValue('openai_api_key'))
@@ -55,6 +68,17 @@ class AiProviderService
 
     private function completeWithOpenAi(string $system, string $user): ?string
     {
+        return $this->completeWithOpenAiMessages([
+            ['role' => 'system', 'content' => $system],
+            ['role' => 'user', 'content' => $user],
+        ]);
+    }
+
+    /**
+     * @param  array<int, array{role: string, content: string}>  $messages
+     */
+    private function completeWithOpenAiMessages(array $messages): ?string
+    {
         $key = $this->openaiKey();
 
         if (! $key) {
@@ -68,10 +92,7 @@ class AiProviderService
                 ->acceptJson()
                 ->post('https://api.openai.com/v1/chat/completions', [
                     'model' => Setting::getValue('openai_model', config('services.openai.model', 'gpt-4o-mini')),
-                    'messages' => [
-                        ['role' => 'system', 'content' => $system],
-                        ['role' => 'user', 'content' => $user],
-                    ],
+                    'messages' => $messages,
                 ]);
 
             if ($response->failed()) {
@@ -92,10 +113,41 @@ class AiProviderService
 
     private function completeWithClaude(string $system, string $user): ?string
     {
+        return $this->completeWithClaudeMessages([
+            ['role' => 'system', 'content' => $system],
+            ['role' => 'user', 'content' => $user],
+        ]);
+    }
+
+    /**
+     * @param  array<int, array{role: string, content: string}>  $messages
+     */
+    private function completeWithClaudeMessages(array $messages): ?string
+    {
         $key = $this->claudeKey();
 
         if (! $key) {
             return null;
+        }
+
+        $systemPrompt = '';
+        $userMessages = [];
+
+        foreach ($messages as $msg) {
+            if ($msg['role'] === 'system') {
+                $systemPrompt = $msg['content'];
+            } else {
+                $userMessages[] = $msg;
+            }
+        }
+
+        if ($systemPrompt === '' && $userMessages !== []) {
+            $systemPrompt = $userMessages[0]['content'];
+            array_shift($userMessages);
+        }
+
+        if ($userMessages === []) {
+            $userMessages = [['role' => 'user', 'content' => 'Hello']];
         }
 
         try {
@@ -109,10 +161,8 @@ class AiProviderService
                 ->post('https://api.anthropic.com/v1/messages', [
                     'model' => Setting::getValue('claude_model', config('services.claude.model', 'claude-sonnet-4-5')),
                     'max_tokens' => 1024,
-                    'system' => $system,
-                    'messages' => [
-                        ['role' => 'user', 'content' => $user],
-                    ],
+                    'system' => $systemPrompt,
+                    'messages' => $userMessages,
                 ]);
 
             if ($response->failed()) {

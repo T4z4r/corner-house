@@ -7,6 +7,8 @@ use Illuminate\Support\Collection;
 
 class KnowledgeBaseService
 {
+    private const MAX_CONTENT_LENGTH = 300;
+
     /**
      * @return Collection<int, KnowledgeBaseArticle>
      */
@@ -38,5 +40,19 @@ class KnowledgeBaseService
             ->take($limit)
             ->pluck('article')
             ->values();
+    }
+
+    /**
+     * Return article content truncated for token efficiency.
+     */
+    public function truncatedContent(KnowledgeBaseArticle $article): string
+    {
+        $content = $article->content;
+
+        if (strlen($content) <= self::MAX_CONTENT_LENGTH) {
+            return $content;
+        }
+
+        return rtrim(substr($content, 0, self::MAX_CONTENT_LENGTH)).'…';
     }
 }

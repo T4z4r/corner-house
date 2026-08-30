@@ -50,7 +50,7 @@ class AiAssistantService
         }
 
         $facts = $this->factsForIntent($intent, $message);
-        $reply = $this->composeReply($message, $intent, $facts);
+        $reply = $this->composeReply($message, $intent, $facts, $conversation);
 
         AiMessage::create([
             'ai_conversation_id' => $conversation->id,
@@ -107,7 +107,9 @@ class AiAssistantService
             'price' => $this->priceFacts($message),
             'booking' => ['Bookings can only be confirmed through the booking form or by our team. I cannot confirm a reservation in chat.'],
             'payment' => ['Payment status is verified by Stripe. I cannot mark a booking as paid from chat.'],
-            default => $this->knowledgeBase->search($message)->map(fn ($article) => $article->title.': '.$article->content)->all(),
+            default => $this->knowledgeBase->search($message)
+                ->map(fn ($article) => $article->title.': '.$this->knowledgeBase->truncatedContent($article))
+                ->all(),
         };
     }
 
