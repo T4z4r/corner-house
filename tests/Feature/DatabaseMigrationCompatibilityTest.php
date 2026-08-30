@@ -59,4 +59,14 @@ class DatabaseMigrationCompatibilityTest extends TestCase
         $this->assertStringContainsString("string('external_booking_id', 100)->nullable();", $migration);
         $this->assertStringContainsString("unique(['external_channel', 'external_booking_id']", $migration);
     }
+
+    public function test_guests_migration_uses_mysql_safe_string_lengths_for_name_index(): void
+    {
+        $migration = file_get_contents(database_path('migrations/2026_08_28_160741_create_guests_table.php'));
+
+        $this->assertIsString($migration);
+        $this->assertStringContainsString("string('first_name', 100);", $migration);
+        $this->assertStringContainsString("string('last_name', 100);", $migration);
+        $this->assertStringContainsString("index(['last_name', 'first_name'])", $migration);
+    }
 }
