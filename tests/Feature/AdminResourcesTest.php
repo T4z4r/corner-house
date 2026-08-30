@@ -91,6 +91,16 @@ class AdminResourcesTest extends TestCase
             ->assertSee('Manual');
     }
 
+    public function test_super_admin_can_view_house_rules_without_a_property_record(): void
+    {
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.website.house-rules'))
+            ->assertOk()
+            ->assertSee('House Rules')
+            ->assertSee('Custom Rules')
+            ->assertSee('Save house rules');
+    }
+
     public function test_calendar_events_endpoint_returns_json(): void
     {
         $property = Property::factory()->create();
