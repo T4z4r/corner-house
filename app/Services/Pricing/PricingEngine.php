@@ -5,6 +5,7 @@ namespace App\Services\Pricing;
 use App\Models\PricingOverride;
 use App\Models\PricingRule;
 use App\Models\Room;
+use App\Models\Setting;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -57,13 +58,14 @@ class PricingEngine
         $base = array_sum($perNight);
         $discount = 0.0;
         $tax = round(($base - $discount) * self::TAX_RATE, 2);
+        $cleaningFee = (float) Setting::getValue('cleaning_fee', 50);
 
         return [
-            'total' => round($base - $discount + $tax, 2),
+            'total' => round($base - $discount + $tax + $cleaningFee, 2),
             'base_amount' => round($base, 2),
             'discount_amount' => round($discount, 2),
             'tax_amount' => $tax,
-            'fees_amount' => 0.0,
+            'fees_amount' => $cleaningFee,
             'nights' => $nights,
             'maximum_stay' => $this->maximumStayForRange($room, $checkIn, $checkOut),
             'per_night' => $perNight,
