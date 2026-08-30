@@ -33,8 +33,8 @@ return new class extends Migration
             $table->string('channel')->nullable();
 
             // Idempotency for external bookings
-            $table->string('external_channel')->nullable();
-            $table->string('external_booking_id')->nullable();
+            $table->string('external_channel', 50)->nullable();
+            $table->string('external_booking_id', 100)->nullable();
             $table->unique(['external_channel', 'external_booking_id'], 'reservations_ext_unique');
 
             $table->decimal('base_amount', 12, 2)->default(0);

@@ -115,6 +115,13 @@
                                                    name="{{ $setting->key }}"
                                                    value="{{ $setting->value }}"
                                                    placeholder="https://...">
+                                        @elseif (str_starts_with($setting->key, 'platform_'))
+                                            <input type="url"
+                                                   class="form-control"
+                                                   id="{{ $setting->key }}"
+                                                   name="{{ $setting->key }}"
+                                                   value="{{ $setting->value }}"
+                                                   placeholder="https://...">
                                         @elseif ($setting->key === 'website_contact_email')
                                             <input type="email"
                                                    class="form-control"

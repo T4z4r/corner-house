@@ -25,10 +25,10 @@ return new class extends Migration
             $table->foreignId('channel_account_id')->constrained()->cascadeOnDelete();
             $table->foreignId('property_id')->constrained()->cascadeOnDelete();
             $table->foreignId('room_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('provider');
-            $table->string('external_property_id')->nullable();
-            $table->string('external_room_id')->nullable();
-            $table->string('external_listing_id')->nullable();
+            $table->string('provider', 50);
+            $table->string('external_property_id', 100)->nullable();
+            $table->string('external_room_id', 100)->nullable();
+            $table->string('external_listing_id', 100)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->json('metadata')->nullable();
             $table->timestamps();
@@ -39,8 +39,8 @@ return new class extends Migration
         Schema::create('channel_sync_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('channel_account_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('channel');
-            $table->string('operation');
+            $table->string('channel', 50);
+            $table->string('operation', 100);
             $table->json('request')->nullable();
             $table->json('response')->nullable();
             $table->enum('status', ['pending', 'success', 'failed'])->default('pending')->index();
@@ -55,9 +55,9 @@ return new class extends Migration
 
         Schema::create('channel_webhooks', function (Blueprint $table) {
             $table->id();
-            $table->string('provider');
-            $table->string('event_type')->nullable();
-            $table->string('external_id')->nullable()->index();
+            $table->string('provider', 50);
+            $table->string('event_type', 100)->nullable();
+            $table->string('external_id', 100)->nullable()->index();
             $table->json('payload');
             $table->enum('status', ['received', 'processed', 'failed', 'ignored'])->default('received')->index();
             $table->text('error_message')->nullable();

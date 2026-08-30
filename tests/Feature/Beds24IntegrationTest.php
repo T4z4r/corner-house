@@ -13,6 +13,7 @@ use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\ReservationGuest;
 use App\Models\Room;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\Beds24\Beds24ChannelProvider;
 use App\Services\Beds24\Beds24SyncService;

@@ -39,9 +39,25 @@
                 <p class="ch-suite-meta">{{ $quote['nights'] }} night(s) · {{ $guests }} guest(s)</p>
                 <hr>
                 <div class="d-flex justify-content-between"><span>Stay</span><span>£{{ number_format($quote['base_amount'], 2) }}</span></div>
+                @if ($quote['fees_amount'] > 0)
+                    <div class="d-flex justify-content-between"><span>Cleaning fee</span><span>£{{ number_format($quote['fees_amount'], 2) }}</span></div>
+                @endif
+                @if (! empty($quote['damage_deposit']) && $quote['damage_deposit'] > 0)
+                    <div class="d-flex justify-content-between"><span>Damage deposit (refunded after stay)</span><span>£{{ number_format($quote['damage_deposit'], 2) }}</span></div>
+                @endif
                 <div class="d-flex justify-content-between"><span>Taxes</span><span>£{{ number_format($quote['tax_amount'], 2) }}</span></div>
                 <div class="d-flex justify-content-between ch-price mt-3"><span>Total</span><span>£{{ number_format($quote['total'], 2) }}</span></div>
                 <p class="small text-muted mt-3 mb-0">The final amount is recalculated on the server before payment.</p>
+            </div>
+
+            <div class="ch-booking-card mt-3">
+                <h6 class="mb-2">House rules</h6>
+                <ul class="small text-muted mb-0" style="padding-left:1.2rem;">
+                    <li>Check-in from 3:00 PM · Check-out by 12:00 PM</li>
+                    <li>Minimum stay: {{ \App\Models\Setting::getValue('min_stay_nights', 2) }} nights ({{ \App\Models\Setting::getValue('min_stay_bank_holiday_nights', 3) }} on bank holiday weekends)</li>
+                    <li>Maximum guests: {{ \App\Models\Setting::getValue('max_adults', 12) }} adults, {{ \App\Models\Setting::getValue('max_infants', 2) }} infants (under 6), {{ \App\Models\Setting::getValue('max_cots', 2) }} cots</li>
+                    <li>No pets allowed</li>
+                </ul>
             </div>
         </div>
     </div>

@@ -84,4 +84,45 @@
         </div>
     </div>
 </section>
+
+@php
+    $airbnbUrl = \App\Models\Setting::getValue('platform_airbnb_url');
+    $bookingUrl = \App\Models\Setting::getValue('platform_booking_url');
+    $vrboUrl = \App\Models\Setting::getValue('platform_vrbo_url');
+    $hasPlatforms = $airbnbUrl || $bookingUrl || $vrboUrl;
+    $discount = \App\Models\Setting::getValue('direct_booking_discount', 10);
+@endphp
+
+@if ($hasPlatforms)
+<section class="ch-section">
+    <div class="container">
+        <div class="row g-5 align-items-center">
+            <div class="col-lg-6">
+                <p class="ch-kicker">Book direct</p>
+                <h2>Save {{ $discount }}% when you book directly</h2>
+                <p class="ch-prose">Our best rates are available when you book through this website. You can also find us on these platforms:</p>
+            </div>
+            <div class="col-lg-6">
+                <div class="d-flex flex-column gap-3">
+                    @if ($airbnbUrl)
+                        <a href="{{ $airbnbUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-lg">
+                            <i class="bi bi-house-heart me-2"></i>Book on Airbnb
+                        </a>
+                    @endif
+                    @if ($bookingUrl)
+                        <a href="{{ $bookingUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-lg">
+                            <i class="bi bi-building me-2"></i>Book on Booking.com
+                        </a>
+                    @endif
+                    @if ($vrboUrl)
+                        <a href="{{ $vrboUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-lg">
+                            <i class="bi bi-house-door me-2"></i>Book on VRBO
+                        </a>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+@endif
 @endsection

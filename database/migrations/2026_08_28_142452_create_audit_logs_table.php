@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->string('action');
-            $table->string('module')->nullable()->index();
-            $table->string('record_type')->nullable();
-            $table->string('record_id')->nullable();
+            $table->string('module', 50)->nullable()->index();
+            $table->string('record_type', 50)->nullable();
+            $table->string('record_id', 50)->nullable();
             $table->json('old_values')->nullable();
             $table->json('new_values')->nullable();
             $table->string('ip_address')->nullable();

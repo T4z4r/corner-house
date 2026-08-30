@@ -50,6 +50,17 @@ class Property extends Model
         'parties_allowed' => 'boolean',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (Property $property): void {
+            $property->pets_allowed ??= 'no';
+            $property->check_in_from ??= '15:00';
+            $property->check_in_until ??= '18:00';
+            $property->check_out_from ??= '08:00';
+            $property->check_out_until ??= '12:00';
+        });
+    }
+
     public function rooms(): HasMany
     {
         return $this->hasMany(Room::class);

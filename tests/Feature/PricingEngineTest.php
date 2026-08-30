@@ -6,6 +6,7 @@ use App\Models\PricingOverride;
 use App\Models\PricingRule;
 use App\Models\Property;
 use App\Models\Room;
+use App\Models\Setting;
 use App\Services\Pricing\PricingEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -20,6 +21,11 @@ class PricingEngineTest extends TestCase
     {
         parent::setUp();
         $this->engine = app(PricingEngine::class);
+
+        // Disable minimum price floors and cleaning fee for engine logic tests
+        Setting::firstOrCreate(['key' => 'min_price_weekday'], ['value' => '0', 'group' => 'booking', 'label' => 'Min weekday', 'cast' => 'decimal:2']);
+        Setting::firstOrCreate(['key' => 'min_price_weekend'], ['value' => '0', 'group' => 'booking', 'label' => 'Min weekend', 'cast' => 'decimal:2']);
+        Setting::firstOrCreate(['key' => 'cleaning_fee'], ['value' => '0', 'group' => 'booking', 'label' => 'Cleaning', 'cast' => 'decimal:2']);
     }
 
     private function makeRoom(float $baseRate): Room
