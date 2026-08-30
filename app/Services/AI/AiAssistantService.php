@@ -18,6 +18,7 @@ class AiAssistantService
         private readonly AvailabilityService $availability,
         private readonly PricingEngine $pricing,
         private readonly AiProviderService $provider,
+        private readonly TokenOptimizationService $tokenOptimiser,
     ) {}
 
     /**
@@ -113,13 +114,21 @@ class AiAssistantService
     /**
      * @param  array<int, string>  $facts
      */
-    public function composeReply(string $message, string $intent, array $facts): string
+    public function composeReply(string $message, string $intent, array $facts, ?AiConversation $conversation = null): string
     {
-        $context = implode("\n", $facts);
-        $generated = $this->provider->complete(
+        $history = $conversation
+            ? $this->tokenOptimiser->buildOptimisedHistory($conversation, $message)
+            : [];
+
+        $messages = $this->tokenOptimiser->buildPrompt(
             $this->provider->instructions(),
-            "Guest question: {$message}\nIntent: {$intent}\nFacts:\n{$context}",
+            $message,
+            $intent,
+            $facts,
+            $history,
         );
+
+        $generated = $this->provider->completeMessages($messages);
 
         if (is_string($generated) && $generated !== '') {
             return $generated;
@@ -129,7 +138,9 @@ class AiAssistantService
             return 'I do not have that information yet. Please check the FAQ page or contact us and we will help.';
         }
 
-        return implode("\n", $facts);
+        $optimised = $this->tokenOptimiser->optimiseFacts($facts, $intent);
+
+        return implode("\n", $optimised);
     }
 
     /**

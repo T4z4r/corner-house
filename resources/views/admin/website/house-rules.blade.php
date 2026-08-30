@@ -3,6 +3,12 @@
 @section('title', 'House Rules')
 
 @section('content')
+    @if (! $property)
+        <div class="alert alert-warning border-0 shadow-sm mb-4">
+            No property record exists yet. Create a property first, then return here to configure house rules.
+        </div>
+    @endif
+
     <div class="ch-page-header">
         <div>
             <div class="ch-breadcrumb"><a href="{{ route('admin.website.index') }}">Website</a> / House Rules</div>
@@ -86,7 +92,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-ch-primary"><i class="bi bi-check-lg me-1"></i>Save house rules</button>
+                <button type="submit" class="btn btn-ch-primary" @disabled(! $property)><i class="bi bi-check-lg me-1"></i>Save house rules</button>
             </form>
         </div>
 
@@ -94,41 +100,49 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white"><h6 class="mb-0">Preview</h6></div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <div class="ch-label">Pets</div>
-                        <span class="ch-badge ch-badge-muted">{{ match($property?->pets_allowed ?? 'no') { 'yes' => 'Allowed', 'upon_request' => 'Upon request', default => 'Not allowed' } }}</span>
-                    </div>
-                    <div class="mb-3">
-                        <div class="ch-label">Smoking</div>
-                        <span class="ch-badge {{ ($property?->smoking_allowed ?? false) ? 'ch-badge-success' : 'ch-badge-muted' }}">
-                            <span class="dot"></span>{{ ($property?->smoking_allowed ?? false) ? 'Allowed' : 'Not allowed' }}
-                        </span>
-                    </div>
-                    <div class="mb-3">
-                        <div class="ch-label">Children</div>
-                        <span class="ch-badge {{ ($property?->children_allowed ?? true) ? 'ch-badge-success' : 'ch-badge-muted' }}">
-                            <span class="dot"></span>{{ ($property?->children_allowed ?? true) ? 'Welcome' : 'Not allowed' }}
-                        </span>
-                    </div>
-                    <div class="mb-3">
-                        <div class="ch-label">Parties</div>
-                        <span class="ch-badge {{ ($property?->parties_allowed ?? false) ? 'ch-badge-success' : 'ch-badge-muted' }}">
-                            <span class="dot"></span>{{ ($property?->parties_allowed ?? false) ? 'Allowed' : 'Not allowed' }}
-                        </span>
-                    </div>
-                    <hr>
-                    <div class="mb-2">
-                        <div class="ch-label">Check-in</div>
-                        <div class="fw-semibold">{{ $property?->check_in_from ?? '15:00' }} - {{ $property?->check_in_until ?? '18:00' }}</div>
-                    </div>
-                    <div class="mb-2">
-                        <div class="ch-label">Check-out</div>
-                        <div class="fw-semibold">{{ $property?->check_out_from ?? '08:00' }} - {{ $property?->check_out_until ?? '12:00' }}</div>
-                    </div>
-                    @if ($property?->custom_rules)
+                    @if ($property)
+                        <div class="mb-3">
+                            <div class="ch-label">Pets</div>
+                            <span class="ch-badge ch-badge-muted">{{ match($property->pets_allowed ?? 'no') { 'yes' => 'Allowed', 'upon_request' => 'Upon request', default => 'Not allowed' } }}</span>
+                        </div>
+                        <div class="mb-3">
+                            <div class="ch-label">Smoking</div>
+                            <span class="ch-badge {{ ($property->smoking_allowed ?? false) ? 'ch-badge-success' : 'ch-badge-muted' }}">
+                                <span class="dot"></span>{{ ($property->smoking_allowed ?? false) ? 'Allowed' : 'Not allowed' }}
+                            </span>
+                        </div>
+                        <div class="mb-3">
+                            <div class="ch-label">Children</div>
+                            <span class="ch-badge {{ ($property->children_allowed ?? true) ? 'ch-badge-success' : 'ch-badge-muted' }}">
+                                <span class="dot"></span>{{ ($property->children_allowed ?? true) ? 'Welcome' : 'Not allowed' }}
+                            </span>
+                        </div>
+                        <div class="mb-3">
+                            <div class="ch-label">Parties</div>
+                            <span class="ch-badge {{ ($property->parties_allowed ?? false) ? 'ch-badge-success' : 'ch-badge-muted' }}">
+                                <span class="dot"></span>{{ ($property->parties_allowed ?? false) ? 'Allowed' : 'Not allowed' }}
+                            </span>
+                        </div>
                         <hr>
-                        <div class="ch-label mb-1">Custom rules</div>
-                        <div class="text-muted small" style="white-space: pre-line;">{{ $property?->custom_rules }}</div>
+                        <div class="mb-2">
+                            <div class="ch-label">Check-in</div>
+                            <div class="fw-semibold">{{ $property->check_in_from ?? '15:00' }} - {{ $property->check_in_until ?? '18:00' }}</div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="ch-label">Check-out</div>
+                            <div class="fw-semibold">{{ $property->check_out_from ?? '08:00' }} - {{ $property->check_out_until ?? '12:00' }}</div>
+                        </div>
+                        @if ($property->custom_rules)
+                            <hr>
+                            <div class="ch-label mb-1">Custom rules</div>
+                            <div class="text-muted small" style="white-space: pre-line;">{{ $property->custom_rules }}</div>
+                        @endif
+                    @else
+                        <div class="calendar-empty">
+                            <div class="display-6 mb-2 text-muted"><i class="bi bi-house-x"></i></div>
+                            <p class="mb-1">No property found yet.</p>
+                            <p class="small mb-0">Create a property before configuring or previewing house rules.</p>
+                        </div>
                     @endif
                 </div>
             </div>

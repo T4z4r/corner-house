@@ -96,6 +96,7 @@ class AdminResourcesTest extends TestCase
         $this->actingAs($this->actingAsSuperAdmin())
             ->get(route('admin.website.house-rules'))
             ->assertOk()
+            ->assertSee('No property record exists yet')
             ->assertSee('House Rules')
             ->assertSee('Custom Rules')
             ->assertSee('Save house rules');
