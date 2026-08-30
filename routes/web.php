@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AddOnController;
 use App\Http\Controllers\Admin\AmenityController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\CalendarController;
@@ -7,9 +8,11 @@ use App\Http\Controllers\Admin\ChannelController;
 use App\Http\Controllers\Admin\ChatbotController;
 use App\Http\Controllers\Admin\CommunicationController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\FoodAndDrinkController;
 use App\Http\Controllers\Admin\GalleryController;
 use App\Http\Controllers\Admin\GuestController;
 use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\PlacesOfInterestController;
 use App\Http\Controllers\Admin\PricingController;
 use App\Http\Controllers\Admin\PropertyController;
 use App\Http\Controllers\Admin\ReportController;
@@ -32,6 +35,8 @@ Route::get('/amenities', [WebsiteController::class, 'amenities'])->name('ameniti
 Route::get('/gallery', [WebsiteController::class, 'gallery'])->name('gallery');
 Route::get('/location', [WebsiteController::class, 'location'])->name('location');
 Route::get('/faq', [WebsiteController::class, 'faq'])->name('faq');
+Route::get('/food-drink', [WebsiteController::class, 'foodAndDrink'])->name('food-drink');
+Route::get('/places', [WebsiteController::class, 'places'])->name('places');
 Route::get('/contact', [WebsiteController::class, 'contact'])->name('contact');
 Route::post('/contact', [WebsiteController::class, 'submitContact'])->name('contact.submit');
 Route::get('/privacy', [WebsiteController::class, 'privacy'])->name('privacy');
@@ -81,6 +86,32 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::put('/website-manager/amenities', [WebsiteManagementController::class, 'updateAmenities'])->name('website.amenities.update');
         Route::get('/website-manager/platforms', [WebsiteManagementController::class, 'platforms'])->name('website.platforms');
         Route::put('/website-manager/platforms', [WebsiteManagementController::class, 'updatePlatforms'])->name('website.platforms.update');
+    });
+
+    Route::middleware('can:properties.view')->group(function (): void {
+        Route::get('/food-drink', [FoodAndDrinkController::class, 'index'])->name('food-drink.index');
+        Route::get('/food-drink/create', [FoodAndDrinkController::class, 'create'])->name('food-drink.create')->middleware('can:properties.create');
+        Route::post('/food-drink', [FoodAndDrinkController::class, 'store'])->name('food-drink.store')->middleware('can:properties.create');
+        Route::get('/food-drink/{foodAndDrink}/edit', [FoodAndDrinkController::class, 'edit'])->name('food-drink.edit')->middleware('can:properties.update');
+        Route::put('/food-drink/{foodAndDrink}', [FoodAndDrinkController::class, 'update'])->name('food-drink.update')->middleware('can:properties.update');
+        Route::delete('/food-drink/{foodAndDrink}', [FoodAndDrinkController::class, 'destroy'])->name('food-drink.destroy')->middleware('can:properties.delete');
+        Route::post('/food-drink/{foodAndDrink}/toggle', [FoodAndDrinkController::class, 'toggle'])->name('food-drink.toggle')->middleware('can:properties.update');
+
+        Route::get('/places', [PlacesOfInterestController::class, 'index'])->name('places.index');
+        Route::get('/places/create', [PlacesOfInterestController::class, 'create'])->name('places.create')->middleware('can:properties.create');
+        Route::post('/places', [PlacesOfInterestController::class, 'store'])->name('places.store')->middleware('can:properties.create');
+        Route::get('/places/{place}/edit', [PlacesOfInterestController::class, 'edit'])->name('places.edit')->middleware('can:properties.update');
+        Route::put('/places/{place}', [PlacesOfInterestController::class, 'update'])->name('places.update')->middleware('can:properties.update');
+        Route::delete('/places/{place}', [PlacesOfInterestController::class, 'destroy'])->name('places.destroy')->middleware('can:properties.delete');
+        Route::post('/places/{place}/toggle', [PlacesOfInterestController::class, 'toggle'])->name('places.toggle')->middleware('can:properties.update');
+
+        Route::get('/addons', [AddOnController::class, 'index'])->name('addons.index');
+        Route::get('/addons/create', [AddOnController::class, 'create'])->name('addons.create')->middleware('can:properties.create');
+        Route::post('/addons', [AddOnController::class, 'store'])->name('addons.store')->middleware('can:properties.create');
+        Route::get('/addons/{addon}/edit', [AddOnController::class, 'edit'])->name('addons.edit')->middleware('can:properties.update');
+        Route::put('/addons/{addon}', [AddOnController::class, 'update'])->name('addons.update')->middleware('can:properties.update');
+        Route::delete('/addons/{addon}', [AddOnController::class, 'destroy'])->name('addons.destroy')->middleware('can:properties.delete');
+        Route::post('/addons/{addon}/toggle', [AddOnController::class, 'toggle'])->name('addons.toggle')->middleware('can:properties.update');
     });
 
     Route::middleware('can:users.view')->group(function (): void {

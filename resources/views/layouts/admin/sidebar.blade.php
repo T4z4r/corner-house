@@ -47,6 +47,23 @@
                 </a>
             </li>
         @endcan
+        @can('properties.view')
+            <li class="nav-item">
+                <a href="{{ route('admin.food-drink.index') }}" class="nav-link {{ request()->routeIs('admin.food-drink.*') ? 'active' : '' }}">
+                    <i class="bi bi-cup-hot me-2"></i><span class="nav-text">Food & Drink</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.places.index') }}" class="nav-link {{ request()->routeIs('admin.places.*') ? 'active' : '' }}">
+                    <i class="bi bi-geo-alt me-2"></i><span class="nav-text">Places of Interest</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.addons.index') }}" class="nav-link {{ request()->routeIs('admin.addons.*') ? 'active' : '' }}">
+                    <i class="bi bi-gift me-2"></i><span class="nav-text">Add-Ons</span>
+                </a>
+            </li>
+        @endcan
         @can('guests.view')
             <li class="nav-item">
                 <a href="{{ route('admin.guests.index') }}" class="nav-link {{ request()->routeIs('admin.guests.*') ? 'active' : '' }}">
@@ -232,6 +249,11 @@
             @endcan
             @can('reservations.view')
                 <li class="nav-item"><a href="{{ route('admin.reservations.index') }}" class="nav-link">Bookings</a></li>
+            @endcan
+            @can('properties.view')
+                <li class="nav-item"><a href="{{ route('admin.food-drink.index') }}" class="nav-link">Food & Drink</a></li>
+                <li class="nav-item"><a href="{{ route('admin.places.index') }}" class="nav-link">Places of Interest</a></li>
+                <li class="nav-item"><a href="{{ route('admin.addons.index') }}" class="nav-link">Add-Ons</a></li>
             @endcan
             @can('reports.view')
                 <li class="nav-item"><a href="{{ route('admin.revenue.index') }}" class="nav-link">Revenue</a></li>

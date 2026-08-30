@@ -25,6 +25,8 @@
                 <li class="nav-item"><a class="nav-link" href="{{ route('property') }}">The House</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ route('amenities') }}">Amenities</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ route('gallery') }}">Gallery</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ route('food-drink') }}">Food & Drink</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ route('places') }}">Places</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ route('location') }}">Location</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ route('faq') }}">FAQ</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ route('contact') }}">Contact</a></li>

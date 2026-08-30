@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Website;
 
 use App\Http\Controllers\Controller;
+use App\Models\AddOn;
 use App\Models\Amenity;
+use App\Models\FoodAndDrink;
 use App\Models\KnowledgeBaseArticle;
+use App\Models\PlacesOfInterest;
 use App\Models\Property;
 use App\Services\System\MailConfigurationService;
 use Illuminate\Http\RedirectResponse;
@@ -56,6 +59,23 @@ class WebsiteController extends Controller
             ->groupBy('category');
 
         return view('website.faq', $data);
+    }
+
+    public function foodAndDrink(): View
+    {
+        $data = $this->propertyData();
+        $data['establishments'] = FoodAndDrink::query()->where('is_active', true)->orderBy('sort_order')->get();
+        $data['addons'] = AddOn::query()->where('is_active', true)->orderBy('sort_order')->get();
+
+        return view('website.food-drink', $data);
+    }
+
+    public function places(): View
+    {
+        $data = $this->propertyData();
+        $data['places'] = PlacesOfInterest::query()->where('is_active', true)->orderBy('sort_order')->get();
+
+        return view('website.places', $data);
     }
 
     public function contact(): View
