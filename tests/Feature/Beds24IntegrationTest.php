@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Services\Beds24\Beds24ChannelProvider;
 use App\Services\Beds24\Beds24SyncService;
 use Database\Seeders\RoleAndPermissionSeeder;
+use Illuminate\Database\Schema\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Spatie\Permission\Models\Role;
@@ -1315,6 +1316,14 @@ class Beds24IntegrationTest extends TestCase
             ->assertSee('Post guests')
             ->assertSee($reservation->reference)
             ->assertSee('Alex Taylor');
+    }
+
+    public function test_schema_default_string_length_is_capped_for_mysql_indexes(): void
+    {
+        $reflection = new \ReflectionClass(Builder::class);
+        $property = $reflection->getProperty('defaultStringLength');
+
+        $this->assertSame(191, $property->getValue());
     }
 
     public function test_booking_can_be_published_from_integrations_page(): void
