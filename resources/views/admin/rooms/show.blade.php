@@ -6,28 +6,98 @@
 
 @push('styles')
 <style>
-    .rc-timeline { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-    .rc-timeline th, .rc-timeline td { border: 1px solid #e9ecef; padding: 0; }
-    .rc-timeline thead th { background: #f8f9fa; font-weight: 600; text-align: center; padding: 10px 4px; font-size: 0.9rem; }
-    .rc-timeline .rc-day-header { min-width: 110px; }
-    .rc-cell { height: 72px; position: relative; cursor: pointer; transition: background 0.15s; }
-    .rc-cell:hover { background: #f0f0f0; }
-    .rc-cell.today { background: #fff8e1; }
-    .rc-cell.today::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--ch-accent); }
-    .rc-event { position: absolute; top: 6px; bottom: 6px; left: 3px; right: 3px; border-radius: 5px; font-size: 0.8rem; padding: 4px 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #fff; font-weight: 500; z-index: 1; }
-    .rc-event--confirmed { background: #1f6f43; }
-    .rc-event--pending { background: #c9a227; }
-    .rc-event--hold { background: #6c757d; }
-    .rc-event--checked-in { background: #0d6efd; }
-    .rc-event--block { background: #20c997; opacity: 0.85; }
-    .rc-event--block-rates { background: #c9a227; opacity: 0.85; }
-    .rc-event--block-restrictions { background: #fd7e14; opacity: 0.85; }
-    .rc-event--block-manual { background: #6c757d; opacity: 0.85; }
-    .rc-weekend { background: #fafafa; }
-    .rc-nav-btn { padding: 4px 12px; }
-    .rc-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.8rem; }
-    .rc-legend-item { display: flex; align-items: center; gap: 5px; }
-    .rc-legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+    .room-cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 0.5rem;
+        padding: 1rem;
+    }
+    .room-cal-weekday {
+        padding: 0.25rem 0.35rem;
+        color: #6c757d;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+    .room-cal-day {
+        min-height: 130px;
+        padding: 0.6rem;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 0.75rem;
+        background: #fff;
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    }
+    .room-cal-day:hover {
+        transform: translateY(-1px);
+        border-color: rgba(31, 111, 67, 0.22);
+        box-shadow: 0 0.5rem 1rem rgba(33, 37, 41, 0.08);
+    }
+    .room-cal-day.is-outside { background: #f8f9fa; color: #8a9097; }
+    .room-cal-day.is-today { border-color: var(--ch-forest); box-shadow: inset 0 0 0 1px rgba(31, 111, 67, 0.16); }
+    .room-cal-day.is-selected { border-color: var(--ch-forest); box-shadow: 0 0 0 0.15rem rgba(31, 111, 67, 0.12); }
+    .room-cal-day-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.45rem;
+    }
+    .room-cal-day-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.8rem;
+        height: 1.8rem;
+        border-radius: 999px;
+        background: rgba(31, 111, 67, 0.08);
+        color: var(--ch-forest);
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
+    .room-cal-day.is-outside .room-cal-day-number { background: rgba(108, 117, 125, 0.1); color: #6c757d; }
+    .room-cal-day-meta { color: #6c757d; font-size: 0.72rem; }
+    .room-cal-events { display: flex; flex-direction: column; gap: 0.3rem; }
+    .room-cal-event {
+        border: 0;
+        border-radius: 0.5rem;
+        padding: 0.3rem 0.5rem;
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-align: left;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .rc-ev-confirmed { background: #1f6f43; }
+    .rc-ev-pending { background: #c9a227; }
+    .rc-ev-hold { background: #6c757d; }
+    .rc-ev-checked-in { background: #0d6efd; }
+    .rc-ev-block { background: #20c997; }
+    .rc-ev-block-rates { background: #c9a227; }
+    .rc-ev-block-restrictions { background: #fd7e14; }
+    .rc-ev-block-manual { background: #6c757d; }
+    .room-cal-empty {
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: #6c757d;
+        padding: 1rem;
+    }
+    .room-cal-nav { display: flex; gap: 0.5rem; align-items: center; }
+    .room-cal-nav .btn { border-radius: 999px; }
+    .room-cal-legend { display: flex; flex-wrap: wrap; gap: 0.75rem; font-size: 0.82rem; }
+    .room-cal-legend-item { display: flex; align-items: center; gap: 0.4rem; }
+    .room-cal-legend-dot { width: 0.75rem; height: 0.75rem; border-radius: 999px; }
+    @media (max-width: 768px) {
+        .room-cal-grid { gap: 0.35rem; padding: 0.75rem; }
+        .room-cal-day { min-height: 100px; padding: 0.5rem; }
+    }
 </style>
 @endpush
 
@@ -130,35 +200,37 @@
             </div>
 
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="bi bi-calendar3 me-2"></i>Availability</h6>
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold"><i class="bi bi-calendar3 me-2"></i>Availability</div>
+                        <div class="small text-muted">Monthly view for {{ $room->name }}</div>
+                    </div>
                     <div class="d-flex align-items-center gap-2">
                         @can('calendar.manage')
                             <button class="btn btn-sm btn-ch-primary" data-bs-toggle="modal" data-bs-target="#blockModal">
                                 <i class="bi bi-calendar-plus me-1"></i>Add block
                             </button>
                         @endcan
-                        <button class="btn btn-sm btn-outline-secondary rc-nav-btn" id="rcPrev"><i class="bi bi-chevron-left"></i></button>
-                        <button class="btn btn-sm btn-outline-secondary rc-nav-btn" id="rcToday">Today</button>
-                        <button class="btn btn-sm btn-outline-secondary rc-nav-btn" id="rcNext"><i class="bi bi-chevron-right"></i></button>
+                        <div class="room-cal-nav">
+                            <button class="btn btn-outline-secondary btn-sm" id="rcPrev"><i class="bi bi-chevron-left"></i></button>
+                            <button class="btn btn-outline-secondary btn-sm" id="rcToday">Today</button>
+                            <button class="btn btn-outline-secondary btn-sm" id="rcNext"><i class="bi bi-chevron-right"></i></button>
+                        </div>
                         <span class="fw-semibold ms-2 small" id="rcPeriodLabel"></span>
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <div class="rc-legend px-3 pt-3">
-                        <div class="rc-legend-item"><span class="rc-legend-dot" style="background:#1f6f43"></span>Confirmed</div>
-                        <div class="rc-legend-item"><span class="rc-legend-dot" style="background:#c9a227"></span>Pending</div>
-                        <div class="rc-legend-item"><span class="rc-legend-dot" style="background:#0d6efd"></span>Checked in</div>
-                        <div class="rc-legend-item"><span class="rc-legend-dot" style="background:#6c757d"></span>Hold</div>
-                        <div class="rc-legend-item"><span class="rc-legend-dot" style="background:#20c997"></span>Availability</div>
-                        <div class="rc-legend-item"><span class="rc-legend-dot" style="background:#fd7e14"></span>Min/Max Stay</div>
+                    <div class="room-cal-legend px-3 pt-3">
+                        <div class="room-cal-legend-item"><span class="room-cal-legend-dot" style="background:#1f6f43"></span>Confirmed</div>
+                        <div class="room-cal-legend-item"><span class="room-cal-legend-dot" style="background:#c9a227"></span>Pending</div>
+                        <div class="room-cal-legend-item"><span class="room-cal-legend-dot" style="background:#0d6efd"></span>Checked in</div>
+                        <div class="room-cal-legend-item"><span class="room-cal-legend-dot" style="background:#6c757d"></span>Hold</div>
+                        <div class="room-cal-legend-item"><span class="room-cal-legend-dot" style="background:#20c997"></span>Availability</div>
+                        <div class="room-cal-legend-item"><span class="room-cal-legend-dot" style="background:#fd7e14"></span>Stay rules</div>
+                        <div class="room-cal-legend-item"><span class="room-cal-legend-dot" style="background:#c9a227;opacity:.7"></span>Rates</div>
                     </div>
-                    <div style="overflow-x: auto;">
-                        <table class="rc-timeline" id="rcTimeline">
-                            <thead><tr id="rcHead"></tr></thead>
-                            <tbody><tr id="rcRow"></tr></tbody>
-                        </table>
-                    </div>
+                    <div class="room-cal-grid" id="rcWeekdays"></div>
+                    <div class="room-cal-grid pt-0" id="rcGrid" aria-live="polite"></div>
                 </div>
             </div>
         </div>
@@ -270,25 +342,149 @@
     const propertyId = {{ $room->property_id }};
     const eventsUrl = '{{ route('admin.calendar.events') }}';
     const blocksStoreUrl = '{{ route('admin.calendar.blocks.store') }}';
-    const today = new Date();
-    let viewDays = 14;
-    let startDate = getWeekStart(today);
 
-    function getWeekStart(date) {
-        const d = new Date(date);
-        const day = d.getDay();
-        d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
-        d.setHours(0, 0, 0, 0);
-        return d;
+    const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const weekdaysEl = document.getElementById('rcWeekdays');
+    const gridEl = document.getElementById('rcGrid');
+    const labelEl = document.getElementById('rcPeriodLabel');
+
+    weekdaysEl.innerHTML = weekdayLabels.map(l => '<div class="room-cal-weekday">' + l + '</div>').join('');
+
+    const today = startOfDay(new Date());
+    let visibleMonth = startOfMonth(today);
+    let selectedDate = today;
+    let events = [];
+
+    function startOfDay(d) { const c = new Date(d); c.setHours(0,0,0,0); return c; }
+    function startOfMonth(d) { const c = new Date(d); c.setDate(1); c.setHours(0,0,0,0); return c; }
+    function addDays(d, n) { const c = new Date(d); c.setDate(c.getDate() + n); return c; }
+    function sameMonth(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth(); }
+    function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+    function dateKey(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+    function monthKey(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+    function parseLocal(s) { return new Date(s + 'T00:00:00'); }
+    function formatMonth(d) { return new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(d); }
+
+    function evClass(event) {
+        const cn = Array.isArray(event.className) ? (event.className[0]||'') : (event.className||'');
+        if (cn.includes('confirmed')) return 'rc-ev-confirmed';
+        if (cn.includes('pending')) return 'rc-ev-pending';
+        if (cn.includes('hold')) return 'rc-ev-hold';
+        if (cn.includes('checked-in')) return 'rc-ev-checked-in';
+        if (cn.includes('block-availability') || cn.includes('fc-event--block ')) return 'rc-ev-block';
+        if (cn.includes('block-rates') || cn.includes('rates')) return 'rc-ev-block-rates';
+        if (cn.includes('block-restrictions') || cn.includes('restrictions')) return 'rc-ev-block-restrictions';
+        if (cn.includes('block-manual') || cn.includes('manual')) return 'rc-ev-block-manual';
+        return 'rc-ev-block';
     }
 
-    function addDays(date, days) {
-        const d = new Date(date);
-        d.setDate(d.getDate() + days);
-        return d;
+    function buildMap() {
+        const map = new Map();
+        events.forEach(ev => {
+            const s = startOfDay(parseLocal(ev.start));
+            const e = ev.end ? startOfDay(parseLocal(ev.end)) : s;
+            const fin = startOfDay(addDays(e, -1));
+            let cur = new Date(s);
+            while (cur <= fin) {
+                const k = dateKey(cur);
+                if (!map.has(k)) map.set(k, []);
+                map.get(k).push(ev);
+                cur.setDate(cur.getDate() + 1);
+            }
+        });
+        return map;
     }
 
-    function fmt(d) { return d.toISOString().split('T')[0]; }
+    function render() {
+        labelEl.textContent = formatMonth(visibleMonth);
+        const first = startOfMonth(visibleMonth);
+        const offset = (first.getDay() + 6) % 7;
+        const gridStart = addDays(first, -offset);
+        const map = buildMap();
+        const cells = [];
+
+        for (let i = 0; i < 42; i++) {
+            const d = addDays(gridStart, i);
+            const k = dateKey(d);
+            const dayEvs = map.get(k) || [];
+            const outside = !sameMonth(d, visibleMonth);
+            const isToday = sameDay(d, today);
+            const isSel = sameDay(d, selectedDate);
+            const evMarkup = dayEvs.slice(0,3).map(ev => {
+                const roomOk = ev.extendedProps && ev.extendedProps.room_id == roomId;
+                return '<button type="button" class="room-cal-event ' + evClass(ev) + '" data-id="' + ev.id + '" title="' + ev.title + '"' + (roomOk ? '' : ' style="opacity:.4"') + '>' + ev.title + '</button>';
+            }).join('');
+            const extra = dayEvs.length > 3 ? '<div class="room-cal-day-meta">+' + (dayEvs.length-3) + ' more</div>' : '';
+
+            cells.push(
+                '<div class="room-cal-day' + (outside ? ' is-outside' : '') + (isToday ? ' is-today' : '') + (isSel ? ' is-selected' : '') + '" data-date="' + k + '">' +
+                    '<div class="room-cal-day-header">' +
+                        '<div class="room-cal-day-number">' + d.getDate() + '</div>' +
+                        '<div class="room-cal-day-meta">' + (outside ? new Intl.DateTimeFormat('en-GB',{month:'short'}).format(d) : '') + '</div>' +
+                    '</div>' +
+                    '<div class="room-cal-events">' + evMarkup + '</div>' +
+                    extra +
+                '</div>'
+            );
+        }
+
+        gridEl.innerHTML = cells.join('');
+
+        gridEl.querySelectorAll('.room-cal-day').forEach(cell => {
+            cell.addEventListener('click', () => {
+                selectedDate = parseLocal(cell.dataset.date);
+                const sInput = document.querySelector('#blockForm input[name="start_date"]');
+                const eInput = document.querySelector('#blockForm input[name="end_date"]');
+                if (sInput) sInput.value = cell.dataset.date;
+                if (eInput) eInput.value = cell.dataset.date;
+                render();
+            });
+        });
+
+        gridEl.querySelectorAll('.room-cal-event').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const ev = events.find(x => x.id === btn.dataset.id);
+                if (ev?.extendedProps?.url) window.location = ev.extendedProps.url;
+            });
+        });
+    }
+
+    function loadEvents() {
+        const s = dateKey(startOfMonth(visibleMonth));
+        const e = dateKey(addDays(new Date(visibleMonth.getFullYear(), visibleMonth.getMonth()+1, 0), 1));
+        const url = new URL(eventsUrl, window.location.origin);
+        url.searchParams.set('start', s);
+        url.searchParams.set('end', e);
+        url.searchParams.set('property_id', propertyId);
+        url.searchParams.set('room_id', roomId);
+        return fetch(url.toString(), { headers: { 'Accept': 'application/json' } })
+            .then(r => r.json())
+            .then(p => { events = Array.isArray(p) ? p : []; })
+            .catch(() => { events = []; });
+    }
+
+    function syncUrl() {
+        const url = new URL(window.location.href);
+        url.searchParams.set('month', monthKey(visibleMonth));
+        window.history.replaceState({}, '', url.toString());
+    }
+
+    function updateMonth(delta) {
+        visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + delta, 1);
+        selectedDate = new Date(visibleMonth);
+        syncUrl();
+        loadEvents().then(render);
+    }
+
+    document.getElementById('rcPrev').addEventListener('click', () => updateMonth(-1));
+    document.getElementById('rcNext').addEventListener('click', () => updateMonth(1));
+    document.getElementById('rcToday').addEventListener('click', () => {
+        visibleMonth = startOfMonth(new Date());
+        selectedDate = new Date();
+        syncUrl();
+        loadEvents().then(render);
+    });
 
     const typeFields = {
         'availability': { active: true },
@@ -301,119 +497,34 @@
     };
 
     function toggleFields() {
-        const type = document.getElementById('blockType');
-        if (!type) return;
-        const fields = typeFields[type.value] || {};
+        const sel = document.getElementById('blockType');
+        if (!sel) return;
+        const f = typeFields[sel.value] || {};
         const fv = document.getElementById('fieldValue');
         const fms = document.getElementById('fieldMinStay');
         const fxs = document.getElementById('fieldMaxStay');
         const fa = document.getElementById('fieldActive');
-        if (fv) fv.style.display = fields.value ? '' : 'none';
-        if (fms) fms.style.display = fields.minStay ? '' : 'none';
-        if (fxs) fxs.style.display = fields.maxStay ? '' : 'none';
-        if (fa) fa.style.display = fields.active ? '' : 'none';
-        if (fields.valueLabel) {
-            document.getElementById('valueLabel').textContent = fields.valueLabel;
-            document.getElementById('blockValue').placeholder = fields.valuePlaceholder || '';
+        if (fv) fv.style.display = f.value ? '' : 'none';
+        if (fms) fms.style.display = f.minStay ? '' : 'none';
+        if (fxs) fxs.style.display = f.maxStay ? '' : 'none';
+        if (fa) fa.style.display = f.active ? '' : 'none';
+        if (f.valueLabel) {
+            document.getElementById('valueLabel').textContent = f.valueLabel;
+            document.getElementById('blockValue').placeholder = f.valuePlaceholder || '';
         }
     }
 
     const blockType = document.getElementById('blockType');
-    if (blockType) {
-        blockType.addEventListener('change', toggleFields);
-        toggleFields();
-    }
-
-    function render() {
-        const head = document.getElementById('rcHead');
-        const row = document.getElementById('rcRow');
-        const label = document.getElementById('rcPeriodLabel');
-        const endDate = addDays(startDate, viewDays);
-
-        label.textContent = startDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) +
-            ' – ' + addDays(endDate, -1).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
-        head.innerHTML = '';
-        row.innerHTML = '';
-
-        const dates = [];
-        for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
-            dates.push(new Date(d));
-        }
-
-        dates.forEach(d => {
-            const th = document.createElement('th');
-            th.className = 'rc-day-header';
-            const dow = d.getDay();
-            if (dow === 0 || dow === 6) th.classList.add('rc-weekend');
-            if (fmt(d) === fmt(today)) th.style.background = '#fff8e1';
-            th.innerHTML = '<div style="font-size:0.75rem">' + d.toLocaleDateString('en-GB', { weekday: 'short' }) + '</div>' +
-                '<div style="font-size:0.7rem;color:#6c757d">' + d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + '</div>';
-            head.appendChild(th);
-
-            const td = document.createElement('td');
-            td.className = 'rc-cell';
-            if (dow === 0 || dow === 6) td.classList.add('rc-weekend');
-            if (fmt(d) === fmt(today)) td.classList.add('today');
-            td.dataset.date = fmt(d);
-            td.addEventListener('click', function () {
-                const startInput = document.querySelector('#blockForm input[name="start_date"]');
-                const endInput = document.querySelector('#blockForm input[name="end_date"]');
-                if (startInput) startInput.value = this.dataset.date;
-                if (endInput) endInput.value = this.dataset.date;
-                const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('blockModal'));
-                modal.show();
-            });
-            row.appendChild(td);
-        });
-
-        loadEvents(dates[0], dates[dates.length - 1]);
-    }
-
-    function loadEvents(start, end) {
-        const url = eventsUrl + '?property_id=' + propertyId + '&start=' + fmt(start) + '&end=' + fmt(addDays(end, 1));
-        fetch(url, { headers: { 'Accept': 'application/json' } })
-            .then(r => r.json())
-            .then(events => {
-                events.forEach(event => {
-                    const eStart = new Date(event.start);
-                    const eEnd = new Date(event.end);
-                    const eRoomId = event.extendedProps.room_id;
-                    if (eRoomId != roomId) return;
-
-                    document.querySelectorAll('#rcRow .rc-cell').forEach(td => {
-                        const cellDate = new Date(td.dataset.date);
-                        if (cellDate >= eStart && cellDate < eEnd) {
-                            const div = document.createElement('div');
-                            div.className = 'rc-event ' + (event.className || '');
-                            div.textContent = event.title;
-                            if (event.extendedProps.url) {
-                                div.style.cursor = 'pointer';
-                                div.addEventListener('click', (e) => {
-                                    e.stopPropagation();
-                                    window.location = event.extendedProps.url;
-                                });
-                            }
-                            td.appendChild(div);
-                        }
-                    });
-                });
-            });
-    }
-
-    document.getElementById('rcPrev').addEventListener('click', () => { startDate = addDays(startDate, -viewDays); render(); });
-    document.getElementById('rcNext').addEventListener('click', () => { startDate = addDays(startDate, viewDays); render(); });
-    document.getElementById('rcToday').addEventListener('click', () => { startDate = getWeekStart(today); render(); });
+    if (blockType) { blockType.addEventListener('change', toggleFields); toggleFields(); }
 
     const blockForm = document.getElementById('blockForm');
     if (blockForm) {
-        blockForm.addEventListener('submit', (e) => {
+        blockForm.addEventListener('submit', e => {
             e.preventDefault();
-            const formData = new FormData(blockForm);
             fetch(blocksStoreUrl, {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
-                body: formData,
+                body: new FormData(blockForm),
             })
             .then(r => r.json())
             .then(data => {
@@ -421,7 +532,7 @@
                     bootstrap.Modal.getInstance(document.getElementById('blockModal')).hide();
                     blockForm.reset();
                     toggleFields();
-                    render();
+                    loadEvents().then(render);
                 } else {
                     alert('Unable to save block');
                 }
@@ -429,7 +540,14 @@
         });
     }
 
-    render();
+    const params = new URLSearchParams(window.location.search);
+    const m = params.get('month');
+    if (m) {
+        const parts = m.split('-');
+        if (parts.length === 2) visibleMonth = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
+    }
+
+    loadEvents().then(render);
 })();
 </script>
 @endpush
