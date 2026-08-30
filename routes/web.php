@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\RevenueController;
 use App\Http\Controllers\Admin\RoomController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\WebsiteManagementController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Website\BookingController;
@@ -70,6 +71,16 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::delete('/gallery/{image}', [GalleryController::class, 'destroy'])->name('gallery.destroy');
         Route::put('/gallery/reorder', [GalleryController::class, 'reorder'])->name('gallery.reorder');
         Route::post('/gallery/delete-uploaded', [GalleryController::class, 'destroyUploaded'])->name('gallery.delete-uploaded');
+
+        Route::get('/website-manager', [WebsiteManagementController::class, 'index'])->name('website.index');
+        Route::get('/website-manager/house-rules', [WebsiteManagementController::class, 'houseRules'])->name('website.house-rules');
+        Route::put('/website-manager/house-rules', [WebsiteManagementController::class, 'updateHouseRules'])->name('website.house-rules.update');
+        Route::get('/website-manager/content', [WebsiteManagementController::class, 'content'])->name('website.content');
+        Route::put('/website-manager/content', [WebsiteManagementController::class, 'updateContent'])->name('website.content.update');
+        Route::get('/website-manager/amenities', [WebsiteManagementController::class, 'amenities'])->name('website.amenities');
+        Route::put('/website-manager/amenities', [WebsiteManagementController::class, 'updateAmenities'])->name('website.amenities.update');
+        Route::get('/website-manager/platforms', [WebsiteManagementController::class, 'platforms'])->name('website.platforms');
+        Route::put('/website-manager/platforms', [WebsiteManagementController::class, 'updatePlatforms'])->name('website.platforms.update');
     });
 
     Route::middleware('can:users.view')->group(function (): void {

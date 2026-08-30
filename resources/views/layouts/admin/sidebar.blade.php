@@ -19,13 +19,8 @@
         @endcan
         @can('settings.view')
             <li class="nav-item">
-                <a href="{{ route('admin.settings.website') }}" class="nav-link {{ request()->routeIs('admin.settings.website') ? 'active' : '' }}">
+                <a href="{{ route('admin.website.index') }}" class="nav-link {{ request()->routeIs('admin.website.*') ? 'active' : '' }}">
                     <i class="bi bi-globe me-2"></i><span class="nav-text">Website</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('admin.gallery.index') }}" class="nav-link {{ request()->routeIs('admin.gallery.*') ? 'active' : '' }}">
-                    <i class="bi bi-images me-2"></i><span class="nav-text">Gallery</span>
                 </a>
             </li>
         @endcan
@@ -203,13 +198,8 @@
             </li>
             @can('settings.view')
                 <li class="nav-item">
-                    <a href="{{ route('admin.settings.website') }}" class="nav-link {{ request()->routeIs('admin.settings.website') ? 'active' : '' }}">
+                    <a href="{{ route('admin.website.index') }}" class="nav-link {{ request()->routeIs('admin.website.*') ? 'active' : '' }}">
                         <i class="bi bi-globe me-2"></i><span class="nav-text">Website</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ route('admin.gallery.index') }}" class="nav-link {{ request()->routeIs('admin.gallery.*') ? 'active' : '' }}">
-                        <i class="bi bi-images me-2"></i><span class="nav-text">Gallery</span>
                     </a>
                 </li>
             @endcan

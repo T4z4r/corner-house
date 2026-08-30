@@ -56,6 +56,7 @@ class CalendarController extends Controller
             'properties' => $properties,
             'selectedProperty' => $selectedProperty,
             'blockTypes' => $this->blockTypes(),
+            'initialMonth' => $request->query('month', now()->format('Y-m')),
         ]);
     }
 
