@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [WebsiteController::class, 'home'])->name('home');
 Route::get('/about', [WebsiteController::class, 'about'])->name('about');
 Route::get('/property', [WebsiteController::class, 'property'])->name('property');
-Route::get('/rooms/{room:slug}', [WebsiteController::class, 'room'])->name('property.room');
+Route::get('/rooms/{room}', [WebsiteController::class, 'room'])->name('property.room');
 Route::get('/amenities', [WebsiteController::class, 'amenities'])->name('amenities');
 Route::get('/gallery', [WebsiteController::class, 'gallery'])->name('gallery');
 Route::get('/location', [WebsiteController::class, 'location'])->name('location');

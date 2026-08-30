@@ -53,6 +53,45 @@ class ChannelWebhookTest extends TestCase
         $this->assertDatabaseCount('channel_webhooks', 2);
     }
 
+    public function test_beds24_webhook_handles_wrapped_body_payloads(): void
+    {
+        $room = Room::factory()->create(['status' => 'active', 'base_rate' => 90]);
+        $account = ChannelAccount::factory()->create(['provider' => 'beds24', 'status' => 'active']);
+        ChannelMapping::factory()->create([
+            'channel_account_id' => $account->id,
+            'property_id' => $room->property_id,
+            'room_id' => $room->id,
+            'provider' => 'beds24',
+            'external_room_id' => '723357',
+        ]);
+
+        $payload = [
+            'body' => [
+                'data' => [[
+                    'id' => 'B24-200',
+                    'roomId' => '723357',
+                    'unitId' => '1',
+                    'arrival' => now()->addDays(30)->toDateString(),
+                    'departure' => now()->addDays(32)->toDateString(),
+                    'firstName' => '',
+                    'lastName' => '',
+                    'status' => 'confirmed',
+                    'channel' => 'direct',
+                    'numAdult' => 2,
+                ]],
+            ],
+        ];
+
+        $this->postJson('/webhooks/beds24', $payload)->assertOk();
+
+        $this->assertDatabaseHas('reservations', [
+            'external_channel' => 'beds24',
+            'external_booking_id' => 'B24-200',
+            'room_id' => $room->id,
+            'status' => 'confirmed',
+        ]);
+    }
+
     public function test_unmapped_webhook_does_not_create_reservation(): void
     {
         ChannelAccount::factory()->create(['provider' => 'beds24', 'status' => 'active']);

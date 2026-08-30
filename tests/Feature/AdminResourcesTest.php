@@ -3,11 +3,14 @@
 namespace Tests\Feature;
 
 use App\Models\AddOn;
+use App\Models\ChannelAccount;
+use App\Models\ChannelMapping;
 use App\Models\FoodAndDrink;
 use App\Models\Guest;
 use App\Models\KnowledgeBaseArticle;
 use App\Models\PlacesOfInterest;
 use App\Models\Property;
+use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\Setting;
 use App\Models\User;
@@ -303,6 +306,69 @@ class AdminResourcesTest extends TestCase
             ->assertRedirect();
 
         $this->assertDatabaseHas('reservations', ['source' => 'manual', 'status' => 'confirmed']);
+    }
+
+    public function test_super_admin_can_resync_a_booking_to_beds24_from_the_reservation_page(): void
+    {
+        $account = ChannelAccount::factory()->create([
+            'provider' => 'beds24',
+            'status' => 'active',
+            'credentials' => [
+                'refresh_token' => 'refresh-token',
+                'access_token' => 'access-token',
+                'access_token_expires_at' => now()->addHour()->toIso8601String(),
+            ],
+        ]);
+        $property = Property::factory()->create();
+        $room = Room::factory()->create([
+            'property_id' => $property->id,
+            'status' => 'active',
+        ]);
+        ChannelMapping::create([
+            'channel_account_id' => $account->id,
+            'provider' => 'beds24',
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'external_property_id' => '2001',
+            'external_room_id' => '77',
+            'status' => 'active',
+        ]);
+        $reservation = Reservation::factory()->create([
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'status' => 'confirmed',
+            'external_channel' => null,
+            'external_booking_id' => null,
+        ]);
+
+        Http::fake([
+            '*bookings*' => Http::response([
+                'data' => [[
+                    'id' => 8123,
+                ]],
+            ], 200),
+        ]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.reservations.show', $reservation))
+            ->assertOk()
+            ->assertSee('Resync booking to Beds24');
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->post(route('admin.channels.bookings.publish', $reservation))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Booking posted to Beds24.');
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'bookings')
+            && (int) ($request->data()[0]['roomId'] ?? 0) === 77
+            && (string) ($request->data()[0]['status'] ?? '') === 'confirmed');
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'external_channel' => 'beds24',
+            'external_booking_id' => '8123',
+            'sync_status' => 'synced',
+        ]);
     }
 
     public function test_super_admin_can_view_properties_index(): void

@@ -6,6 +6,7 @@ use App\Models\ChannelAccount;
 use App\Models\ChannelMapping;
 use App\Models\ChannelSyncLog;
 use App\Models\ChannelWebhook;
+use App\Models\Guest;
 use App\Models\Reservation;
 use App\Services\Audit\AuditLogger;
 use App\Services\Beds24\Beds24ChannelProvider;
@@ -228,7 +229,10 @@ class ChannelManager
                 'total_amount' => $total !== null ? (float) $total : $existing->total_amount,
                 'base_amount' => $total !== null ? (float) $total : $existing->base_amount,
                 'cancelled_at' => null,
+                'notes' => $booking['notes'] ?? $existing->notes,
             ]);
+
+            $this->syncReservationGuest($existing->fresh(['guest']), $booking);
 
             return ['status' => 'updated'];
         }
@@ -241,12 +245,15 @@ class ChannelManager
             'guest_email' => $booking['email'] ?? null,
             'guest_first_name' => $booking['firstName'] ?? $booking['guestFirstName'] ?? 'Guest',
             'guest_last_name' => $booking['lastName'] ?? $booking['guestLastName'] ?? '',
+            'guest_phone' => $booking['phone'] ?? $booking['guestPhone'] ?? null,
+            'guest_country' => $booking['country'] ?? $booking['guestCountry'] ?? null,
             'status' => $cancelled ? 'cancelled' : 'confirmed',
             'source' => $source,
             'channel' => $account->provider,
             'external_channel' => $account->provider,
             'external_booking_id' => $externalId,
             'skip_sync' => true,
+            'notes' => $booking['notes'] ?? null,
         ]);
 
         if ($cancelled) {
@@ -311,6 +318,10 @@ class ChannelManager
      */
     private function bookingList(array $payload): array
     {
+        if (isset($payload['body']) && is_array($payload['body'])) {
+            $payload = $payload['body'];
+        }
+
         $bookings = $payload['data'] ?? $payload['bookings'] ?? $payload['booking'] ?? $payload;
 
         if (isset($bookings['id']) || isset($bookings['bookId'])) {
@@ -322,5 +333,53 @@ class ChannelManager
         }
 
         return array_values(array_filter($bookings, 'is_array'));
+    }
+
+    /**
+     * @param  array<string, mixed>  $booking
+     */
+    private function syncReservationGuest(Reservation $reservation, array $booking): void
+    {
+        $guestData = $this->guestDataFromBooking($booking);
+        if ($guestData === []) {
+            return;
+        }
+
+        $guest = $reservation->guest;
+
+        if ($guest instanceof Guest) {
+            $guest->update($guestData);
+
+            return;
+        }
+
+        if (! empty($guestData['email'])) {
+            $guest = Guest::query()->firstOrNew(['email' => $guestData['email']]);
+            $guest->fill($guestData);
+            $guest->save();
+
+            $reservation->update(['guest_id' => $guest->id]);
+
+            return;
+        }
+
+        $guest = Guest::query()->create($guestData);
+        $reservation->update(['guest_id' => $guest->id]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $booking
+     * @return array<string, mixed>
+     */
+    private function guestDataFromBooking(array $booking): array
+    {
+        return array_filter([
+            'first_name' => $booking['firstName'] ?? $booking['guestFirstName'] ?? null,
+            'last_name' => $booking['lastName'] ?? $booking['guestLastName'] ?? null,
+            'email' => $booking['email'] ?? $booking['guestEmail'] ?? null,
+            'phone' => $booking['phone'] ?? $booking['guestPhone'] ?? null,
+            'country' => $booking['country'] ?? $booking['guestCountry'] ?? null,
+            'source' => $booking['channel'] ?? null,
+        ], static fn ($value) => $value !== null && $value !== '');
     }
 }

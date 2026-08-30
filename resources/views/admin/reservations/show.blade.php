@@ -19,6 +19,14 @@
             <p class="ch-subtitle">{{ $reservation->room?->name }} · {{ $reservation->room?->property?->name }}</p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
+            @can('channels.configure')
+                <form method="POST" action="{{ route('admin.channels.bookings.publish', $reservation) }}">
+                    @csrf
+                    <button class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-repeat me-1"></i>Resync booking to Beds24
+                    </button>
+                </form>
+            @endcan
             @if (in_array($reservation->status, ['confirmed', 'checked_in']))
                 @can('reservations.update')
                     @if ($reservation->status !== 'checked_in')

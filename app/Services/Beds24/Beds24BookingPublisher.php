@@ -18,6 +18,10 @@ class Beds24BookingPublisher
             return false;
         }
 
+        if ($reservation->status === 'cancelled' && empty($reservation->external_booking_id)) {
+            return false;
+        }
+
         $reservation->loadMissing(['guest', 'guests']);
         $payload = $this->bookingPayload($account, $reservation);
         if ($payload === []) {

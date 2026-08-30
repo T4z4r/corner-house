@@ -17,6 +17,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\Beds24\Beds24ChannelProvider;
 use App\Services\Beds24\Beds24SyncService;
+use App\Services\Booking\BookingService;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Database\Schema\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -1688,6 +1689,12 @@ class Beds24IntegrationTest extends TestCase
                 'access_token_expires_at' => now()->addHour()->toIso8601String(),
             ],
         ]);
+        $guest = Guest::factory()->create([
+            'first_name' => 'Old',
+            'last_name' => 'Guest',
+            'email' => 'old@example.com',
+            'phone' => '+447700900000',
+        ]);
         ChannelMapping::factory()->create([
             'channel_account_id' => $account->id,
             'property_id' => $room->property_id,
@@ -1699,6 +1706,7 @@ class Beds24IntegrationTest extends TestCase
         $reservation = Reservation::factory()->create([
             'property_id' => $room->property_id,
             'room_id' => $room->id,
+            'guest_id' => $guest->id,
             'status' => 'confirmed',
             'external_channel' => 'beds24',
             'external_booking_id' => '9001',
@@ -1719,6 +1727,10 @@ class Beds24IntegrationTest extends TestCase
                     'departure' => $newOut,
                     'status' => 'confirmed',
                     'numAdult' => 2,
+                    'firstName' => 'Jamie',
+                    'lastName' => 'Channel',
+                    'email' => 'jamie@example.com',
+                    'phone' => '+447700900111',
                 ]],
             ], 200),
             '*inventory/rooms/calendar*' => Http::response(['data' => []], 200),
@@ -1727,8 +1739,97 @@ class Beds24IntegrationTest extends TestCase
         app(Beds24SyncService::class)->synchronize($account);
 
         $reservation->refresh();
+        $reservation->guest?->refresh();
         $this->assertSame($newIn, $reservation->check_in->toDateString());
         $this->assertSame($newOut, $reservation->check_out->toDateString());
         $this->assertSame('synced', $reservation->sync_status);
+        $this->assertSame('Jamie', $reservation->guest?->first_name);
+        $this->assertSame('Channel', $reservation->guest?->last_name);
+        $this->assertSame('jamie@example.com', $reservation->guest?->email);
+        $this->assertSame('+447700900111', $reservation->guest?->phone);
+    }
+
+    public function test_confirmed_local_booking_is_pushed_to_beds24_and_cancelled_bookings_sync_back(): void
+    {
+        $account = ChannelAccount::factory()->create([
+            'provider' => 'beds24',
+            'status' => 'active',
+            'credentials' => [
+                'refresh_token' => 'refresh-token',
+                'access_token' => 'access-1',
+                'access_token_expires_at' => now()->addHour()->toIso8601String(),
+            ],
+        ]);
+        $property = Property::factory()->create();
+        $room = Room::factory()->create([
+            'property_id' => $property->id,
+            'status' => 'active',
+        ]);
+        ChannelMapping::create([
+            'channel_account_id' => $account->id,
+            'provider' => 'beds24',
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'external_property_id' => '2001',
+            'external_room_id' => '77',
+            'status' => 'active',
+        ]);
+
+        Http::fake([
+            '*bookings*' => Http::response([
+                'data' => [[
+                    'id' => 7003,
+                ]],
+            ], 200),
+            '*inventory/rooms/calendar*' => Http::response(['success' => true], 200),
+        ]);
+
+        $reservation = app(BookingService::class)->create([
+            'room_id' => $room->id,
+            'check_in' => now()->addDays(21)->toDateString(),
+            'check_out' => now()->addDays(24)->toDateString(),
+            'guests_count' => 2,
+            'guest_email' => 'alex@example.com',
+            'guest_first_name' => 'Alex',
+            'guest_last_name' => 'Taylor',
+            'status' => 'confirmed',
+            'source' => 'direct',
+        ])['reservation'];
+
+        $reservation->refresh();
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'bookings')
+            && (int) ($request->data()[0]['roomId'] ?? 0) === 77
+            && (string) ($request->data()[0]['firstName'] ?? '') === 'Alex'
+            && (string) ($request->data()[0]['status'] ?? '') === 'confirmed');
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'external_channel' => 'beds24',
+            'external_booking_id' => '7003',
+            'sync_status' => 'synced',
+        ]);
+
+        $reservation->refresh();
+
+        Http::fake([
+            '*bookings*' => Http::response([
+                'data' => [[
+                    'id' => 7003,
+                ]],
+            ], 200),
+            '*inventory/rooms/calendar*' => Http::response(['success' => true], 200),
+        ]);
+
+        app(BookingService::class)->cancel($reservation, 'Guest requested cancellation');
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'bookings')
+            && (int) ($request->data()[0]['id'] ?? 0) === 7003
+            && (string) ($request->data()[0]['status'] ?? '') === 'cancelled');
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'status' => 'cancelled',
+        ]);
     }
 }
