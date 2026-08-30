@@ -25,9 +25,33 @@
 
     <div class="row g-4">
         @forelse ($rooms as $room)
+            @php
+                $images = $room->images->sortBy('sort_order')->values();
+                $hero = $images->first();
+                $thumbs = $images->slice(1, 3);
+            @endphp
             <div class="col-md-6">
                 <article class="ch-suite-card ch-result-card">
                     <div class="ch-result-ribbon">Available</div>
+                    @if ($images->isNotEmpty())
+                        <div class="ch-suite-gallery">
+                            <div class="ch-suite-gallery-hero">
+                                <img src="{{ asset('storage/'.$hero->path) }}" alt="{{ $hero->alt ?: $room->name }}">
+                            </div>
+                            @foreach ($thumbs as $thumb)
+                                <div class="ch-suite-gallery-thumb">
+                                    <img src="{{ asset('storage/'.$thumb->path) }}" alt="{{ $thumb->alt ?: $room->name }}">
+                                </div>
+                            @endforeach
+                            @if ($images->count() > 4)
+                                <div class="ch-suite-gallery-count"><i class="bi bi-images me-1"></i>{{ $images->count() }}</div>
+                            @endif
+                        </div>
+                    @else
+                        <div class="ch-suite-no-image">
+                            <i class="bi bi-house"></i>
+                        </div>
+                    @endif
                     <div class="ch-suite-body">
                         <div class="ch-suite-eyebrow">Direct rate</div>
                         <h3>{{ $room->name }}</h3>

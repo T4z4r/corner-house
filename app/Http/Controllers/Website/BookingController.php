@@ -47,6 +47,7 @@ class BookingController extends Controller
                     ->map(function (Room $room) use ($start, $end, $guests): Room {
                         $quote = $this->pricing->calculateForRange($room, $start, $end, $guests);
                         $room->setAttribute('quote', $quote);
+                        $room->load(['images' => fn ($q) => $q->orderBy('sort_order')]);
 
                         return $room;
                     });
