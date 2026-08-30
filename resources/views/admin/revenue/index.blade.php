@@ -1,0 +1,40 @@
+@extends('layouts.admin.app')
+@section('title', 'Revenue')
+@section('content')
+<div class="ch-page-header"><div><h4>Revenue intelligence</h4></div></div>
+<div class="row g-3 mb-4">
+    @foreach ([
+        ['Revenue', '£'.number_format($stats['revenue'], 2)],
+        ['Occupancy', $stats['occupancy'].'%'],
+        ['ADR', '£'.number_format($stats['adr'], 2)],
+        ['RevPAR', '£'.number_format($stats['revpar'], 2)],
+        ['Direct', $stats['direct_bookings']],
+        ['OTA', $stats['ota_bookings']],
+        ['Avg booking', '£'.number_format($stats['average_booking_value'], 2)],
+        ['Cancel rate', $stats['cancellation_rate'].'%'],
+    ] as $card)
+        <div class="col-6 col-md-3">
+            <div class="ch-stat-card"><div><div class="ch-stat-value">{{ $card[1] }}</div><div class="ch-stat-label">{{ $card[0] }}</div></div></div>
+        </div>
+    @endforeach
+</div>
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <canvas id="revenueChart" height="120"></canvas>
+    </div>
+</div>
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const series = @json($series);
+    new Chart(document.getElementById('revenueChart'), {
+        type: 'line',
+        data: {
+            labels: series.labels,
+            datasets: [{ label: 'Revenue', data: series.revenue, borderColor: '#1f6f43' }]
+        }
+    });
+});
+</script>
+@endpush
+@endsection
