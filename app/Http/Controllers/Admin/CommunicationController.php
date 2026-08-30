@@ -8,6 +8,7 @@ use App\Models\CommunicationTemplate;
 use App\Models\Guest;
 use App\Services\Audit\AuditLogger;
 use App\Services\Notification\NotificationService;
+use App\Services\Notification\SystemNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -18,6 +19,7 @@ class CommunicationController extends Controller
     public function __construct(
         private readonly NotificationService $notifications,
         private readonly AuditLogger $auditLogger,
+        private readonly SystemNotificationService $systemNotifications,
     ) {}
 
     public function index(): View
@@ -61,7 +63,8 @@ class CommunicationController extends Controller
             'channel' => ['required', 'in:email,sms,whatsapp'],
         ]);
 
-        $this->notifications->sendManual($data);
+        $communication = $this->notifications->sendManual($data);
+        $this->systemNotifications->communicationQueued($communication, auth()->id());
         $this->auditLogger->log('communications.sent', 'communications');
 
         return back()->with('status', 'Message queued.');

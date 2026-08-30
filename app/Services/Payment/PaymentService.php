@@ -7,6 +7,7 @@ use App\Models\Refund;
 use App\Models\Reservation;
 use App\Services\Audit\AuditLogger;
 use App\Services\Booking\BookingService;
+use App\Services\Notification\SystemNotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -16,6 +17,7 @@ class PaymentService
         private readonly PaymentGatewayInterface $gateway,
         private readonly BookingService $bookingService,
         private readonly AuditLogger $auditLogger,
+        private readonly SystemNotificationService $systemNotifications,
     ) {}
 
     public function startCheckout(Reservation $reservation, string $successUrl, string $cancelUrl): Payment
@@ -123,6 +125,7 @@ class PaymentService
             ]);
 
             $this->bookingService->confirm($reservation);
+            $this->systemNotifications->paymentMarkedPaid($locked->fresh(['reservation']), null);
             $this->auditLogger->log('payments.paid', 'payments', 'payment', (string) $locked->id);
 
             return $locked->fresh();
@@ -160,6 +163,7 @@ class PaymentService
         $payment->update(['status' => 'refunded']);
         $payment->reservation?->update(['payment_status' => 'refunded']);
 
+        $this->systemNotifications->paymentRefunded($payment->fresh(['reservation']), $refund, $userId);
         $this->auditLogger->log('payments.refunded', 'payments', 'payment', (string) $payment->id);
 
         return $refund;

@@ -7,7 +7,7 @@
         <div>
             <div class="ch-breadcrumb">Management / Places of Interest</div>
             <h4>Places of Interest</h4>
-            <p class="ch-subtitle">{{ $items->total() }} place{{ $items->total() === 1 ? '' : 's' }} defined</p>
+            <p class="ch-subtitle">{{ $items->count() }} place{{ $items->count() === 1 ? '' : 's' }} defined</p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
             @can('places.create')

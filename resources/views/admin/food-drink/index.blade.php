@@ -7,7 +7,7 @@
         <div>
             <div class="ch-breadcrumb">Management / Food & Drink</div>
             <h4>Food & Drink</h4>
-            <p class="ch-subtitle">{{ $items->total() }} {{ Str::plural('item', $items->total()) }} listed</p>
+            <p class="ch-subtitle">{{ $items->count() }} {{ Str::plural('item', $items->count()) }} listed</p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
             @can('food-drink.create')

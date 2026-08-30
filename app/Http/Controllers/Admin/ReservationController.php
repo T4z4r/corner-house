@@ -7,6 +7,7 @@ use App\Models\Reservation;
 use App\Models\Room;
 use App\Services\Audit\AuditLogger;
 use App\Services\Booking\BookingService;
+use App\Services\Notification\SystemNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -16,6 +17,7 @@ class ReservationController extends Controller
     public function __construct(
         private readonly AuditLogger $auditLogger,
         private readonly BookingService $bookingService,
+        private readonly SystemNotificationService $systemNotifications,
     ) {}
 
     public function index(Request $request): View
@@ -53,6 +55,7 @@ class ReservationController extends Controller
             $data['source'] = 'manual';
 
             $result = $this->bookingService->create($data);
+            $this->systemNotifications->reservationCreated($result['reservation'], $request->user()?->id);
 
             $this->auditLogger->log('reservations.created', 'reservations', 'reservation', (string) $result['reservation']->id);
 
@@ -74,6 +77,7 @@ class ReservationController extends Controller
     {
         try {
             $this->bookingService->cancel($reservation, $request->input('reason'), auth()->id());
+            $this->systemNotifications->reservationCancelled($reservation->fresh(), auth()->id());
             $this->auditLogger->log('reservations.cancelled', 'reservations', 'reservation', (string) $reservation->id);
 
             return redirect()->route('admin.reservations.show', $reservation)->with('status', 'Reservation cancelled.');
@@ -88,6 +92,7 @@ class ReservationController extends Controller
             return back()->withErrors(['error' => 'Reservation must be confirmed before check-in.']);
         }
         $reservation->update(['status' => 'checked_in']);
+        $this->systemNotifications->reservationCheckedIn($reservation, auth()->id());
         $this->auditLogger->log('reservations.checked_in', 'reservations', 'reservation', (string) $reservation->id);
 
         return back()->with('status', 'Guest checked in.');
@@ -99,6 +104,7 @@ class ReservationController extends Controller
             return back()->withErrors(['error' => 'Reservation is not checked in.']);
         }
         $reservation->update(['status' => 'checked_out']);
+        $this->systemNotifications->reservationCheckedOut($reservation, auth()->id());
         $this->auditLogger->log('reservations.checked_out', 'reservations', 'reservation', (string) $reservation->id);
 
         return back()->with('status', 'Guest checked out.');

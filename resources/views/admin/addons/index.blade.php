@@ -7,7 +7,7 @@
         <div>
             <div class="ch-breadcrumb">Management / Add-Ons</div>
             <h4>Add-Ons</h4>
-            <p class="ch-subtitle">{{ $items->total() }} add-on{{ $items->total() === 1 ? '' : 's' }} defined</p>
+            <p class="ch-subtitle">{{ $items->count() }} add-on{{ $items->count() === 1 ? '' : 's' }} defined</p>
         </div>
         @can('addons.create')
             <a href="{{ route('admin.addons.create') }}" class="btn btn-ch-primary"><i class="bi bi-plus-lg me-1"></i>Add new</a>
