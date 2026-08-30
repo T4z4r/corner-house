@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Room;
+use App\Models\Setting;
 use App\Services\Availability\AvailabilityService;
 use App\Services\Booking\BookingHoldService;
 use App\Services\Booking\BookingService;
@@ -71,6 +72,24 @@ class BookingController extends Controller
 
         $checkIn = Carbon::parse($data['check_in']);
         $checkOut = Carbon::parse($data['check_out']);
+
+        // 48-hour advance notice
+        $minAdvanceDays = (int) Setting::getValue('min_advance_days', 2);
+        if ($checkIn->lt(Carbon::today()->addDays($minAdvanceDays))) {
+            return back()->withErrors(['check_in' => 'Bookings require at least '.$minAdvanceDays.' days advance notice.']);
+        }
+
+        // No same-day turnaround: if checkout is today, next available is tomorrow
+        // (already enforced by min_advance_days, but explicit check for turnaround)
+        $lastCheckoutToday = Reservation::query()
+            ->where('room_id', $room->id)
+            ->whereIn('status', ['confirmed', 'checked_in', 'checked_out'])
+            ->whereDate('check_out', Carbon::today())
+            ->exists();
+        if ($lastCheckoutToday && $checkIn->lte(Carbon::today())) {
+            return back()->withErrors(['check_in' => 'This room is being turned over. The next available check-in date is '.Carbon::tomorrow()->format('d M Y').'.']);
+        }
+
         $quote = $this->pricing->calculateForRange($room, $checkIn, $checkOut, (int) $data['guests']);
 
         if ($checkIn->diffInDays($checkOut) < $quote['minimum_stay']) {
@@ -79,6 +98,12 @@ class BookingController extends Controller
 
         if (($quote['maximum_stay'] ?? null) !== null && $checkIn->diffInDays($checkOut) > $quote['maximum_stay']) {
             return back()->withErrors(['check_in' => 'This stay exceeds the '.$quote['maximum_stay'].'-night maximum.']);
+        }
+
+        // Max occupancy
+        $maxAdults = (int) Setting::getValue('max_adults', 12);
+        if ((int) $data['guests'] > $maxAdults) {
+            return back()->withErrors(['guests' => 'Maximum '.$maxAdults.' guests allowed.']);
         }
 
         $available = $this->availability->isRoomAvailable($room, $checkIn, $checkOut);
@@ -112,6 +137,19 @@ class BookingController extends Controller
         $room = Room::query()->findOrFail($data['room_id']);
         $checkIn = Carbon::parse($data['check_in']);
         $checkOut = Carbon::parse($data['check_out']);
+
+        // 48-hour advance notice
+        $minAdvanceDays = (int) Setting::getValue('min_advance_days', 2);
+        if ($checkIn->lt(Carbon::today()->addDays($minAdvanceDays))) {
+            return back()->withInput()->withErrors(['error' => 'Bookings require at least '.$minAdvanceDays.' days advance notice.']);
+        }
+
+        // Max occupancy
+        $maxAdults = (int) Setting::getValue('max_adults', 12);
+        if ((int) $data['guests_count'] > $maxAdults) {
+            return back()->withInput()->withErrors(['error' => 'Maximum '.$maxAdults.' guests allowed.']);
+        }
+
         $quote = $this->pricing->calculateForRange($room, $checkIn, $checkOut, (int) $data['guests_count']);
 
         if ($checkIn->diffInDays($checkOut) < $quote['minimum_stay']) {
@@ -121,6 +159,11 @@ class BookingController extends Controller
         if (($quote['maximum_stay'] ?? null) !== null && $checkIn->diffInDays($checkOut) > $quote['maximum_stay']) {
             return back()->withInput()->withErrors(['error' => 'This stay exceeds the '.$quote['maximum_stay'].'-night maximum.']);
         }
+
+        // Add damage deposit to total
+        $damageDeposit = (float) Setting::getValue('damage_deposit', 950);
+        $quote['total'] = round($quote['total'] + $damageDeposit, 2);
+        $quote['damage_deposit'] = $damageDeposit;
 
         try {
             $hold = $this->holds->createHold(

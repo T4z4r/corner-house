@@ -148,7 +148,13 @@ class PricingEngine
             $rate = $this->applyAdjustment($rate, $applicable['adjustment_type'], (float) $applicable['adjustment_value']);
         }
 
-        return round(max(0, $rate), 2);
+        // Enforce minimum price floors
+        $minWeekday = (float) Setting::getValue('min_price_weekday', 450);
+        $minWeekend = (float) Setting::getValue('min_price_weekend', 600);
+        $isWeekend = in_array($date->dayOfWeek, [Carbon::FRIDAY, Carbon::SATURDAY, Carbon::SUNDAY]);
+        $minPrice = $isWeekend ? $minWeekend : $minWeekday;
+
+        return round(max($minPrice, $rate), 2);
     }
 
     /**
