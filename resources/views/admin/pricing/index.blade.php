@@ -219,7 +219,7 @@
         </div>
     </div>
 
-    @can('pricing.manage')
+    @can('pricing.create')
         <div class="modal fade" id="ruleModal" tabindex="-1">
             <div class="modal-dialog modal-lg">
                 <form method="POST" action="{{ route('admin.pricing.rules.store') }}" class="modal-content">
