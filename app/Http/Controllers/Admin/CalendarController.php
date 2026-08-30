@@ -7,6 +7,7 @@ use App\Models\BookingHold;
 use App\Models\CalendarBlock;
 use App\Models\Property;
 use App\Models\Reservation;
+use App\Models\Room;
 use App\Services\Audit\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -52,9 +53,17 @@ class CalendarController extends Controller
             ? Property::find($request->query('property_id'))
             : $properties->first();
 
+        $rooms = $selectedProperty
+            ? Room::where('property_id', $selectedProperty->id)->get()
+            : collect();
+
+        $selectedRoomId = $request->query('room_id');
+
         return view('admin.calendar', [
             'properties' => $properties,
             'selectedProperty' => $selectedProperty,
+            'rooms' => $rooms,
+            'selectedRoomId' => $selectedRoomId,
             'blockTypes' => $this->blockTypes(),
             'initialMonth' => $request->query('month', now()->format('Y-m')),
         ]);
@@ -68,6 +77,7 @@ class CalendarController extends Controller
         $start = $request->query('start');
         $end = $request->query('end');
         $propertyId = $request->query('property_id');
+        $roomId = $request->query('room_id');
 
         $events = collect();
 
@@ -75,14 +85,17 @@ class CalendarController extends Controller
             ->active()
             ->with(['room', 'guest'])
             ->when($propertyId, fn ($q) => $q->where('property_id', $propertyId))
+            ->when($roomId, fn ($q) => $q->where('room_id', $roomId))
             ->when($start, fn ($q) => $q->whereDate('check_out', '>=', $start))
             ->when($end, fn ($q) => $q->whereDate('check_in', '<=', $end))
             ->get();
 
         foreach ($reservations as $reservation) {
+            $roomName = $reservation->room?->name ?? 'Unassigned';
+            $guestName = $reservation->guest?->full_name ?? 'Guest';
             $events->push([
                 'id' => 'res-'.$reservation->id,
-                'title' => $reservation->reference.' · '.($reservation->guest?->full_name ?? 'Guest'),
+                'title' => $reservation->reference.' · '.$roomName.' · '.$guestName,
                 'start' => $reservation->check_in->toDateString(),
                 'end' => $reservation->check_out->copy()->addDay()->toDateString(),
                 'className' => $this->reservationCalendarClass($reservation),
@@ -91,6 +104,7 @@ class CalendarController extends Controller
                     'status' => $reservation->status,
                     'amount' => $reservation->total_amount,
                     'room_id' => $reservation->room_id,
+                    'room_name' => $roomName,
                     'url' => route('admin.reservations.show', $reservation),
                 ],
             ]);
@@ -99,6 +113,7 @@ class CalendarController extends Controller
         $blocks = CalendarBlock::query()
             ->with('room')
             ->when($propertyId, fn ($q) => $q->where('property_id', $propertyId))
+            ->when($roomId, fn ($q) => $q->where('room_id', $roomId))
             ->when($start, fn ($q) => $q->whereDate('end_date', '>=', $start))
             ->when($end, fn ($q) => $q->whereDate('start_date', '<=', $end))
             ->get();
@@ -107,29 +122,32 @@ class CalendarController extends Controller
             ->active()
             ->with('room')
             ->when($propertyId, fn ($q) => $q->where('property_id', $propertyId))
+            ->when($roomId, fn ($q) => $q->where('room_id', $roomId))
             ->when($start, fn ($q) => $q->whereDate('check_out', '>=', $start))
             ->when($end, fn ($q) => $q->whereDate('check_in', '<=', $end))
             ->get();
 
         foreach ($holds as $hold) {
+            $roomName = $hold->room?->name ?? 'Room';
             $events->push([
                 'id' => 'hold-'.$hold->id,
-                'title' => 'Hold · '.($hold->room?->name ?? 'Room'),
+                'title' => 'Hold · '.$roomName,
                 'start' => $hold->check_in->toDateString(),
                 'end' => $hold->check_out->toDateString(),
                 'className' => 'fc-event--hold',
-                'extendedProps' => ['type' => 'hold', 'room_id' => $hold->room_id],
+                'extendedProps' => ['type' => 'hold', 'room_id' => $hold->room_id, 'room_name' => $roomName],
             ]);
         }
 
         foreach ($blocks as $block) {
+            $roomName = $block->room?->name ?? 'All rooms';
             $events->push([
                 'id' => 'block-'.$block->id,
                 'title' => $this->blockTitle($block),
                 'start' => $block->start_date->toDateString(),
                 'end' => $block->end_date->copy()->addDay()->toDateString(),
                 'className' => $this->blockCalendarClass($block),
-                'extendedProps' => ['type' => 'block', 'block_type' => $block->type, 'room_id' => $block->room_id],
+                'extendedProps' => ['type' => 'block', 'block_type' => $block->type, 'room_id' => $block->room_id, 'room_name' => $roomName],
             ]);
         }
 
@@ -209,18 +227,19 @@ class CalendarController extends Controller
     {
         $type = $this->normalizeBlockType($block->type);
         $label = self::BLOCK_TYPES[$type] ?? ucfirst($type);
+        $roomLabel = $block->room ? ' · '.$block->room->name : '';
 
         if ($block->title) {
-            return $block->title;
+            return $block->title.$roomLabel;
         }
 
         return match ($type) {
-            'daily_price', 'fixed_prices' => $block->value ? $label.': £'.number_format($block->value, 2) : $label,
-            'multiplier' => $block->value ? $label.': '.$block->value.'x' : $label,
-            'min_stay' => $block->min_stay ? $label.': '.$block->min_stay.' nights' : $label,
-            'max_stay' => $block->max_stay ? $label.': '.$block->max_stay.' nights' : $label,
-            'availability' => $label.($block->is_active ? ' (Open)' : ' (Closed)'),
-            default => $label,
+            'daily_price', 'fixed_prices' => $block->value ? $label.': £'.number_format($block->value, 2).$roomLabel : $label.$roomLabel,
+            'multiplier' => $block->value ? $label.': '.$block->value.'x'.$roomLabel : $label.$roomLabel,
+            'min_stay' => $block->min_stay ? $label.': '.$block->min_stay.' nights'.$roomLabel : $label.$roomLabel,
+            'max_stay' => $block->max_stay ? $label.': '.$block->max_stay.' nights'.$roomLabel : $label.$roomLabel,
+            'availability' => $label.($block->is_active ? ' (Open)' : ' (Closed)').$roomLabel,
+            default => $label.$roomLabel,
         };
     }
 }

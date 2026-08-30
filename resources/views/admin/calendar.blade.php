@@ -207,6 +207,7 @@
 @section('content')
     @php
         $selectedPropertyId = $selectedProperty?->id;
+        $selectedRoomId = $selectedRoomId ?? '';
     @endphp
 
     <div class="ch-page-header">
@@ -221,6 +222,15 @@
                 <select id="propertyFilter" class="form-select" style="width: auto; min-width: 180px;">
                     @foreach ($properties as $property)
                         <option value="{{ $property->id }}" @selected($selectedProperty?->id === $property->id)>{{ $property->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-door-open text-muted"></i>
+                <select id="roomFilter" class="form-select" style="width: auto; min-width: 160px;">
+                    <option value="">All rooms</option>
+                    @foreach ($rooms as $room)
+                        <option value="{{ $room->id }}" @selected($selectedRoomId == $room->id)>{{ $room->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -288,6 +298,15 @@
                     <div class="modal-body">
                         <input type="hidden" name="property_id" id="block_property" value="{{ $selectedPropertyId }}">
                         <div class="mb-3">
+                            <label class="form-label">Room <span class="text-muted">(optional)</span></label>
+                            <select name="room_id" id="blockRoom" class="form-select">
+                                <option value="">All rooms</option>
+                                @foreach ($rooms as $room)
+                                    <option value="{{ $room->id }}">{{ $room->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">Type</label>
                             <select name="type" class="form-select" id="blockType">
                                 @foreach ($blockTypes as $value => $label)
@@ -346,16 +365,20 @@
 @endsection
 
 @push('scripts')
-<script>
+    <script>
     document.addEventListener('DOMContentLoaded', function () {
         const propertyId = @json($selectedPropertyId);
+        const selectedRoomId = @json($selectedRoomId);
         const initialMonth = @json($initialMonth);
         const eventsEndpoint = @json(route('admin.calendar.events'));
         const blocksStoreEndpoint = @json(route('admin.calendar.blocks.store'));
+        const roomsData = @json($rooms->map(fn($r) => ['id' => $r->id, 'name' => $r->name]));
         const today = startOfDay(new Date());
         let visibleMonth = startOfMonth(parseMonthKey(initialMonth));
         let selectedDate = isSameMonth(today, visibleMonth) ? today : new Date(visibleMonth);
         let events = [];
+        let activePropertyId = propertyId || '';
+        let activeRoomId = selectedRoomId || '';
 
         const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         const monthLabelEl = document.getElementById('monthLabel');
@@ -545,12 +568,14 @@
                         const openUrl = event.extendedProps?.url || null;
                         const colorClass = eventBadgeClass(event);
                         const label = eventLabel(event);
+                        const roomName = event.extendedProps?.room_name || '';
                         const dateRange = event.end
                             ? `${formatEventDate(parseLocalDate(event.start))} to ${formatEventDate(parseLocalDate(event.end))}`
                             : formatEventDate(parseLocalDate(event.start));
                         const body = `
                             <div class="small text-muted">${dateRange}</div>
                             <div class="fw-semibold text-truncate">${label}</div>
+                            ${roomName ? `<div class="small text-muted"><i class="bi bi-door-open me-1"></i>${roomName}</div>` : ''}
                         `;
 
                         if (openUrl) {
@@ -640,8 +665,14 @@
             const url = new URL(window.location.href);
             url.searchParams.set('month', monthKey(visibleMonth));
 
-            if (propertyId) {
-                url.searchParams.set('property_id', propertyId);
+            if (activePropertyId) {
+                url.searchParams.set('property_id', activePropertyId);
+            }
+
+            if (activeRoomId) {
+                url.searchParams.set('room_id', activeRoomId);
+            } else {
+                url.searchParams.delete('room_id');
             }
 
             window.history.replaceState({}, '', url.toString());
@@ -654,8 +685,12 @@
             url.searchParams.set('start', start);
             url.searchParams.set('end', end);
 
-            if (propertyId) {
-                url.searchParams.set('property_id', propertyId);
+            if (activePropertyId) {
+                url.searchParams.set('property_id', activePropertyId);
+            }
+
+            if (activeRoomId) {
+                url.searchParams.set('room_id', activeRoomId);
             }
 
             return fetch(url.toString(), {
@@ -692,7 +727,30 @@
                 const url = new URL(window.location.href);
                 url.searchParams.set('property_id', propertyFilter.value);
                 url.searchParams.set('month', monthKey(visibleMonth));
+                url.searchParams.delete('room_id');
                 window.location = url.toString();
+            });
+        }
+
+        const roomFilter = document.getElementById('roomFilter');
+        if (roomFilter) {
+            roomFilter.addEventListener('change', () => {
+                activeRoomId = roomFilter.value;
+                syncUrl();
+                loadEvents().then(renderMonth);
+            });
+        }
+
+        const blockRoom = document.getElementById('blockRoom');
+        const blockPropertyInput = document.getElementById('block_property');
+        if (blockPropertyInput) {
+            blockPropertyInput.addEventListener('change', () => {
+                const pid = blockPropertyInput.value;
+                const matchingRooms = roomsData.filter((r) => true);
+                blockRoom.innerHTML = '<option value="">All rooms</option>';
+                matchingRooms.forEach((room) => {
+                    blockRoom.innerHTML += `<option value="${room.id}">${room.name}</option>`;
+                });
             });
         }
 

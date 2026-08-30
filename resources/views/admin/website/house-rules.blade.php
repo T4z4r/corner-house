@@ -96,7 +96,7 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <div class="ch-label">Pets</div>
-                        <span class="ch-badge ch-badge-muted">{{ match(($property->pets_allowed ?? 'no') as $v) { 'yes' => 'Allowed', 'upon_request' => 'Upon request', default => 'Not allowed' } }}</span>
+                        <span class="ch-badge ch-badge-muted">{{ match($property->pets_allowed ?? 'no') { 'yes' => 'Allowed', 'upon_request' => 'Upon request', default => 'Not allowed' } }}</span>
                     </div>
                     <div class="mb-3">
                         <div class="ch-label">Smoking</div>
