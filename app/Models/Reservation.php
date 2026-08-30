@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -86,6 +87,13 @@ class Reservation extends Model
     public function communications(): HasMany
     {
         return $this->hasMany(Communication::class);
+    }
+
+    public function addons(): BelongsToMany
+    {
+        return $this->belongsToMany(AddOn::class, 'reservation_addons')
+            ->withPivot(['quantity', 'unit_price', 'total_price'])
+            ->withTimestamps();
     }
 
     /**

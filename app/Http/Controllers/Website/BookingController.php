@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Website;
 
 use App\Http\Controllers\Controller;
+use App\Models\AddOn;
 use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Room;
@@ -133,6 +134,8 @@ class BookingController extends Controller
             'guest_last_name' => ['required', 'string', 'max:255'],
             'guest_email' => ['required', 'email'],
             'guest_phone' => ['nullable', 'string', 'max:50'],
+            'addon_ids' => ['nullable', 'array'],
+            'addon_ids.*' => ['integer', 'exists:add_ons,id'],
         ]);
 
         $room = Room::query()->findOrFail($data['room_id']);
@@ -166,6 +169,13 @@ class BookingController extends Controller
         $quote['total'] = round($quote['total'] + $damageDeposit, 2);
         $quote['damage_deposit'] = $damageDeposit;
 
+        // Calculate add-ons total
+        $addonIds = $data['addon_ids'] ?? [];
+        $addons = AddOn::query()->whereIn('id', $addonIds)->where('is_active', true)->get();
+        $addonsTotal = (float) $addons->sum('price');
+        $quote['addons_total'] = $addonsTotal;
+        $quote['total'] = round($quote['total'] + $addonsTotal, 2);
+
         try {
             $hold = $this->holds->createHold(
                 $room->id,
@@ -181,6 +191,16 @@ class BookingController extends Controller
                 'source' => 'direct',
                 'hold_token' => $hold['hold']->hold_token,
             ]);
+
+            // Attach add-ons to reservation
+            $reservation = $result['reservation'];
+            foreach ($addons as $addon) {
+                $reservation->addons()->attach($addon->id, [
+                    'quantity' => 1,
+                    'unit_price' => $addon->price,
+                    'total_price' => $addon->price,
+                ]);
+            }
 
             $payment = $this->payments->startCheckout(
                 $result['reservation'],

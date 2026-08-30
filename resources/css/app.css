@@ -1703,6 +1703,23 @@ body.ch-collapsed .ch-sidebar hr {
     color: var(--ch-accent);
 }
 
+/* Add-on selection */
+.ch-addon-option {
+    background: #fbf8f1;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.ch-addon-option:hover {
+    background: #f5f0e6;
+}
+
+.ch-addon-option:has(input:checked) {
+    border-color: var(--ch-forest);
+    background: #e7f3ec;
+}
+
 .ch-contact-detail {
     display: flex;
     align-items: flex-start;
