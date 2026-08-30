@@ -12,6 +12,13 @@
         </div>
         <div class="d-flex gap-2 flex-wrap">
             @can('pricing.create')
+                <form method="POST" action="{{ route('admin.pricing.ai.generate') }}" class="d-inline">
+                    @csrf
+                    <input type="hidden" name="property_id" value="{{ $selectedPropertyId }}">
+                    <button class="btn btn-outline-success" onclick="return confirm('Generate AI seasonal pricing rules for this property?');">
+                        <i class="bi bi-stars me-1"></i>Generate seasonal pricing
+                    </button>
+                </form>
                 <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#overrideModal">
                     <i class="bi bi-sliders me-1"></i>New override
                 </button>
@@ -62,10 +69,15 @@
                                         <td><span class="ch-badge ch-badge-primary">{{ $rule->priority }}</span></td>
                                         <td class="fw-semibold">{{ $rule->name }}</td>
                                         <td><span class="ch-badge ch-badge-muted">{{ ucfirst(str_replace('_', ' ', $rule->rule_type)) }}</span></td>
-                                        <td>{{ $rule->adjustment_type === 'percent' ? $rule->adjustment_value.'%' : '£'.number_format($rule->adjustment_value, 0) }}</td>
+                                        <td>
+                                            {{ $rule->adjustment_type === 'percent' ? $rule->adjustment_value.'%' : '£'.number_format($rule->adjustment_value, 0) }}
+                                            @if ($rule->generated_by_ai)
+                                                <span class="badge text-bg-success ms-1">AI</span>
+                                            @endif
+                                        </td>
                                         <td class="small">
                                             @if ($rule->start_date)
-                                                {{ $rule->start_date->format('d M Y') }} → {{ $rule->end_date?->format('d M Y') ?? 'open' }}
+                                                {{ $rule->start_date->format('d M Y') }} -> {{ $rule->end_date?->format('d M Y') ?? 'open' }}
                                             @else
                                                 <span class="text-muted">Always</span>
                                             @endif
@@ -191,7 +203,7 @@
                                 @forelse ($overrides as $override)
                                     <tr>
                                         <td class="fw-semibold">{{ $override->room?->name }}</td>
-                                        <td>{{ $override->start_date->format('d M Y') }} → {{ $override->end_date->format('d M Y') }}</td>
+                                        <td>{{ $override->start_date->format('d M Y') }} -> {{ $override->end_date->format('d M Y') }}</td>
                                         <td>&pound;{{ number_format($override->rate, 2) }}</td>
                                         <td>{{ $override->minimum_stay ?? '-' }}</td>
                                         <td class="text-end">
@@ -367,5 +379,3 @@
         </div>
     @endcan
 @endsection
-
-

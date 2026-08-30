@@ -69,4 +69,34 @@ class CommunicationController extends Controller
 
         return back()->with('status', 'Message queued.');
     }
+
+    public function updateTemplate(Request $request, CommunicationTemplate $template): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'event' => ['required', 'string', 'max:100'],
+            'channel' => ['required', 'in:email,sms,whatsapp'],
+            'subject' => ['nullable', 'string', 'max:255'],
+            'body' => ['required', 'string'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $template->update([
+            ...$data,
+            'slug' => Str::slug($data['name']).'-'.Str::random(4),
+            'is_active' => $request->boolean('is_active', true),
+        ]);
+
+        $this->auditLogger->log('communications.template_updated', 'communications');
+
+        return redirect()->route('admin.communications.index')->with('status', 'Template updated.');
+    }
+
+    public function destroyTemplate(CommunicationTemplate $template): RedirectResponse
+    {
+        $template->delete();
+        $this->auditLogger->log('communications.template_deleted', 'communications');
+
+        return redirect()->route('admin.communications.index')->with('status', 'Template deleted.');
+    }
 }

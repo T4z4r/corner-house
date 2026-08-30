@@ -35,8 +35,8 @@ class PropertySeeder extends Seeder
                 'check_in_from' => '15:00',
                 'check_in_until' => '18:00',
                 'check_out_from' => '08:00',
-                'check_out_until' => '10:00',
-                'custom_rules' => "• Check-in from 3pm, check-out by 10am\n• No smoking anywhere inside the property\n• Quiet hours after 10pm\n• No parties or events without prior arrangement\n• Maximum occupancy as per booking confirmation\n• Please treat the house and its contents with respect\n• Damage deposit may be charged for any breakages or damage",
+                'check_out_until' => '12:00',
+                'custom_rules' => "• Check-in from 3pm, check-out by 12pm\n• 2 nights minimum stay (3 nights on bank holiday weekends)\n• 48 hours advance booking notice required\n• No same-day bookings\n• No smoking anywhere inside the property\n• Quiet hours after 10pm\n• No parties or events without prior arrangement\n• Maximum 12 adults, 2 infants (under 6), 2 cots\n• No pets allowed\n• Damage deposit required for direct bookings\n• Please treat the house and its contents with respect\n• Damage deposit may be charged for any breakages or damage",
             ],
         );
     }

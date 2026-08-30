@@ -52,9 +52,9 @@
 <section class="ch-editorial-cta">
     <div class="container">
         <div class="ch-editorial-panel">
-            <p class="ch-kicker">Plan ahead</p>
-            <h2>Know what to expect before you arrive.</h2>
-            <a class="btn btn-ch-book" href="{{ route('faq') }}">Read the FAQ</a>
+            <p class="ch-kicker">Around here</p>
+            <h2>See the weather, local events, and area highlights.</h2>
+            <a class="btn btn-ch-book" href="{{ route('area-guide') }}">Open area guide</a>
         </div>
     </div>
 </section>

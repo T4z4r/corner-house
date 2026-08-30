@@ -26,6 +26,10 @@ class PricingRule extends Model
         'days_before_checkin',
         'apply_weekends_only',
         'is_enabled',
+        'generated_by_ai',
+        'ai_generation_key',
+        'generation_metadata',
+        'generated_at',
     ];
 
     protected $casts = [
@@ -39,6 +43,9 @@ class PricingRule extends Model
         'days_before_checkin' => 'integer',
         'apply_weekends_only' => 'boolean',
         'is_enabled' => 'boolean',
+        'generated_by_ai' => 'boolean',
+        'generation_metadata' => 'array',
+        'generated_at' => 'datetime',
     ];
 
     public function property(): BelongsTo

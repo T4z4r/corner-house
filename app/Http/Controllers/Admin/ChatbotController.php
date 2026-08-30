@@ -38,6 +38,8 @@ class ChatbotController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'content' => ['required', 'string'],
             'priority' => ['nullable', 'integer', 'min:0'],
+            'starts_at' => ['nullable', 'date'],
+            'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
             'status' => ['required', 'in:active,disabled'],
             'show_on_website' => ['nullable', 'boolean'],
             'source_message_id' => ['nullable', 'exists:ai_messages,id'],
@@ -72,6 +74,8 @@ class ChatbotController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'content' => ['required', 'string'],
             'priority' => ['nullable', 'integer', 'min:0'],
+            'starts_at' => ['nullable', 'date'],
+            'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
             'status' => ['required', 'in:active,disabled'],
             'show_on_website' => ['nullable', 'boolean'],
         ]);

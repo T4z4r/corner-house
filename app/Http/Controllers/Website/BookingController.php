@@ -46,7 +46,7 @@ class BookingController extends Controller
             if ($end->gt($start)) {
                 $rooms = $this->availability->listAvailableRooms($property->id, $start, $end, max(1, $guests))
                     ->map(function (Room $room) use ($start, $end, $guests): Room {
-                        $quote = $this->pricing->calculateForRange($room, $start, $end, $guests);
+                        $quote = $this->pricing->calculateForRange($room, $start, $end, $guests, null, true);
                         $room->setAttribute('quote', $quote);
                         $room->load(['images' => fn ($q) => $q->orderBy('sort_order')]);
 
@@ -92,7 +92,7 @@ class BookingController extends Controller
             return back()->withErrors(['check_in' => 'This room is being turned over. The next available check-in date is '.Carbon::tomorrow()->format('d M Y').'.']);
         }
 
-        $quote = $this->pricing->calculateForRange($room, $checkIn, $checkOut, (int) $data['guests']);
+        $quote = $this->pricing->calculateForRange($room, $checkIn, $checkOut, (int) $data['guests'], null, true);
 
         if ($checkIn->diffInDays($checkOut) < $quote['minimum_stay']) {
             return back()->withErrors(['check_in' => 'This stay does not meet the '.$quote['minimum_stay'].'-night minimum.']);
@@ -151,10 +151,22 @@ class BookingController extends Controller
         // Max occupancy
         $maxAdults = (int) Setting::getValue('max_adults', 12);
         if ((int) $data['guests_count'] > $maxAdults) {
-            return back()->withInput()->withErrors(['error' => 'Maximum '.$maxAdults.' guests allowed.']);
+            return back()->withInput()->withErrors(['error' => 'Maximum '.$maxAdults.' adults allowed.']);
         }
 
-        $quote = $this->pricing->calculateForRange($room, $checkIn, $checkOut, (int) $data['guests_count']);
+        $maxInfants = (int) Setting::getValue('max_infants', 2);
+        $maxCots = (int) Setting::getValue('max_cots', 2);
+        $infants = (int) ($data['infants'] ?? 0);
+        $cots = (int) ($data['cots'] ?? 0);
+
+        if ($infants > $maxInfants) {
+            return back()->withInput()->withErrors(['error' => 'Maximum '.$maxInfants.' infants allowed.']);
+        }
+        if ($cots > $maxCots) {
+            return back()->withInput()->withErrors(['error' => 'Maximum '.$maxCots.' cots allowed.']);
+        }
+
+        $quote = $this->pricing->calculateForRange($room, $checkIn, $checkOut, (int) $data['guests_count'], null, true);
 
         if ($checkIn->diffInDays($checkOut) < $quote['minimum_stay']) {
             return back()->withInput()->withErrors(['error' => 'This stay does not meet the '.$quote['minimum_stay'].'-night minimum.']);

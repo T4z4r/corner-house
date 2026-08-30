@@ -8,13 +8,17 @@ use App\Models\PricingRule;
 use App\Models\Property;
 use App\Models\Room;
 use App\Services\Audit\AuditLogger;
+use App\Services\Pricing\SeasonalPricingAutomationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PricingController extends Controller
 {
-    public function __construct(private readonly AuditLogger $auditLogger) {}
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+        private readonly SeasonalPricingAutomationService $seasonalPricingAutomation,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -130,5 +134,37 @@ class PricingController extends Controller
         $override->delete();
 
         return redirect()->route('admin.pricing.index')->with('status', 'Rate override deleted.');
+    }
+
+    public function generateSeasonalRules(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'property_id' => ['nullable', 'exists:properties,id'],
+        ]);
+
+        $property = isset($validated['property_id'])
+            ? Property::query()->where('status', 'active')->findOrFail((int) $validated['property_id'])
+            : Property::query()->where('status', 'active')->orderBy('id')->first();
+
+        if (! $property) {
+            return redirect()->route('admin.pricing.index')->with('status', 'Create an active property before generating seasonal pricing.');
+        }
+
+        $result = $this->seasonalPricingAutomation->generateForProperty($property);
+
+        $this->auditLogger->log('pricing.ai_generated', 'pricing', 'pricing_rule', (string) $property->id, newValues: [
+            'property_id' => $property->id,
+            'created' => $result['created'],
+            'updated' => $result['updated'],
+        ]);
+
+        return redirect()
+            ->route('admin.pricing.index', ['property_id' => $property->id])
+            ->with('status', sprintf(
+                '%s Generated %d new seasonal rule(s) and updated %d existing rule(s).',
+                $result['summary'],
+                $result['created'],
+                $result['updated'],
+            ));
     }
 }

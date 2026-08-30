@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AiConversation;
 use App\Models\AiMessage;
 use App\Models\KnowledgeBaseArticle;
+use App\Models\Property;
 use App\Models\Room;
 use App\Models\Setting;
 use App\Models\User;
@@ -53,6 +54,39 @@ class ChatAssistantTest extends TestCase
         ])->assertOk()
             ->assertJsonPath('intent', 'availability')
             ->assertSee('Oak Suite', false);
+    }
+
+    public function test_weather_and_event_question_uses_area_intelligence(): void
+    {
+        Property::factory()->create(['latitude' => 52.234, 'longitude' => -0.893]);
+
+        KnowledgeBaseArticle::factory()->create([
+            'title' => 'Summer art fair',
+            'category' => 'area-event',
+            'content' => 'A local art fair will run all weekend near the property.',
+            'status' => 'active',
+            'show_on_website' => true,
+        ]);
+
+        Http::fake([
+            'api.open-meteo.com/*' => Http::response([
+                'daily' => [
+                    'time' => [now()->toDateString(), now()->addDay()->toDateString()],
+                    'temperature_2m_max' => [24.1, 22.8],
+                    'temperature_2m_min' => [15.0, 13.8],
+                    'precipitation_probability_max' => [10, 35],
+                    'weathercode' => [1, 2],
+                ],
+            ], 200),
+        ]);
+
+        $this->postJson('/api/v1/chat', [
+            'message' => 'What is the weather like and are there any events nearby?',
+            'session_id' => 'chat-area',
+        ])->assertOk()
+            ->assertJsonPath('intent', 'area')
+            ->assertSee('Summer art fair', false)
+            ->assertSee('Mainly clear', false);
     }
 
     public function test_assistant_does_not_confirm_bookings_in_chat(): void

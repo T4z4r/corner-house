@@ -16,6 +16,8 @@ class KnowledgeBaseArticle extends Model
         'content',
         'status',
         'priority',
+        'starts_at',
+        'ends_at',
         'source',
         'show_on_website',
         'source_message_id',
@@ -25,6 +27,8 @@ class KnowledgeBaseArticle extends Model
 
     protected $casts = [
         'priority' => 'integer',
+        'starts_at' => 'date',
+        'ends_at' => 'date',
         'show_on_website' => 'boolean',
     ];
 

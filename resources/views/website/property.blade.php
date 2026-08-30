@@ -80,7 +80,7 @@
                             <h3>{{ $room->name }}</h3>
                             <p class="ch-suite-meta">Sleeps {{ $room->capacity }} · from £{{ number_format($room->base_rate, 2) }} / night</p>
                             <p>{{ \Illuminate\Support\Str::limit($room->description, 160) }}</p>
-                            <a class="ch-text-link" href="{{ route('booking.search') }}">Check dates</a>
+                            <a class="ch-text-link" href="{{ route('property.room', $room) }}">View details</a>
                         </div>
                     </article>
                 </div>
@@ -90,6 +90,50 @@
                 </div>
             @endforelse
         </div>
+    </div>
+</section>
+
+<section class="ch-section">
+    <div class="container">
+        <div class="ch-section-intro">
+            <p class="ch-kicker">Know before you go</p>
+            <h2>House rules</h2>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="ch-info-card">
+                    <div class="ch-info-card-content">
+                        <span class="ch-info-card-badge">Check-in &amp; check-out</span>
+                        <h3 class="ch-info-card-title">Arrivals &amp; departures</h3>
+                        <p class="ch-info-card-text">Check-in from 3:00 PM. Check-out by 12:00 PM (noon). Please let us know your estimated arrival time.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="ch-info-card">
+                    <div class="ch-info-card-content">
+                        <span class="ch-info-card-badge">Minimum stay</span>
+                        <h3 class="ch-info-card-title">Length of stay</h3>
+                        <p class="ch-info-card-text">2 nights minimum. 3 nights required on bank holiday weekends. 48 hours advance booking notice.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="ch-info-card">
+                    <div class="ch-info-card-content">
+                        <span class="ch-info-card-badge">Occupancy</span>
+                        <h3 class="ch-info-card-title">Guest limits</h3>
+                        <p class="ch-info-card-text">Maximum 12 adults, 2 infants (under 6), and 2 cots. No pets. No smoking indoors.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @if ($property?->custom_rules)
+            <div class="mt-4 p-4 rounded" style="background:#fbf8f1;">
+                <h5 class="mb-3">Full house rules</h5>
+                <div class="small" style="white-space:pre-line; color:#4a4540;">{{ $property->custom_rules }}</div>
+            </div>
+        @endif
     </div>
 </section>
 

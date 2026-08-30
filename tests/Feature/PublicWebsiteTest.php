@@ -6,6 +6,7 @@ use App\Models\KnowledgeBaseArticle;
 use App\Models\Property;
 use App\Models\Room;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class PublicWebsiteTest extends TestCase
@@ -32,10 +33,65 @@ class PublicWebsiteTest extends TestCase
         $this->get(route('property'))->assertOk()->assertSee('Garden Room');
         $this->get(route('amenities'))->assertOk();
         $this->get(route('gallery'))->assertOk();
-        $this->get(route('location'))->assertOk();
+        $this->get(route('location'))->assertOk()->assertSee('Open in Google Maps');
         $this->get(route('contact'))->assertOk();
         $this->get(route('privacy'))->assertOk();
         $this->get(route('booking.search'))->assertOk();
+    }
+
+    public function test_area_guide_page_shows_weather_and_local_events(): void
+    {
+        $property = Property::factory()->create(['latitude' => 52.234, 'longitude' => -0.893]);
+
+        KnowledgeBaseArticle::factory()->create([
+            'title' => 'August supper club',
+            'category' => 'local-event',
+            'content' => 'Live music and seasonal tasting menus this weekend.',
+            'starts_at' => '2026-08-29',
+            'ends_at' => '2026-08-30',
+            'status' => 'active',
+            'show_on_website' => true,
+        ]);
+
+        KnowledgeBaseArticle::factory()->create([
+            'title' => 'September craft fair',
+            'category' => 'area-event',
+            'content' => 'A craft fair with local makers and food stalls.',
+            'starts_at' => '2026-09-12',
+            'ends_at' => '2026-09-13',
+            'status' => 'active',
+            'show_on_website' => true,
+        ]);
+
+        Http::fake([
+            'api.open-meteo.com/*' => Http::response([
+                'daily' => [
+                    'time' => [now()->toDateString(), now()->addDay()->toDateString()],
+                    'temperature_2m_max' => [23.5, 21.0],
+                    'temperature_2m_min' => [14.0, 12.5],
+                    'precipitation_probability_max' => [15, 45],
+                    'weathercode' => [1, 3],
+                ],
+            ], 200),
+        ]);
+
+        $this->get(route('location'))
+            ->assertOk()
+            ->assertSee('Open in Google Maps')
+            ->assertDontSee('Weather forecast');
+
+        $this->get(route('area-guide', ['period' => 'week', 'date' => '2026-08-30']))
+            ->assertOk()
+            ->assertSee('Weather forecast')
+            ->assertSee('August supper club')
+            ->assertDontSee('September craft fair')
+            ->assertSee('This week');
+
+        $this->get(route('area-guide', ['period' => 'month', 'date' => '2026-09-15']))
+            ->assertOk()
+            ->assertSee('September craft fair')
+            ->assertDontSee('August supper club')
+            ->assertSee('This month');
     }
 
     public function test_faq_page_shows_knowledge_base_articles(): void

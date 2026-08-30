@@ -6,6 +6,7 @@ use App\Models\AiConversation;
 use App\Models\AiMessage;
 use App\Models\Property;
 use App\Models\Room;
+use App\Services\Area\AreaIntelligenceService;
 use App\Services\Availability\AvailabilityService;
 use App\Services\Pricing\PricingEngine;
 use Illuminate\Support\Carbon;
@@ -17,6 +18,7 @@ class AiAssistantService
         private readonly KnowledgeBaseService $knowledgeBase,
         private readonly AvailabilityService $availability,
         private readonly PricingEngine $pricing,
+        private readonly AreaIntelligenceService $areaIntelligence,
         private readonly AiProviderService $provider,
         private readonly TokenOptimizationService $tokenOptimiser,
     ) {}
@@ -42,7 +44,7 @@ class AiAssistantService
 
         if (! $this->provider->isAutoRespondEnabled()) {
             return [
-                'reply' => 'Thanks — a member of the team will reply to you shortly.',
+                'reply' => 'Thanks - a member of the team will reply to you shortly.',
                 'intent' => $intent,
                 'conversation_id' => $conversation->id,
                 'auto_responded' => false,
@@ -80,6 +82,30 @@ class AiAssistantService
     public function detectIntent(string $message): string
     {
         $text = strtolower($message);
+        $hasWeather = str_contains($text, 'weather')
+            || str_contains($text, 'forecast')
+            || str_contains($text, 'rain')
+            || str_contains($text, 'temperature')
+            || str_contains($text, 'hot')
+            || str_contains($text, 'cold');
+        $hasEvent = str_contains($text, 'event')
+            || str_contains($text, 'events')
+            || str_contains($text, 'nearby')
+            || str_contains($text, 'what is on')
+            || str_contains($text, "what's on")
+            || str_contains($text, 'what is happening')
+            || str_contains($text, 'around here')
+            || str_contains($text, 'local area');
+
+        if ($hasWeather && $hasEvent) {
+            return 'area';
+        }
+        if ($hasWeather) {
+            return 'weather';
+        }
+        if ($hasEvent) {
+            return 'event';
+        }
 
         if (str_contains($text, 'available') || str_contains($text, 'availability') || str_contains($text, 'free')) {
             return 'availability';
@@ -105,6 +131,12 @@ class AiAssistantService
         return match ($intent) {
             'availability' => $this->availabilityFacts($message),
             'price' => $this->priceFacts($message),
+            'weather' => $this->areaIntelligence->weatherFacts($this->activeProperty()),
+            'event' => $this->areaIntelligence->eventFacts($this->activeProperty()),
+            'area' => array_merge(
+                $this->areaIntelligence->weatherFacts($this->activeProperty()),
+                $this->areaIntelligence->eventFacts($this->activeProperty()),
+            ),
             'booking' => ['Bookings can only be confirmed through the booking form or by our team. I cannot confirm a reservation in chat.'],
             'payment' => ['Payment status is verified by Stripe. I cannot mark a booking as paid from chat.'],
             default => $this->knowledgeBase->search($message)
@@ -151,7 +183,7 @@ class AiAssistantService
     private function availabilityFacts(string $message): array
     {
         [$checkIn, $checkOut] = $this->extractDates($message);
-        $property = Property::query()->where('status', 'active')->first();
+        $property = $this->activeProperty();
 
         if (! $property || ! $checkIn || ! $checkOut) {
             return ['To check availability I need specific dates. You can also use the booking page to search.'];
@@ -196,6 +228,11 @@ class AiAssistantService
         }
 
         return [null, null];
+    }
+
+    private function activeProperty(): ?Property
+    {
+        return Property::query()->where('status', 'active')->first();
     }
 
     public function newSessionId(): string

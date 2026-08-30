@@ -54,6 +54,20 @@ class AiProviderService
         };
     }
 
+    /**
+     * Generate structured JSON from a prompt.
+     *
+     * @param  array<string, mixed>  $schema
+     * @return array<string, mixed>|null
+     */
+    public function generateJson(string $system, string $user, array $schema, string $schemaName = 'StructuredResponse'): ?array
+    {
+        return match ($this->provider()) {
+            'claude' => $this->generateJsonWithClaude($system, $user, $schema),
+            default => $this->generateJsonWithOpenAi($system, $user, $schema, $schemaName),
+        };
+    }
+
     public function openaiKey(): ?string
     {
         return $this->filledSecret(Setting::getValue('openai_api_key'))
@@ -188,5 +202,113 @@ class AiProviderService
         }
 
         return $value;
+    }
+
+    /**
+     * @param  array<string, mixed>  $schema
+     * @return array<string, mixed>|null
+     */
+    private function generateJsonWithOpenAi(string $system, string $user, array $schema, string $schemaName): ?array
+    {
+        $key = $this->openaiKey();
+
+        if (! $key) {
+            return null;
+        }
+
+        try {
+            $response = Http::connectTimeout(5)
+                ->timeout(30)
+                ->withToken($key)
+                ->acceptJson()
+                ->post('https://api.openai.com/v1/responses', [
+                    'model' => Setting::getValue('openai_model', config('services.openai.model', 'gpt-4o-mini')),
+                    'instructions' => $system,
+                    'input' => $user,
+                    'text' => [
+                        'format' => [
+                            'type' => 'json_schema',
+                            'name' => $schemaName,
+                            'strict' => true,
+                            'schema' => $schema,
+                        ],
+                    ],
+                ]);
+
+            if ($response->failed()) {
+                Log::error('OpenAI structured request failed', ['status' => $response->status()]);
+
+                return null;
+            }
+
+            $text = $response->json('output_text');
+
+            if (! is_string($text) || $text === '') {
+                $text = $response->json('output.0.content.0.text');
+            }
+
+            return $this->decodeJsonPayload(is_string($text) ? $text : null);
+        } catch (\Throwable $e) {
+            Log::error('OpenAI structured request failed', ['message' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $schema
+     * @return array<string, mixed>|null
+     */
+    private function generateJsonWithClaude(string $system, string $user, array $schema): ?array
+    {
+        $key = $this->claudeKey();
+
+        if (! $key) {
+            return null;
+        }
+
+        try {
+            $response = Http::connectTimeout(5)
+                ->timeout(30)
+                ->withHeaders([
+                    'x-api-key' => $key,
+                    'anthropic-version' => config('services.claude.version', '2023-06-01'),
+                ])
+                ->acceptJson()
+                ->post('https://api.anthropic.com/v1/messages', [
+                    'model' => Setting::getValue('claude_model', config('services.claude.model', 'claude-sonnet-4-5')),
+                    'max_tokens' => 2048,
+                    'system' => $system."\nReturn JSON only matching this schema: ".json_encode($schema, JSON_THROW_ON_ERROR),
+                    'messages' => [
+                        ['role' => 'user', 'content' => $user],
+                    ],
+                ]);
+
+            if ($response->failed()) {
+                Log::error('Claude structured request failed', ['status' => $response->status()]);
+
+                return null;
+            }
+
+            return $this->decodeJsonPayload($response->json('content.0.text'));
+        } catch (\Throwable $e) {
+            Log::error('Claude structured request failed', ['message' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function decodeJsonPayload(mixed $payload): ?array
+    {
+        if (! is_string($payload) || trim($payload) === '') {
+            return null;
+        }
+
+        $decoded = json_decode(trim($payload), true);
+
+        return is_array($decoded) ? $decoded : null;
     }
 }

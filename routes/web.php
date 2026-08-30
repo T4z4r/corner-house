@@ -32,9 +32,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [WebsiteController::class, 'home'])->name('home');
 Route::get('/about', [WebsiteController::class, 'about'])->name('about');
 Route::get('/property', [WebsiteController::class, 'property'])->name('property');
+Route::get('/rooms/{room:slug}', [WebsiteController::class, 'room'])->name('property.room');
 Route::get('/amenities', [WebsiteController::class, 'amenities'])->name('amenities');
 Route::get('/gallery', [WebsiteController::class, 'gallery'])->name('gallery');
 Route::get('/location', [WebsiteController::class, 'location'])->name('location');
+Route::get('/area-guide', [WebsiteController::class, 'areaGuide'])->name('area-guide');
 Route::get('/faq', [WebsiteController::class, 'faq'])->name('faq');
 Route::get('/food-drink', [WebsiteController::class, 'foodAndDrink'])->name('food-drink');
 Route::get('/places', [WebsiteController::class, 'places'])->name('places');
@@ -204,6 +206,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
 
     Route::middleware('can:pricing.view')->group(function (): void {
         Route::get('/pricing', [PricingController::class, 'index'])->name('pricing.index');
+        Route::post('/pricing/ai/generate', [PricingController::class, 'generateSeasonalRules'])->name('pricing.ai.generate')->middleware('can:pricing.create');
         Route::post('/pricing/rules', [PricingController::class, 'storeRule'])->name('pricing.rules.store')->middleware('can:pricing.create');
         Route::put('/pricing/rules/{rule}', [PricingController::class, 'updateRule'])->name('pricing.rules.update')->middleware('can:pricing.update');
         Route::delete('/pricing/rules/{rule}', [PricingController::class, 'destroyRule'])->name('pricing.rules.destroy')->middleware('can:pricing.delete');
@@ -248,7 +251,13 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
 
     Route::middleware('can:communications.view')->group(function (): void {
         Route::get('/communications', [CommunicationController::class, 'index'])->name('communications.index');
-        Route::post('/communications/templates', [CommunicationController::class, 'storeTemplate'])->name('communications.templates.store')->middleware('can:communications.manage_templates');
+
+        Route::middleware('can:communications.manage_templates')->group(function (): void {
+            Route::post('/communications/templates', [CommunicationController::class, 'storeTemplate'])->name('communications.templates.store');
+            Route::put('/communications/templates/{template}', [CommunicationController::class, 'updateTemplate'])->name('communications.templates.update');
+            Route::delete('/communications/templates/{template}', [CommunicationController::class, 'destroyTemplate'])->name('communications.templates.destroy');
+        });
+
         Route::post('/communications/send', [CommunicationController::class, 'send'])->name('communications.send')->middleware('can:communications.send');
     });
 

@@ -22,9 +22,11 @@
                         <div class="col-md-4"><input name="category" class="form-control" placeholder="Category" required></div>
                         <div class="col-md-8"><input name="title" class="form-control" placeholder="Title" required></div>
                         <div class="col-12"><textarea name="content" class="form-control" rows="3" required></textarea></div>
-                        <div class="col-md-4"><select name="status" class="form-select"><option value="active">Active</option><option value="disabled">Disabled</option></select></div>
-                        <div class="col-md-4"><input type="number" name="priority" class="form-control" value="0"></div>
-                        <div class="col-md-4 d-flex align-items-center">
+                        <div class="col-md-3"><input type="date" name="starts_at" class="form-control" placeholder="Start date"></div>
+                        <div class="col-md-3"><input type="date" name="ends_at" class="form-control" placeholder="End date"></div>
+                        <div class="col-md-3"><select name="status" class="form-select"><option value="active">Active</option><option value="disabled">Disabled</option></select></div>
+                        <div class="col-md-3"><input type="number" name="priority" class="form-control" value="0"></div>
+                        <div class="col-12 d-flex align-items-center">
                             <div class="form-check">
                                 <input type="hidden" name="show_on_website" value="0">
                                 <input class="form-check-input" type="checkbox" name="show_on_website" value="1" id="showOnWebsite" checked>
@@ -45,6 +47,14 @@
                                 <span class="small text-muted">{{ $article->status }}</span>
                             </div>
                         </div>
+                        @if ($article->starts_at || $article->ends_at)
+                            <div class="small text-muted mt-1">
+                                Event window:
+                                {{ $article->starts_at?->format('d M Y') ?? 'open' }}
+                                -
+                                {{ $article->ends_at?->format('d M Y') ?? 'open' }}
+                            </div>
+                        @endif
                     </div>
                 @endforeach
                 <div class="mt-3">{{ $articles->links() }}</div>

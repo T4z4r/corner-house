@@ -9,9 +9,12 @@ use App\Models\FoodAndDrink;
 use App\Models\KnowledgeBaseArticle;
 use App\Models\PlacesOfInterest;
 use App\Models\Property;
+use App\Models\Room;
+use App\Services\Area\AreaIntelligenceService;
 use App\Services\System\MailConfigurationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
@@ -32,6 +35,23 @@ class WebsiteController extends Controller
         return view('website.property', $this->propertyData());
     }
 
+    public function room(Room $room): View
+    {
+        abort_unless($room->isActive(), 404);
+
+        $room->load(['images', 'property.amenities', 'property.policies']);
+
+        $data = $this->propertyData();
+        $data['room'] = $room;
+        $data['siblingRooms'] = Room::query()
+            ->where('id', '!=', $room->id)
+            ->where('status', 'active')
+            ->with('images')
+            ->get();
+
+        return view('website.room', $data);
+    }
+
     public function amenities(): View
     {
         return view('website.amenities', $this->propertyData());
@@ -42,9 +62,39 @@ class WebsiteController extends Controller
         return view('website.gallery', $this->propertyData());
     }
 
-    public function location(): View
+    public function location(AreaIntelligenceService $areaIntelligence): View
     {
         return view('website.location', $this->propertyData());
+    }
+
+    public function areaGuide(Request $request, AreaIntelligenceService $areaIntelligence): View
+    {
+        $data = $this->propertyData();
+        $period = $request->string('period')->lower()->toString();
+        $period = in_array($period, ['week', 'month'], true) ? $period : 'month';
+        try {
+            $anchorDate = $request->filled('date')
+                ? Carbon::parse($request->string('date')->toString())
+                : now();
+        } catch (\Throwable) {
+            $anchorDate = now();
+        }
+        $windowStart = $period === 'week'
+            ? $anchorDate->copy()->startOfWeek(Carbon::MONDAY)
+            : $anchorDate->copy()->startOfMonth();
+        $windowEnd = $period === 'week'
+            ? $anchorDate->copy()->endOfWeek(Carbon::SUNDAY)
+            : $anchorDate->copy()->endOfMonth();
+
+        $data['weatherForecast'] = $areaIntelligence->weatherForecast($data['property']);
+        $data['localEvents'] = $areaIntelligence->nearbyEvents($data['property'], $windowStart, $windowEnd);
+        $data['selectedPeriod'] = $period;
+        $data['anchorDate'] = $anchorDate;
+        $data['windowLabel'] = $period === 'week'
+            ? sprintf('Week of %s', $windowStart->format('d M Y'))
+            : $windowStart->format('F Y');
+
+        return view('website.area-guide', $data);
     }
 
     public function faq(): View

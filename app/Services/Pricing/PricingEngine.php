@@ -41,7 +41,7 @@ class PricingEngine
      *     per_night: array<string, float>
      * }
      */
-    public function calculateForRange(Room $room, Carbon $checkIn, Carbon $checkOut, int $guests = 1, ?float $occupancyPct = null): array
+    public function calculateForRange(Room $room, Carbon $checkIn, Carbon $checkOut, int $guests = 1, ?float $occupancyPct = null, bool $isDirectBooking = false): array
     {
         if ($checkOut->lte($checkIn)) {
             throw new \DomainException('Check-out must be after check-in.');
@@ -57,6 +57,12 @@ class PricingEngine
 
         $base = array_sum($perNight);
         $discount = 0.0;
+
+        if ($isDirectBooking) {
+            $discountPct = (float) Setting::getValue('direct_booking_discount', 10);
+            $discount = round($base * ($discountPct / 100), 2);
+        }
+
         $tax = round(($base - $discount) * self::TAX_RATE, 2);
         $cleaningFee = (float) Setting::getValue('cleaning_fee', 50);
 
@@ -75,7 +81,12 @@ class PricingEngine
 
     public function minimumStayForRange(Room $room, Carbon $checkIn, Carbon $checkOut): int
     {
-        $minimum = (int) ($room->min_stay ?: 1);
+        // Read base minimum from settings
+        $isBankHolidayWeekend = $this->isBankHolidayWeekend($checkIn, $checkOut);
+        $settingMin = $isBankHolidayWeekend
+            ? (int) Setting::getValue('min_stay_bank_holiday_nights', 3)
+            : (int) Setting::getValue('min_stay_nights', 2);
+        $minimum = max($settingMin, (int) ($room->min_stay ?: 1));
 
         $rules = PricingRule::query()
             ->where('is_enabled', true)
@@ -236,5 +247,29 @@ class PricingEngine
             ->whereDate('end_date', '>=', $date->toDateString())
             ->orderBy('start_date', 'desc')
             ->first();
+    }
+
+    private function isBankHolidayWeekend(Carbon $checkIn, Carbon $checkOut): bool
+    {
+        $year = $checkIn->year;
+
+        $bankHolidays = [
+            Carbon::create($year, 1, 1),
+            Carbon::create($year, 4, 18),
+            Carbon::create($year, 4, 21),
+            Carbon::create($year, 5, 5),
+            Carbon::create($year, 5, 26),
+            Carbon::create($year, 8, 25),
+            Carbon::create($year, 12, 25),
+            Carbon::create($year, 12, 26),
+        ];
+
+        foreach ($bankHolidays as $bh) {
+            if ($bh->gte($checkIn) && $bh->lt($checkOut)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

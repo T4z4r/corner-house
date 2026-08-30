@@ -5,13 +5,17 @@ namespace Tests\Feature;
 use App\Models\AddOn;
 use App\Models\FoodAndDrink;
 use App\Models\Guest;
+use App\Models\KnowledgeBaseArticle;
 use App\Models\PlacesOfInterest;
 use App\Models\Property;
 use App\Models\Room;
+use App\Models\Setting;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
+use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -172,7 +176,65 @@ class AdminResourcesTest extends TestCase
             ->assertOk()
             ->assertSee('New rule')
             ->assertSee('New override')
+            ->assertSee('Generate seasonal pricing')
             ->assertDontSee('Post to Beds24');
+    }
+
+    public function test_super_admin_can_generate_ai_seasonal_pricing_rules(): void
+    {
+        $this->seed(SettingsSeeder::class);
+        Setting::query()->where('key', 'openai_api_key')->update(['value' => Setting::encryptSecret('sk-test-openai')]);
+        cache()->forget('settings.all');
+
+        $property = Property::factory()->create();
+
+        Http::fake([
+            'api.open-meteo.com/*' => Http::response([
+                'daily' => [
+                    'time' => [now()->toDateString()],
+                    'temperature_2m_max' => [23.4],
+                    'temperature_2m_min' => [14.1],
+                    'precipitation_probability_max' => [15],
+                    'weathercode' => [1],
+                ],
+            ], 200),
+            'api.openai.com/*' => Http::response([
+                'output_text' => json_encode([
+                    'summary' => 'Seasonal demand is healthy and should be nudged up slightly.',
+                    'rules' => [
+                        [
+                            'generation_key' => 'late-summer-uplift',
+                            'name' => 'Late summer uplift',
+                            'rule_type' => 'seasonal',
+                            'start_date' => now()->addWeek()->toDateString(),
+                            'end_date' => now()->addWeeks(6)->toDateString(),
+                            'priority' => 5,
+                            'adjustment_type' => 'percent',
+                            'adjustment_value' => 12,
+                            'minimum_stay' => 2,
+                            'max_stay' => 5,
+                            'occupancy_threshold' => null,
+                            'days_before_checkin' => null,
+                            'apply_weekends_only' => false,
+                            'reasoning' => 'Tourism demand is expected to rise.',
+                        ],
+                    ],
+                ], JSON_THROW_ON_ERROR),
+            ], 200),
+        ]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->post(route('admin.pricing.ai.generate'), [
+                'property_id' => $property->id,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('pricing_rules', [
+            'property_id' => $property->id,
+            'name' => 'Late summer uplift',
+            'generated_by_ai' => true,
+            'ai_generation_key' => 'late-summer-uplift',
+        ]);
     }
 
     public function test_super_admin_can_create_pricing_rule(): void
@@ -193,6 +255,35 @@ class AdminResourcesTest extends TestCase
             ->assertRedirect();
 
         $this->assertDatabaseHas('pricing_rules', ['name' => 'Summer high season', 'adjustment_value' => 20, 'max_stay' => 5]);
+    }
+
+    public function test_guest_manager_can_store_scheduled_event_articles(): void
+    {
+        $this->seed(RoleAndPermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole(Role::findByName('Guest Manager'));
+
+        $this->actingAs($user)
+            ->post(route('admin.chatbot.articles.store'), [
+                'category' => 'local-event',
+                'title' => 'Harvest supper club',
+                'content' => 'An autumn tasting menu with live music.',
+                'status' => 'active',
+                'priority' => 1,
+                'starts_at' => '2026-09-10',
+                'ends_at' => '2026-09-12',
+                'show_on_website' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertTrue(
+            KnowledgeBaseArticle::query()
+                ->where('title', 'Harvest supper club')
+                ->whereDate('starts_at', '2026-09-10')
+                ->whereDate('ends_at', '2026-09-12')
+                ->where('show_on_website', true)
+                ->exists(),
+        );
     }
 
     public function test_create_manual_reservation_via_admin(): void
