@@ -44,11 +44,20 @@ class PublicWebsiteTest extends TestCase
             'title' => 'Is parking available?',
             'category' => 'parking',
             'status' => 'active',
+            'show_on_website' => true,
+        ]);
+
+        KnowledgeBaseArticle::factory()->create([
+            'title' => 'Internal staff note',
+            'category' => 'faqs',
+            'status' => 'active',
+            'show_on_website' => false,
         ]);
 
         $this->get(route('faq'))
             ->assertOk()
-            ->assertSee('Is parking available?');
+            ->assertSee('Is parking available?')
+            ->assertDontSee('Internal staff note');
     }
 
     public function test_contact_form_sends_enquiry(): void

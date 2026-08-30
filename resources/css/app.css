@@ -1255,7 +1255,8 @@ body.ch-collapsed .ch-sidebar hr {
 
 .ch-hero-metrics {
     display: flex;
-    gap: 2.4rem;
+    flex-wrap: wrap;
+    gap: 2rem;
     margin-top: 2.6rem;
     padding-top: 1.8rem;
     border-top: 1px solid rgba(247, 241, 228, 0.12);

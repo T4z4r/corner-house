@@ -49,6 +49,7 @@ class WebsiteController extends Controller
         $data = $this->propertyData();
         $data['articles'] = KnowledgeBaseArticle::query()
             ->where('status', 'active')
+            ->where('show_on_website', true)
             ->orderByDesc('priority')
             ->orderBy('title')
             ->get()

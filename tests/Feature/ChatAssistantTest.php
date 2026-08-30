@@ -81,6 +81,43 @@ class ChatAssistantTest extends TestCase
         $this->assertDatabaseHas('knowledge_base_articles', ['title' => 'Is there Wi-Fi?']);
     }
 
+    public function test_guest_manager_can_publish_a_chatbot_question_to_faq_with_visibility_toggle(): void
+    {
+        $this->seed(RoleAndPermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->assignRole(Role::findByName('Guest Manager'));
+
+        $conversation = AiConversation::query()->create([
+            'session_id' => 'faq-publish-thread',
+            'source' => 'website',
+            'status' => 'open',
+        ]);
+
+        $message = AiMessage::query()->create([
+            'ai_conversation_id' => $conversation->id,
+            'role' => 'user',
+            'content' => 'Do you offer early check-in?',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('admin.chatbot.articles.store'), [
+                'category' => 'faqs',
+                'title' => 'Do you offer early check-in?',
+                'content' => 'Early check-in is available by request and subject to availability.',
+                'priority' => 2,
+                'status' => 'active',
+                'show_on_website' => '0',
+                'source_message_id' => $message->id,
+            ])->assertRedirect();
+
+        $this->assertDatabaseHas('knowledge_base_articles', [
+            'title' => 'Do you offer early check-in?',
+            'source' => 'chatbot',
+            'source_message_id' => $message->id,
+            'show_on_website' => false,
+        ]);
+    }
+
     public function test_openai_provider_is_used_when_configured(): void
     {
         $this->seed(SettingsSeeder::class);

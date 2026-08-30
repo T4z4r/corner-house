@@ -24,14 +24,27 @@
                         <div class="col-12"><textarea name="content" class="form-control" rows="3" required></textarea></div>
                         <div class="col-md-4"><select name="status" class="form-select"><option value="active">Active</option><option value="disabled">Disabled</option></select></div>
                         <div class="col-md-4"><input type="number" name="priority" class="form-control" value="0"></div>
-                        <div class="col-md-4"><button class="btn btn-ch-primary w-100">Add article</button></div>
+                        <div class="col-md-4 d-flex align-items-center">
+                            <div class="form-check">
+                                <input type="hidden" name="show_on_website" value="0">
+                                <input class="form-check-input" type="checkbox" name="show_on_website" value="1" id="showOnWebsite" checked>
+                                <label class="form-check-label" for="showOnWebsite">Show on website</label>
+                            </div>
+                        </div>
+                        <div class="col-12"><button class="btn btn-ch-primary w-100">Add article</button></div>
                     </form>
                 @endcan
                 @foreach ($articles as $article)
                     <div class="border-bottom py-2">
-                        <strong>{{ $article->title }}</strong>
-                        <span class="badge text-bg-light">{{ $article->category }}</span>
-                        <span class="small text-muted">{{ $article->status }}</span>
+                        <div class="d-flex justify-content-between align-items-center gap-2">
+                            <strong>{{ $article->title }}</strong>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <span class="badge text-bg-light">{{ $article->category }}</span>
+                                <span class="badge text-bg-{{ ($article->source ?? 'manual') === 'chatbot' ? 'primary' : 'secondary' }}">{{ ($article->source ?? 'manual') === 'chatbot' ? 'Chatbot' : 'Manual' }}</span>
+                                <span class="badge text-bg-{{ ($article->show_on_website ?? true) ? 'success' : 'warning' }}">{{ ($article->show_on_website ?? true) ? 'Website' : 'Hidden' }}</span>
+                                <span class="small text-muted">{{ $article->status }}</span>
+                            </div>
+                        </div>
                     </div>
                 @endforeach
                 <div class="mt-3">{{ $articles->links() }}</div>

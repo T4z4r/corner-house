@@ -24,7 +24,7 @@ class ChatbotController extends Controller
     public function index(): View
     {
         return view('admin.chatbot.index', [
-            'articles' => KnowledgeBaseArticle::query()->latest()->paginate(20, ['*'], 'articles'),
+            'articles' => KnowledgeBaseArticle::query()->with('sourceMessage.conversation')->latest()->paginate(20, ['*'], 'articles'),
             'conversations' => AiConversation::query()->withCount('messages')->latest()->paginate(15, ['*'], 'conversations'),
             'provider' => $this->provider->provider(),
             'autoRespond' => $this->provider->isAutoRespondEnabled(),
@@ -39,13 +39,26 @@ class ChatbotController extends Controller
             'content' => ['required', 'string'],
             'priority' => ['nullable', 'integer', 'min:0'],
             'status' => ['required', 'in:active,disabled'],
+            'show_on_website' => ['nullable', 'boolean'],
+            'source_message_id' => ['nullable', 'exists:ai_messages,id'],
         ]);
 
-        KnowledgeBaseArticle::create([
+        $payload = [
             ...$data,
             'created_by' => auth()->id(),
             'updated_by' => auth()->id(),
-        ]);
+            'source' => ! empty($data['source_message_id'] ?? null) ? 'chatbot' : 'manual',
+            'show_on_website' => (bool) ($data['show_on_website'] ?? false),
+        ];
+
+        if (! empty($data['source_message_id'] ?? null)) {
+            KnowledgeBaseArticle::query()->updateOrCreate(
+                ['source_message_id' => $data['source_message_id']],
+                $payload,
+            );
+        } else {
+            KnowledgeBaseArticle::create($payload);
+        }
 
         $this->auditLogger->log('chatbot.article_created', 'chatbot');
 
@@ -60,6 +73,7 @@ class ChatbotController extends Controller
             'content' => ['required', 'string'],
             'priority' => ['nullable', 'integer', 'min:0'],
             'status' => ['required', 'in:active,disabled'],
+            'show_on_website' => ['nullable', 'boolean'],
         ]);
 
         $article->update([
@@ -82,7 +96,7 @@ class ChatbotController extends Controller
     public function showConversation(AiConversation $conversation): View
     {
         return view('admin.chatbot.conversation', [
-            'conversation' => $conversation->load('messages'),
+            'conversation' => $conversation->load(['messages.faqArticle']),
         ]);
     }
 

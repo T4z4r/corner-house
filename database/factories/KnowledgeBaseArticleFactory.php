@@ -20,6 +20,8 @@ class KnowledgeBaseArticleFactory extends Factory
             'content' => fake()->paragraph(),
             'status' => 'active',
             'priority' => 0,
+            'source' => 'manual',
+            'show_on_website' => true,
         ];
     }
 }

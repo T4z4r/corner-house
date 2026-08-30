@@ -2,6 +2,15 @@
 
 @section('title', 'Stay with us')
 
+@php
+    $heroMain = \App\Models\Setting::getValue('website_hero_gallery_main');
+    $heroSmall = \App\Models\Setting::getValue('website_hero_gallery_small');
+    $metricBedrooms = \App\Models\Setting::getValue('hero_bedrooms') ?: ($property?->bedrooms ?? '-');
+    $metricBathrooms = \App\Models\Setting::getValue('hero_bathrooms') ?: ($property?->bathrooms ?? '-');
+    $metricGuests = \App\Models\Setting::getValue('hero_guests') ?: ($property?->capacity ?? '-');
+    $metricRooms = \App\Models\Setting::getValue('hero_rooms') ?: ($rooms->count() ?: '-');
+@endphp
+
 @section('content')
 <section class="ch-hero">
     <div class="ch-hero-overlay"></div>
@@ -16,15 +25,24 @@
                     <a class="ch-hero-link" href="{{ route('property') }}">Explore the house</a>
                 </div>
                 <div class="ch-hero-metrics">
-                    <div><span>{{ $property?->capacity ?? '4' }}</span><small>Guests</small></div>
-                    <div><span>{{ $property?->bedrooms ?? '2' }}</span><small>Bedrooms</small></div>
-                    <div><span>Direct</span><small>Best house rate</small></div>
+                    <div><span>{{ $metricBedrooms }}</span><small>Bedrooms</small></div>
+                    <div><span>{{ $metricBathrooms }}</span><small>Bathrooms</small></div>
+                    <div><span>{{ $metricGuests }}</span><small>Guests</small></div>
+                    <div><span>{{ $metricRooms }}</span><small>Rooms</small></div>
                 </div>
             </div>
             <div class="col-lg-6">
                 <div class="ch-hero-gallery" aria-hidden="true">
-                    <div class="ch-hero-photo ch-hero-photo-main"></div>
-                    <div class="ch-hero-photo ch-hero-photo-small"></div>
+                    <div class="ch-hero-photo ch-hero-photo-main">
+                        @if ($heroMain)
+                            <img src="{{ asset('storage/'.$heroMain) }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+                        @endif
+                    </div>
+                    <div class="ch-hero-photo ch-hero-photo-small">
+                        @if ($heroSmall)
+                            <img src="{{ asset('storage/'.$heroSmall) }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+                        @endif
+                    </div>
                     <div class="ch-hero-stamp">Boutique stay<br>Northamptonshire</div>
                 </div>
                 <div class="ch-booking-card">
@@ -64,14 +82,32 @@
         </div>
         <div class="row g-4">
             @forelse ($rooms as $room)
-                @php $image = $room->images->first(); @endphp
+                @php
+                    $images = $room->images->sortBy('sort_order')->values();
+                    $hero = $images->first();
+                    $thumbs = $images->slice(1, 3);
+                @endphp
                 <div class="col-md-4">
                     <article class="ch-suite-card">
-                        <div class="ch-suite-media">
-                            @if ($image)
-                                <img src="{{ asset('storage/'.$image->path) }}" alt="{{ $image->alt ?: $room->name }}">
-                            @endif
-                        </div>
+                        @if ($images->isNotEmpty())
+                            <div class="ch-suite-gallery">
+                                <div class="ch-suite-gallery-hero">
+                                    <img src="{{ asset('storage/'.$hero->path) }}" alt="{{ $hero->alt ?: $room->name }}">
+                                </div>
+                                @foreach ($thumbs as $thumb)
+                                    <div class="ch-suite-gallery-thumb">
+                                        <img src="{{ asset('storage/'.$thumb->path) }}" alt="{{ $thumb->alt ?: $room->name }}">
+                                    </div>
+                                @endforeach
+                                @if ($images->count() > 4)
+                                    <div class="ch-suite-gallery-count"><i class="bi bi-images me-1"></i>{{ $images->count() }}</div>
+                                @endif
+                            </div>
+                        @else
+                            <div class="ch-suite-no-image">
+                                <i class="bi bi-house"></i>
+                            </div>
+                        @endif
                         <div class="ch-suite-body">
                             <div class="ch-suite-eyebrow">Private room</div>
                             <h3>{{ $room->name }}</h3>
