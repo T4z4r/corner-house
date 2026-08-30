@@ -49,10 +49,6 @@
                 <button type="submit" class="btn btn-ch-primary w-100 py-2 fw-semibold">Sign in</button>
             </form>
 
-            <p class="text-center text-muted small mt-4 mb-0">
-                Need an account?
-                <a href="{{ route('register') }}" class="text-decoration-none">Register</a>
-            </p>
         </div>
     </div>
 @endsection
