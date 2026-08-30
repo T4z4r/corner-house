@@ -60,6 +60,7 @@ class FoodAndDrinkController extends Controller
             'address' => ['nullable', 'string', 'max:500'],
             'phone' => ['nullable', 'string', 'max:50'],
             'website' => ['nullable', 'url', 'max:500'],
+            'image' => ['nullable', 'image', 'max:5120'],
             'is_featured' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
@@ -68,6 +69,10 @@ class FoodAndDrinkController extends Controller
         $data['slug'] = Str::slug($data['name']);
         $data['is_featured'] = $request->boolean('is_featured');
         $data['is_active'] = $request->boolean('is_active', true);
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('food-drink', 'public');
+        }
 
         FoodAndDrink::create($data);
         $this->auditLogger->log('food_and_drink.created', 'food_and_drinks', 'food_and_drink', $data['slug']);
@@ -89,6 +94,7 @@ class FoodAndDrinkController extends Controller
             'address' => ['nullable', 'string', 'max:500'],
             'phone' => ['nullable', 'string', 'max:50'],
             'website' => ['nullable', 'url', 'max:500'],
+            'image' => ['nullable', 'image', 'max:5120'],
             'is_featured' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
@@ -97,6 +103,13 @@ class FoodAndDrinkController extends Controller
         $data['slug'] = Str::slug($data['name']);
         $data['is_featured'] = $request->boolean('is_featured');
         $data['is_active'] = $request->boolean('is_active', true);
+
+        if ($request->hasFile('image')) {
+            if ($foodAndDrink->image && \Storage::disk('public')->exists($foodAndDrink->image)) {
+                \Storage::disk('public')->delete($foodAndDrink->image);
+            }
+            $data['image'] = $request->file('image')->store('food-drink', 'public');
+        }
 
         $foodAndDrink->update($data);
         $this->auditLogger->log('food_and_drink.updated', 'food_and_drinks', 'food_and_drink', (string) $foodAndDrink->id);

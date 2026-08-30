@@ -62,12 +62,17 @@ class PlacesOfInterestController extends Controller
             'distance' => ['nullable', 'string', 'max:100'],
             'website' => ['nullable', 'url', 'max:500'],
             'phone' => ['nullable', 'string', 'max:50'],
+            'image' => ['nullable', 'image', 'max:5120'],
             'is_active' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
 
         $data['slug'] = Str::slug($data['name']);
         $data['is_active'] = $request->boolean('is_active', true);
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('places', 'public');
+        }
 
         PlacesOfInterest::create($data);
         $this->auditLogger->log('places_of_interest.created', 'places_of_interests', 'places_of_interest', $data['slug']);
@@ -90,12 +95,20 @@ class PlacesOfInterestController extends Controller
             'distance' => ['nullable', 'string', 'max:100'],
             'website' => ['nullable', 'url', 'max:500'],
             'phone' => ['nullable', 'string', 'max:50'],
+            'image' => ['nullable', 'image', 'max:5120'],
             'is_active' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
 
         $data['slug'] = Str::slug($data['name']);
         $data['is_active'] = $request->boolean('is_active', true);
+
+        if ($request->hasFile('image')) {
+            if ($place->image && \Storage::disk('public')->exists($place->image)) {
+                \Storage::disk('public')->delete($place->image);
+            }
+            $data['image'] = $request->file('image')->store('places', 'public');
+        }
 
         $place->update($data);
         $this->auditLogger->log('places_of_interest.updated', 'places_of_interests', 'places_of_interest', (string) $place->id);
