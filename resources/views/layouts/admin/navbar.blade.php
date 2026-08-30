@@ -12,7 +12,7 @@
             <i class="bi bi-robot"></i>
             <span class="d-none d-md-inline ms-1">Assistant</span>
         </button>
-        <form method="POST" action="{{ route('logout') }}" class="d-none d-lg-inline-flex">
+        <form method="POST" action="{{ route('logout') }}">
             @csrf
             <button type="submit" class="btn btn-outline-danger d-flex align-items-center gap-2" title="Sign out">
                 <i class="bi bi-box-arrow-right"></i>
@@ -29,12 +29,6 @@
                     <li><a class="dropdown-item" href="{{ route('admin.settings') }}"><i class="bi bi-gear me-2"></i>Settings</a></li>
                     <li><hr class="dropdown-divider"></li>
                 @endcan
-                <li>
-                    <form method="POST" action="{{ route('logout') }}" id="navbarLogoutForm">
-                        @csrf
-                        <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-right me-2"></i>Sign out</button>
-                    </form>
-                </li>
             </ul>
         </div>
     </div>

@@ -16,8 +16,8 @@
             <a href="{{ route('admin.website.house-rules') }}" class="card border-0 shadow-sm text-decoration-none h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
-                            <i class="bi bi-list-check fs-5 text-primary"></i>
+                        <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                            <i class="bi bi-list-check fs-5 text-success"></i>
                         </div>
                         <h6 class="mb-0">House Rules</h6>
                     </div>
@@ -30,8 +30,8 @@
             <a href="{{ route('admin.website.content') }}" class="card border-0 shadow-sm text-decoration-none h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
-                            <i class="bi bi-pencil-square fs-5 text-primary"></i>
+                        <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                            <i class="bi bi-pencil-square fs-5 text-success"></i>
                         </div>
                         <h6 class="mb-0">Property Content</h6>
                     </div>
@@ -44,8 +44,8 @@
             <a href="{{ route('admin.website.amenities') }}" class="card border-0 shadow-sm text-decoration-none h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
-                            <i class="bi bi-plus-circle fs-5 text-primary"></i>
+                        <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                            <i class="bi bi-plus-circle fs-5 text-success"></i>
                         </div>
                         <h6 class="mb-0">Amenities</h6>
                     </div>
@@ -58,8 +58,8 @@
             <a href="{{ route('admin.gallery.index') }}" class="card border-0 shadow-sm text-decoration-none h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
-                            <i class="bi bi-images fs-5 text-primary"></i>
+                        <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                            <i class="bi bi-images fs-5 text-success"></i>
                         </div>
                         <h6 class="mb-0">Gallery</h6>
                     </div>
@@ -72,8 +72,8 @@
             <a href="{{ route('admin.website.platforms') }}" class="card border-0 shadow-sm text-decoration-none h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
-                            <i class="bi bi-globe fs-5 text-primary"></i>
+                        <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                            <i class="bi bi-globe fs-5 text-success"></i>
                         </div>
                         <h6 class="mb-0">Platform Links</h6>
                     </div>
@@ -86,8 +86,8 @@
             <a href="{{ route('admin.settings.website') }}" class="card border-0 shadow-sm text-decoration-none h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
-                            <i class="bi bi-gear fs-5 text-primary"></i>
+                        <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                            <i class="bi bi-gear fs-5 text-success"></i>
                         </div>
                         <h6 class="mb-0">Website Settings</h6>
                     </div>
