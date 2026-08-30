@@ -21,18 +21,40 @@ class Beds24SyncService
     ) {}
 
     /**
-     * @return array{properties: int, rooms: int, bookings: int, overrides: int, blocks: int}
+     * @return array{properties: int, rooms: int, bookings: int, overrides: int, blocks: int, errors: string[]}
      */
     public function synchronize(ChannelAccount $account): array
     {
-        $catalog = $this->syncCatalog($account);
-        $bookings = $this->channels->syncBookings($account, true);
-        $calendar = $this->syncCalendar($account);
+        $errors = [];
+
+        try {
+            $catalog = $this->syncCatalog($account);
+        } catch (\Throwable $e) {
+            Log::error('Beds24 catalog sync failed', ['account_id' => $account->id, 'message' => $e->getMessage()]);
+            $errors[] = 'catalog: '.$e->getMessage();
+            $catalog = ['properties' => 0, 'rooms' => 0];
+        }
+
+        try {
+            $bookings = $this->channels->syncBookings($account, true);
+        } catch (\Throwable $e) {
+            Log::error('Beds24 bookings sync failed', ['account_id' => $account->id, 'message' => $e->getMessage()]);
+            $errors[] = 'bookings: '.$e->getMessage();
+            $bookings = 0;
+        }
+
+        try {
+            $calendar = $this->syncCalendar($account);
+        } catch (\Throwable $e) {
+            Log::error('Beds24 calendar sync failed', ['account_id' => $account->id, 'message' => $e->getMessage()]);
+            $errors[] = 'calendar: '.$e->getMessage();
+            $calendar = ['overrides' => 0, 'blocks' => 0];
+        }
 
         $account->update([
             'last_synced_at' => now(),
-            'last_error' => null,
-            'status' => 'active',
+            'last_error' => $errors !== [] ? implode('; ', $errors) : null,
+            'status' => $errors !== [] ? 'partial' : 'active',
             'settings' => array_merge($account->settings ?? [], [
                 'last_full_sync_at' => now()->toIso8601String(),
                 'last_sync_counts' => [
@@ -51,6 +73,7 @@ class Beds24SyncService
             'bookings' => $bookings,
             'overrides' => $calendar['overrides'],
             'blocks' => $calendar['blocks'],
+            'errors' => $errors,
         ];
     }
 
@@ -73,8 +96,17 @@ class Beds24SyncService
                 continue;
             }
 
-            $property = $this->upsertProperty($account, $remote);
-            $propertyCount++;
+            try {
+                $property = $this->upsertProperty($account, $remote);
+                $propertyCount++;
+            } catch (\Throwable $e) {
+                Log::warning('Beds24 catalog: failed to sync property', [
+                    'external_id' => $remote['id'] ?? null,
+                    'message' => $e->getMessage(),
+                ]);
+
+                continue;
+            }
 
             $rooms = $remote['roomTypes'] ?? $remote['rooms'] ?? [];
             if (! is_array($rooms)) {
@@ -86,8 +118,15 @@ class Beds24SyncService
                     continue;
                 }
 
-                $this->upsertRoom($account, $property, (string) $remote['id'], $remote, $remoteRoom);
-                $roomCount++;
+                try {
+                    $this->upsertRoom($account, $property, (string) $remote['id'], $remote, $remoteRoom);
+                    $roomCount++;
+                } catch (\Throwable $e) {
+                    Log::warning('Beds24 catalog: failed to sync room', [
+                        'external_room_id' => $remoteRoom['id'] ?? null,
+                        'message' => $e->getMessage(),
+                    ]);
+                }
             }
         }
 
@@ -161,8 +200,16 @@ class Beds24SyncService
                 continue;
             }
 
-            $this->upsertRoomFromRoomPayload($account, $property, (string) $remoteRoom['propertyId'], $remoteRoom);
-            $roomCount++;
+            try {
+                $this->upsertRoomFromRoomPayload($account, $property, (string) $remoteRoom['propertyId'], $remoteRoom);
+                $roomCount++;
+            } catch (\Throwable $e) {
+                $skipped++;
+                Log::warning('Beds24 rooms sync failed for room', [
+                    'external_room_id' => $remoteRoom['id'] ?? null,
+                    'message' => $e->getMessage(),
+                ]);
+            }
         }
 
         return ['rooms' => $roomCount, 'skipped' => $skipped];
@@ -200,7 +247,7 @@ class Beds24SyncService
                     $to->toDateString(),
                 );
             } catch (\Throwable $e) {
-                Log::warning('Beds24 calendar sync failed', [
+                Log::warning('Beds24 calendar sync failed for room', [
                     'room_id' => $room->id,
                     'message' => $e->getMessage(),
                 ]);
@@ -208,9 +255,16 @@ class Beds24SyncService
                 continue;
             }
 
-            $result = $this->applyCalendar($room, $this->calendarDays($payload, (string) $mapping->external_room_id), $from, $to);
-            $overrides += $result['overrides'];
-            $blocks += $result['blocks'];
+            try {
+                $result = $this->applyCalendar($room, $this->calendarDays($payload, (string) $mapping->external_room_id), $from, $to);
+                $overrides += $result['overrides'];
+                $blocks += $result['blocks'];
+            } catch (\Throwable $e) {
+                Log::warning('Beds24 calendar apply failed for room', [
+                    'room_id' => $room->id,
+                    'message' => $e->getMessage(),
+                ]);
+            }
         }
 
         return ['overrides' => $overrides, 'blocks' => $blocks];
