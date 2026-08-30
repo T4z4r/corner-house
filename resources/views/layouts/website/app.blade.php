@@ -22,15 +22,15 @@
         </button>
         <div class="collapse navbar-collapse" id="publicNav">
             <ul class="navbar-nav ms-auto align-items-lg-center">
-                <li class="nav-item"><a class="nav-link" href="{{ route('property') }}">The House</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ route('amenities') }}">Amenities</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ route('gallery') }}">Gallery</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ route('food-drink') }}">Food & Drink</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ route('places') }}">Places</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ route('location') }}">Location</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ route('faq') }}">FAQ</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ route('contact') }}">Contact</a></li>
-                <li class="nav-item"><a class="btn btn-ch-book ms-lg-3" href="{{ route('booking.search') }}">Book now</a></li>
+                <li class="nav-item"><a class="nav-link {{ request()->routeIs('property') ? 'active' : '' }}" href="{{ route('property') }}">The House</a></li>
+                <li class="nav-item"><a class="nav-link {{ request()->routeIs('amenities') ? 'active' : '' }}" href="{{ route('amenities') }}">Amenities</a></li>
+                <li class="nav-item"><a class="nav-link {{ request()->routeIs('gallery') ? 'active' : '' }}" href="{{ route('gallery') }}">Gallery</a></li>
+                <li class="nav-item"><a class="nav-link {{ request()->routeIs('food-drink') ? 'active' : '' }}" href="{{ route('food-drink') }}">Food & Drink</a></li>
+                <li class="nav-item"><a class="nav-link {{ request()->routeIs('places') ? 'active' : '' }}" href="{{ route('places') }}">Places</a></li>
+                <li class="nav-item"><a class="nav-link {{ request()->routeIs('location') ? 'active' : '' }}" href="{{ route('location') }}">Location</a></li>
+                <li class="nav-item"><a class="nav-link {{ request()->routeIs('faq') ? 'active' : '' }}" href="{{ route('faq') }}">FAQ</a></li>
+                <li class="nav-item"><a class="nav-link {{ request()->routeIs('contact') ? 'active' : '' }}" href="{{ route('contact') }}">Contact</a></li>
+                <li class="nav-item"><a class="btn btn-ch-book ms-lg-3 {{ request()->routeIs('booking.*') ? 'active' : '' }}" href="{{ route('booking.search') }}">Book now</a></li>
             </ul>
         </div>
     </div>

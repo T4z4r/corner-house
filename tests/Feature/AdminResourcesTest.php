@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\AddOn;
+use App\Models\FoodAndDrink;
 use App\Models\Guest;
+use App\Models\PlacesOfInterest;
 use App\Models\Property;
 use App\Models\Room;
 use App\Models\User;
@@ -244,6 +247,64 @@ class AdminResourcesTest extends TestCase
             ->assertSee('Garden Room')
             ->assertSee('Attic Room')
             ->assertSee('Maple Cottage');
+    }
+
+    public function test_super_admin_can_view_food_and_drink_index_with_pagination(): void
+    {
+        for ($i = 1; $i <= 21; $i++) {
+            FoodAndDrink::create([
+                'name' => 'Local Bistro '.$i,
+                'slug' => 'local-bistro-'.$i,
+                'category' => 'restaurant',
+                'is_active' => true,
+                'sort_order' => $i,
+            ]);
+        }
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.food-drink.index'))
+            ->assertOk()
+            ->assertSee('Local Bistro 1')
+            ->assertSee('Next');
+    }
+
+    public function test_super_admin_can_view_addons_index_with_pagination(): void
+    {
+        for ($i = 1; $i <= 21; $i++) {
+            AddOn::create([
+                'name' => 'Breakfast Pack '.$i,
+                'slug' => 'breakfast-pack-'.$i,
+                'category' => 'food',
+                'price' => 15,
+                'is_active' => true,
+                'sort_order' => $i,
+            ]);
+        }
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.addons.index'))
+            ->assertOk()
+            ->assertSee('Breakfast Pack 1')
+            ->assertSee('Next');
+    }
+
+    public function test_super_admin_can_view_places_index_with_pagination(): void
+    {
+        for ($i = 1; $i <= 21; $i++) {
+            PlacesOfInterest::create([
+                'name' => 'Attraction '.$i,
+                'slug' => 'attraction-'.$i,
+                'category' => 'attraction',
+                'is_active' => true,
+                'sort_order' => $i,
+            ]);
+        }
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.places.index'))
+            ->assertOk()
+            ->assertSee('Attraction 1')
+            ->assertSee('Next');
     }
 
     public function test_room_management_window_filters_by_status(): void

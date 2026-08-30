@@ -859,6 +859,12 @@ body.ch-collapsed .ch-sidebar hr {
     color: var(--ch-accent);
 }
 
+.ch-public-nav .nav-link.active {
+    color: var(--ch-accent);
+    border-bottom: 2px solid var(--ch-accent);
+    padding-bottom: 0.5rem;
+}
+
 .ch-public-nav .navbar-toggler {
     border-color: rgba(255, 255, 255, 0.25);
 }
@@ -1458,6 +1464,209 @@ body.ch-collapsed .ch-sidebar hr {
 
 .ch-amenity:hover {
     transform: translateY(-2px);
+}
+
+/* Info cards – food/drink, places, addons */
+.ch-info-card {
+    background: #fbf8f1;
+    padding: 1.6rem 1.5rem;
+    height: 100%;
+    border-left: 3px solid var(--ch-accent);
+    cursor: pointer;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.ch-info-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 40px -16px rgba(20, 16, 8, 0.45);
+}
+
+.ch-info-card--accent {
+    border-left-color: var(--ch-forest);
+}
+
+.ch-info-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+}
+
+.ch-info-card-badge {
+    display: inline-block;
+    background: #e7f3ec;
+    color: #1f6f43;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.65rem;
+    border-radius: 2px;
+}
+
+.ch-info-card-featured {
+    display: inline-block;
+    background: var(--ch-accent);
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.22rem 0.55rem;
+    border-radius: 2px;
+    margin-left: 0.4rem;
+}
+
+.ch-info-card-distance {
+    display: inline-block;
+    background: #1f3d32;
+    color: #f7f1e4;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 0.25rem 0.65rem;
+    border-radius: 2px;
+}
+
+.ch-info-card-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #1a1612;
+    margin-bottom: 0.45rem;
+    line-height: 1.25;
+}
+
+.ch-info-card-text {
+    color: #6b6458;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    margin-bottom: 0.6rem;
+    flex: 1;
+}
+
+.ch-info-card-meta {
+    font-size: 0.82rem;
+    color: #8a8279;
+    margin-bottom: 0.6rem;
+}
+
+.ch-info-card-meta i {
+    color: var(--ch-accent);
+    margin-right: 0.3rem;
+}
+
+.ch-info-card-price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.25rem;
+    color: #1a1612;
+    margin-bottom: 0.5rem;
+}
+
+.ch-info-card-price span {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.82rem;
+    color: #8a8279;
+}
+
+.ch-info-card-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ch-accent);
+    margin-top: auto;
+}
+
+.ch-info-card-cta i {
+    font-size: 0.7rem;
+    transition: transform 0.2s ease;
+}
+
+.ch-info-card:hover .ch-info-card-cta i {
+    transform: translateX(3px);
+}
+
+/* Modal */
+.ch-modal {
+    background: #fbf8f1;
+    border: none;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.ch-modal-header {
+    background: #1f3d32;
+    color: #f7f1e4;
+    border-bottom: none;
+    padding: 1.5rem 1.6rem 1.2rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+}
+
+.ch-modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #f7f1e4;
+    margin-bottom: 0;
+}
+
+.ch-modal-distance {
+    font-size: 0.82rem;
+    color: rgba(247, 241, 228, 0.7);
+    margin-top: 0.3rem;
+}
+
+.ch-modal-header .btn-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+.ch-modal-body {
+    padding: 1.5rem 1.6rem;
+}
+
+.ch-modal-body p {
+    color: #4a4540;
+    font-size: 0.95rem;
+    line-height: 1.65;
+    margin-bottom: 1rem;
+}
+
+.ch-modal-detail {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.65rem 0;
+    border-top: 1px solid rgba(31, 61, 50, 0.1);
+    font-size: 0.9rem;
+    color: #4a4540;
+}
+
+.ch-modal-detail i {
+    color: var(--ch-accent);
+    font-size: 0.95rem;
+    width: 1.2rem;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.ch-modal-detail a {
+    color: #1f3d32;
+    text-decoration: none;
+}
+
+.ch-modal-detail a:hover {
+    color: var(--ch-accent);
 }
 
 .ch-contact-detail {

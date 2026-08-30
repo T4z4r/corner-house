@@ -144,6 +144,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let latestId = widget.dataset.notificationsLatestId || null;
         let loadedOnce = false;
         let requestInFlight = false;
+        let audioContext = null;
 
         const levelClassMap = {
             success: 'text-bg-success',
@@ -185,7 +186,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                const audioContext = new AudioContextClass();
+                if (!audioContext) {
+                    audioContext = new AudioContextClass();
+                }
+
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume().catch(() => {});
+                }
+
                 const oscillator = audioContext.createOscillator();
                 const gainNode = audioContext.createGain();
 
@@ -199,7 +207,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 gainNode.gain.exponentialRampToValueAtTime(0.15, audioContext.currentTime + 0.02);
                 gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.18);
                 oscillator.stop(audioContext.currentTime + 0.2);
-                oscillator.onended = () => audioContext.close().catch(() => {});
             } catch (error) {
                 console.warn('Notification sound skipped:', error);
             }
@@ -337,6 +344,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 markAllRead();
             });
         }
+
+        window.addEventListener('pointerdown', function primeAudioContext() {
+            if (!audioContext && (window.AudioContext || window.webkitAudioContext)) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            if (audioContext?.state === 'suspended') {
+                audioContext.resume().catch(() => {});
+            }
+        }, { once: true });
 
         updateBadge(Number(widget.dataset.notificationsCount || 0));
         updateSummary(Number(widget.dataset.notificationsCount || 0));
