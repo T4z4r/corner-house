@@ -1593,6 +1593,29 @@ body.ch-collapsed .ch-sidebar hr {
     transform: translateX(3px);
 }
 
+.ch-info-card-img {
+    height: 160px;
+    overflow: hidden;
+    margin: -1.6rem -1.5rem 0;
+}
+
+.ch-info-card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.ch-info-card:hover .ch-info-card-img img {
+    transform: scale(1.04);
+}
+
+.ch-info-card-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
 /* Modal */
 .ch-modal {
     background: #fbf8f1;
@@ -1609,6 +1632,17 @@ body.ch-collapsed .ch-sidebar hr {
     flex-direction: column;
     align-items: flex-start;
     gap: 0;
+}
+
+.ch-modal-img {
+    height: 200px;
+    overflow: hidden;
+}
+
+.ch-modal-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .ch-modal-title {

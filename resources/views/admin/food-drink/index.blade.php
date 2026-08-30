@@ -74,7 +74,7 @@
                                 </td>
                                 <td>
                                     @can('food-drink.update')
-                                        <form method="POST" action="{{ route('admin.food-drink.toggle-featured', $item) }}" class="d-inline">
+                                        <form method="POST" action="{{ route('admin.food-drink.toggle', $item) }}" class="d-inline">
                                             @csrf
                                             <button type="submit" class="btn btn-sm {{ $item->is_featured ? 'btn-outline-warning' : 'btn-outline-secondary' }}" title="{{ $item->is_featured ? 'Remove featured' : 'Mark as featured' }}">
                                                 <i class="bi {{ $item->is_featured ? 'bi-star-fill' : 'bi-star' }}"></i>

@@ -13,7 +13,7 @@
 
     <div class="card border-0 shadow-sm">
         <div class="card-body">
-            <form method="POST" action="{{ route('admin.places.update', $item) }}">
+            <form method="POST" action="{{ route('admin.places.update', $item) }}" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 <div class="row g-3">
@@ -68,6 +68,17 @@
                             <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" @checked(old('is_active', $item->is_active))>
                             <label class="form-check-label" for="is_active">Active on public site</label>
                         </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Image <span class="text-muted">(optional)</span></label>
+                        @if ($item->image)
+                            <div class="mb-2">
+                                <img src="{{ asset('storage/'.$item->image) }}" alt="{{ $item->name }}" class="rounded" style="max-height:80px;">
+                            </div>
+                        @endif
+                        <input type="file" name="image" class="form-control" accept="image/*">
+                        <div class="form-text">Max 5 MB. Leave empty to keep current image.</div>
+                        @error('image') <div class="text-danger small">{{ $message }}</div> @enderror
                     </div>
                 </div>
                 <div class="mt-4 d-flex gap-2">

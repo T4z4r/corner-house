@@ -13,7 +13,7 @@
 
     <div class="card border-0 shadow-sm">
         <div class="card-body">
-            <form method="POST" action="{{ route('admin.food-drink.update', $item) }}">
+            <form method="POST" action="{{ route('admin.food-drink.update', $item) }}" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 <div class="row g-3">
@@ -56,6 +56,17 @@
                         <label class="form-label">Sort Order</label>
                         <input type="number" name="sort_order" class="form-control" value="{{ old('sort_order', $item->sort_order) }}" min="0">
                         @error('sort_order') <div class="text-danger small">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Image <span class="text-muted">(optional)</span></label>
+                        @if ($item->image)
+                            <div class="mb-2">
+                                <img src="{{ asset('storage/'.$item->image) }}" alt="{{ $item->name }}" class="rounded" style="max-height:80px;">
+                            </div>
+                        @endif
+                        <input type="file" name="image" class="form-control" accept="image/*">
+                        <div class="form-text">Max 5 MB. Leave empty to keep current image.</div>
+                        @error('image') <div class="text-danger small">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-12">
                         <div class="d-flex gap-4">

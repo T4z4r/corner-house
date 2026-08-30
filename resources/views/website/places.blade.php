@@ -12,23 +12,35 @@
             @forelse ($sorted as $place)
                 <div class="col-md-4">
                     <div class="ch-info-card" data-bs-toggle="modal" data-bs-target="#placeModal{{ $place->id }}" role="button" tabindex="0">
-                        <div class="ch-info-card-header">
-                            <span class="ch-info-card-badge">{{ ucfirst($place->category) }}</span>
-                            @if ($place->distance)
-                                <span class="ch-info-card-distance">{{ $place->distance }}</span>
-                            @endif
-                        </div>
-                        <h3 class="ch-info-card-title">{{ $place->name }}</h3>
-                        @if ($place->description)
-                            <p class="ch-info-card-text">{{ Str::limit($place->description, 100) }}</p>
+                        @if ($place->image)
+                            <div class="ch-info-card-img">
+                                <img src="{{ asset('storage/'.$place->image) }}" alt="{{ $place->name }}">
+                            </div>
                         @endif
-                        <span class="ch-info-card-cta">View details <i class="bi bi-arrow-right"></i></span>
+                        <div class="ch-info-card-content">
+                            <div class="ch-info-card-header">
+                                <span class="ch-info-card-badge">{{ ucfirst($place->category) }}</span>
+                                @if ($place->distance)
+                                    <span class="ch-info-card-distance">{{ $place->distance }}</span>
+                                @endif
+                            </div>
+                            <h3 class="ch-info-card-title">{{ $place->name }}</h3>
+                            @if ($place->description)
+                                <p class="ch-info-card-text">{{ Str::limit($place->description, 100) }}</p>
+                            @endif
+                            <span class="ch-info-card-cta">View details <i class="bi bi-arrow-right"></i></span>
+                        </div>
                     </div>
                 </div>
 
                 <div class="modal fade" id="placeModal{{ $place->id }}" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content ch-modal">
+                            @if ($place->image)
+                                <div class="ch-modal-img">
+                                    <img src="{{ asset('storage/'.$place->image) }}" alt="{{ $place->name }}">
+                                </div>
+                            @endif
                             <div class="modal-header ch-modal-header">
                                 <div>
                                     <span class="ch-info-card-badge mb-2">{{ ucfirst($place->category) }}</span>

@@ -16,24 +16,36 @@
                 @foreach ($chunk as $e)
                     <div class="col-md-4">
                         <div class="ch-info-card" data-bs-toggle="modal" data-bs-target="#foodModal{{ $e->id }}" role="button" tabindex="0">
-                            <span class="ch-info-card-badge">{{ ucfirst($e->category) }}</span>
-                            @if ($e->is_featured)
-                                <span class="ch-info-card-featured">Featured</span>
-                            @endif
-                            <h3 class="ch-info-card-title">{{ $e->name }}</h3>
-                            <p class="ch-info-card-text">{{ Str::limit($e->description, 100) }}</p>
-                            @if ($e->address)
-                                <div class="ch-info-card-meta">
-                                    <i class="bi bi-geo-alt"></i> {{ $e->address }}
+                            @if ($e->image)
+                                <div class="ch-info-card-img">
+                                    <img src="{{ asset('storage/'.$e->image) }}" alt="{{ $e->name }}">
                                 </div>
                             @endif
-                            <span class="ch-info-card-cta">View details <i class="bi bi-arrow-right"></i></span>
+                            <div class="ch-info-card-content">
+                                <span class="ch-info-card-badge">{{ ucfirst($e->category) }}</span>
+                                @if ($e->is_featured)
+                                    <span class="ch-info-card-featured">Featured</span>
+                                @endif
+                                <h3 class="ch-info-card-title">{{ $e->name }}</h3>
+                                <p class="ch-info-card-text">{{ Str::limit($e->description, 100) }}</p>
+                                @if ($e->address)
+                                    <div class="ch-info-card-meta">
+                                        <i class="bi bi-geo-alt"></i> {{ $e->address }}
+                                    </div>
+                                @endif
+                                <span class="ch-info-card-cta">View details <i class="bi bi-arrow-right"></i></span>
+                            </div>
                         </div>
                     </div>
 
                     <div class="modal fade" id="foodModal{{ $e->id }}" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content ch-modal">
+                                @if ($e->image)
+                                    <div class="ch-modal-img">
+                                        <img src="{{ asset('storage/'.$e->image) }}" alt="{{ $e->name }}">
+                                    </div>
+                                @endif
                                 <div class="modal-header ch-modal-header">
                                     <div>
                                         <span class="ch-info-card-badge mb-2">{{ ucfirst($e->category) }}</span>

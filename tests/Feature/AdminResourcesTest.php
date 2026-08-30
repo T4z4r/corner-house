@@ -268,6 +268,24 @@ class AdminResourcesTest extends TestCase
             ->assertSee('Next');
     }
 
+    public function test_super_admin_can_toggle_food_and_drink_featured_status(): void
+    {
+        $item = FoodAndDrink::create([
+            'name' => 'Signature Dinner',
+            'slug' => 'signature-dinner',
+            'category' => 'restaurant',
+            'is_featured' => false,
+            'is_active' => true,
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->post(route('admin.food-drink.toggle-featured', $item))
+            ->assertRedirect();
+
+        $this->assertTrue($item->refresh()->is_featured);
+    }
+
     public function test_super_admin_can_view_addons_index_with_pagination(): void
     {
         for ($i = 1; $i <= 21; $i++) {

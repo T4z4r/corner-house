@@ -13,7 +13,7 @@
 
     <div class="card border-0 shadow-sm">
         <div class="card-body">
-            <form method="POST" action="{{ route('admin.food-drink.store') }}">
+            <form method="POST" action="{{ route('admin.food-drink.store') }}" enctype="multipart/form-data">
                 @csrf
                 <div class="row g-3">
                     <div class="col-md-6">
@@ -55,6 +55,12 @@
                         <label class="form-label">Sort Order</label>
                         <input type="number" name="sort_order" class="form-control" value="{{ old('sort_order', 0) }}" min="0">
                         @error('sort_order') <div class="text-danger small">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Image <span class="text-muted">(optional)</span></label>
+                        <input type="file" name="image" class="form-control" accept="image/*">
+                        <div class="form-text">Max 5 MB. JPG, PNG or WebP.</div>
+                        @error('image') <div class="text-danger small">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-12">
                         <div class="d-flex gap-4">

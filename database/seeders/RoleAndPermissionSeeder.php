@@ -46,6 +46,9 @@ class RoleAndPermissionSeeder extends Seeder
             'users' => ['view', 'create', 'update', 'delete', 'manage_roles'],
             'settings' => ['view', 'update'],
             'audit_logs' => ['view'],
+            'food-drink' => ['view', 'create', 'update', 'delete'],
+            'places' => ['view', 'create', 'update', 'delete'],
+            'addons' => ['view', 'create', 'update', 'delete'],
         ];
 
         $permissions = [];
@@ -70,6 +73,9 @@ class RoleAndPermissionSeeder extends Seeder
                 'properties.view', 'properties.create', 'properties.update',
                 'rooms.view', 'rooms.create', 'rooms.update',
                 'amenities.view', 'amenities.create', 'amenities.update',
+                'food-drink.view', 'food-drink.create', 'food-drink.update', 'food-drink.delete',
+                'places.view', 'places.create', 'places.update', 'places.delete',
+                'addons.view', 'addons.create', 'addons.update', 'addons.delete',
                 'guests.view', 'guests.create', 'guests.update',
                 'reservations.view', 'reservations.create', 'reservations.update', 'reservations.cancel',
                 'calendar.view', 'calendar.manage',

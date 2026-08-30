@@ -132,4 +132,12 @@ class FoodAndDrinkController extends Controller
 
         return back()->with('status', 'Status updated.');
     }
+
+    public function toggleFeatured(FoodAndDrink $foodAndDrink): RedirectResponse
+    {
+        $foodAndDrink->update(['is_featured' => ! $foodAndDrink->is_featured]);
+        $this->auditLogger->log('food_and_drink.featured_toggled', 'food_and_drinks', 'food_and_drink', (string) $foodAndDrink->id);
+
+        return back()->with('status', 'Featured status updated.');
+    }
 }

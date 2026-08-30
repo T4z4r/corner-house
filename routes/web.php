@@ -93,30 +93,36 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::put('/website-manager/platforms', [WebsiteManagementController::class, 'updatePlatforms'])->name('website.platforms.update');
     });
 
-    Route::middleware('can:properties.view')->group(function (): void {
+    Route::middleware('can:food-drink.view')->group(function (): void {
         Route::get('/food-drink', [FoodAndDrinkController::class, 'index'])->name('food-drink.index');
-        Route::get('/food-drink/create', [FoodAndDrinkController::class, 'create'])->name('food-drink.create')->middleware('can:properties.create');
-        Route::post('/food-drink', [FoodAndDrinkController::class, 'store'])->name('food-drink.store')->middleware('can:properties.create');
-        Route::get('/food-drink/{foodAndDrink}/edit', [FoodAndDrinkController::class, 'edit'])->name('food-drink.edit')->middleware('can:properties.update');
-        Route::put('/food-drink/{foodAndDrink}', [FoodAndDrinkController::class, 'update'])->name('food-drink.update')->middleware('can:properties.update');
-        Route::delete('/food-drink/{foodAndDrink}', [FoodAndDrinkController::class, 'destroy'])->name('food-drink.destroy')->middleware('can:properties.delete');
-        Route::post('/food-drink/{foodAndDrink}/toggle', [FoodAndDrinkController::class, 'toggle'])->name('food-drink.toggle')->middleware('can:properties.update');
+        Route::get('/food-drink/create', [FoodAndDrinkController::class, 'create'])->name('food-drink.create')->middleware('can:food-drink.create');
+        Route::post('/food-drink', [FoodAndDrinkController::class, 'store'])->name('food-drink.store')->middleware('can:food-drink.create');
+        Route::get('/food-drink/{foodAndDrink}/edit', [FoodAndDrinkController::class, 'edit'])->name('food-drink.edit')->middleware('can:food-drink.update');
+        Route::put('/food-drink/{foodAndDrink}', [FoodAndDrinkController::class, 'update'])->name('food-drink.update')->middleware('can:food-drink.update');
+        Route::delete('/food-drink/{foodAndDrink}', [FoodAndDrinkController::class, 'destroy'])->name('food-drink.destroy')->middleware('can:food-drink.delete');
+        Route::post('/food-drink/{foodAndDrink}/toggle', [FoodAndDrinkController::class, 'toggle'])->name('food-drink.toggle')->middleware('can:food-drink.update');
+        Route::post('/food-drink/{foodAndDrink}/toggle-featured', [FoodAndDrinkController::class, 'toggleFeatured'])->name('food-drink.toggle-featured')->middleware('can:food-drink.update');
+        Route::post('/food-drink/{foodAndDrink}/toggle-featured', [FoodAndDrinkController::class, 'toggleFeatured'])->name('food-drink.toggle-featured')->middleware('can:food-drink.update');
+    });
 
+    Route::middleware('can:places.view')->group(function (): void {
         Route::get('/places', [PlacesOfInterestController::class, 'index'])->name('places.index');
-        Route::get('/places/create', [PlacesOfInterestController::class, 'create'])->name('places.create')->middleware('can:properties.create');
-        Route::post('/places', [PlacesOfInterestController::class, 'store'])->name('places.store')->middleware('can:properties.create');
-        Route::get('/places/{place}/edit', [PlacesOfInterestController::class, 'edit'])->name('places.edit')->middleware('can:properties.update');
-        Route::put('/places/{place}', [PlacesOfInterestController::class, 'update'])->name('places.update')->middleware('can:properties.update');
-        Route::delete('/places/{place}', [PlacesOfInterestController::class, 'destroy'])->name('places.destroy')->middleware('can:properties.delete');
-        Route::post('/places/{place}/toggle', [PlacesOfInterestController::class, 'toggle'])->name('places.toggle')->middleware('can:properties.update');
+        Route::get('/places/create', [PlacesOfInterestController::class, 'create'])->name('places.create')->middleware('can:places.create');
+        Route::post('/places', [PlacesOfInterestController::class, 'store'])->name('places.store')->middleware('can:places.create');
+        Route::get('/places/{place}/edit', [PlacesOfInterestController::class, 'edit'])->name('places.edit')->middleware('can:places.update');
+        Route::put('/places/{place}', [PlacesOfInterestController::class, 'update'])->name('places.update')->middleware('can:places.update');
+        Route::delete('/places/{place}', [PlacesOfInterestController::class, 'destroy'])->name('places.destroy')->middleware('can:places.delete');
+        Route::post('/places/{place}/toggle', [PlacesOfInterestController::class, 'toggle'])->name('places.toggle')->middleware('can:places.update');
+    });
 
+    Route::middleware('can:addons.view')->group(function (): void {
         Route::get('/addons', [AddOnController::class, 'index'])->name('addons.index');
-        Route::get('/addons/create', [AddOnController::class, 'create'])->name('addons.create')->middleware('can:properties.create');
-        Route::post('/addons', [AddOnController::class, 'store'])->name('addons.store')->middleware('can:properties.create');
-        Route::get('/addons/{addon}/edit', [AddOnController::class, 'edit'])->name('addons.edit')->middleware('can:properties.update');
-        Route::put('/addons/{addon}', [AddOnController::class, 'update'])->name('addons.update')->middleware('can:properties.update');
-        Route::delete('/addons/{addon}', [AddOnController::class, 'destroy'])->name('addons.destroy')->middleware('can:properties.delete');
-        Route::post('/addons/{addon}/toggle', [AddOnController::class, 'toggle'])->name('addons.toggle')->middleware('can:properties.update');
+        Route::get('/addons/create', [AddOnController::class, 'create'])->name('addons.create')->middleware('can:addons.create');
+        Route::post('/addons', [AddOnController::class, 'store'])->name('addons.store')->middleware('can:addons.create');
+        Route::get('/addons/{addon}/edit', [AddOnController::class, 'edit'])->name('addons.edit')->middleware('can:addons.update');
+        Route::put('/addons/{addon}', [AddOnController::class, 'update'])->name('addons.update')->middleware('can:addons.update');
+        Route::delete('/addons/{addon}', [AddOnController::class, 'destroy'])->name('addons.destroy')->middleware('can:addons.delete');
+        Route::post('/addons/{addon}/toggle', [AddOnController::class, 'toggle'])->name('addons.toggle')->middleware('can:addons.update');
     });
 
     Route::middleware('can:users.view')->group(function (): void {
