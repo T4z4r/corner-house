@@ -30,15 +30,20 @@
 
                 <div class="mb-3">
                     <label for="password" class="form-label">Password</label>
-                    <input type="password"
-                           class="form-control @error('password') is-invalid @enderror"
-                           id="password"
-                           name="password"
-                           placeholder="Enter your password"
-                           required>
-                    @error('password')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    <div class="position-relative">
+                        <input type="password"
+                               class="form-control pe-5 @error('password') is-invalid @enderror"
+                               id="password"
+                               name="password"
+                               placeholder="Enter your password"
+                               required>
+                        <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y me-2 p-0 text-muted border-0 bg-transparent" id="togglePassword" tabindex="-1">
+                            <i class="bi bi-eye" id="toggleIcon"></i>
+                        </button>
+                        @error('password')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
                 </div>
 
                 <div class="mb-3 form-check">
@@ -52,3 +57,19 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+document.getElementById('togglePassword').addEventListener('click', function () {
+    const input = document.getElementById('password');
+    const icon = document.getElementById('toggleIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('bi-eye', 'bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.replace('bi-eye-slash', 'bi-eye');
+    }
+});
+</script>
+@endpush
