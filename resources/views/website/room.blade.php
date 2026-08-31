@@ -85,11 +85,30 @@
                     </div>
                 @endif
 
-                <div class="d-grid gap-2">
-                    <a class="btn btn-ch-book btn-lg" href="{{ route('booking.search', ['check_in' => now()->addDays(2)->format('Y-m-d'), 'check_out' => now()->addDays(4)->format('Y-m-d'), 'guests' => min($room->capacity, 2)]) }}">
-                        Check availability
-                    </a>
+                <div class="d-grid gap-2 mb-3">
                     <a class="btn btn-outline-secondary" href="{{ route('property') }}">Back to all rooms</a>
+                </div>
+
+                <div class="ch-booking-card">
+                    <h3>Book this room</h3>
+                    <p class="ch-booking-note">Live availability. Final price calculated by the house.</p>
+                    <form method="GET" action="{{ route('booking.details', $room) }}" class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label">Arrive</label>
+                            <input type="date" name="check_in" class="form-control" required min="{{ now()->addDays(2)->toDateString() }}">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Depart</label>
+                            <input type="date" name="check_out" class="form-control" required min="{{ now()->addDays(3)->toDateString() }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Guests</label>
+                            <input type="number" name="guests" class="form-control" min="1" max="{{ $room->capacity }}" value="{{ min(2, $room->capacity) }}">
+                        </div>
+                        <div class="col-12">
+                            <button class="btn btn-ch-book w-100">Check &amp; book</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
