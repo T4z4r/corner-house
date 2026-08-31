@@ -20,6 +20,7 @@ use App\Services\Beds24\Beds24Client;
 use App\Services\Beds24\Beds24PricingPublisher;
 use App\Services\Beds24\Beds24PropertyPublisher;
 use App\Services\Beds24\Beds24SyncService;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,18 +36,18 @@ class ChannelController extends Controller
         return redirect()->route('admin.channels.integrations');
     }
 
-    public function integrations(): View
+    public function integrations(Request $request): View
     {
         return view('admin.channels.integrations', [
             'swaggerUrl' => 'https://beds24.com/api/v2/#/',
-            ...$this->channelPageData(),
+            ...$this->channelPageData($request),
         ]);
     }
 
-    public function setupPage(): View
+    public function setupPage(Request $request): View
     {
         return view('admin.channels.setup', [
-            ...$this->channelPageData(),
+            ...$this->channelPageData($request),
         ]);
     }
 
@@ -393,11 +394,11 @@ class ChannelController extends Controller
         return back()->with('status', 'Channel account saved.');
     }
 
-    public function edit(ChannelAccount $account): View
+    public function edit(Request $request, ChannelAccount $account): View
     {
         return view('admin.channels.edit', [
             'account' => $account,
-            ...$this->channelPageData(),
+            ...$this->channelPageData($request),
         ]);
     }
 
@@ -644,18 +645,32 @@ class ChannelController extends Controller
     /**
      * @return array{
      *     accounts: Collection<int, ChannelAccount>,
-     *     logs: Collection<int, ChannelSyncLog>,
+     *     logs: LengthAwarePaginator,
      *     mappings: Collection<int, ChannelMapping>,
      *     properties: Collection<int, Property>,
      *     rooms: Collection<int, Room>,
      *     testEndpoints: array<int, string>,
      * }
      */
-    private function channelPageData(): array
+    private function channelPageData(Request $request): array
     {
+        $logsQuery = ChannelSyncLog::query()->latest();
+
+        if ($search = $request->input('log_search')) {
+            $logsQuery->where(function ($q) use ($search) {
+                $q->where('channel', 'like', "%{$search}%")
+                    ->orWhere('operation', 'like', "%{$search}%")
+                    ->orWhere('status', 'like', "%{$search}%");
+            });
+        }
+
+        if ($status = $request->input('log_status')) {
+            $logsQuery->where('status', $status);
+        }
+
         return [
             'accounts' => ChannelAccount::query()->withCount('mappings')->latest()->get(),
-            'logs' => ChannelSyncLog::query()->latest()->limit(20)->get(),
+            'logs' => $logsQuery->paginate(15)->withQueryString(),
             'mappings' => ChannelMapping::query()->with(['property', 'room', 'account'])->latest()->get(),
             'pricingRules' => PricingRule::query()->with(['property', 'room'])->orderByDesc('created_at')->limit(20)->get(),
             'pricingOverrides' => PricingOverride::query()->with(['room'])->orderByDesc('created_at')->limit(20)->get(),

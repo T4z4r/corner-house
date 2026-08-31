@@ -77,6 +77,10 @@ class SettingsSeeder extends Seeder
             ['group' => 'website', 'key' => 'platform_airbnb_url', 'value' => '', 'label' => 'Airbnb listing URL', 'cast' => 'string'],
             ['group' => 'website', 'key' => 'platform_booking_url', 'value' => '', 'label' => 'Booking.com listing URL', 'cast' => 'string'],
             ['group' => 'website', 'key' => 'platform_vrbo_url', 'value' => '', 'label' => 'VRBO listing URL', 'cast' => 'string'],
+            ['group' => 'stripe', 'key' => 'stripe_key', 'value' => '', 'label' => 'Stripe publishable key', 'cast' => 'secret'],
+            ['group' => 'stripe', 'key' => 'stripe_secret', 'value' => '', 'label' => 'Stripe secret key', 'cast' => 'secret'],
+            ['group' => 'stripe', 'key' => 'stripe_webhook_secret', 'value' => '', 'label' => 'Stripe webhook signing secret', 'cast' => 'secret'],
+            ['group' => 'stripe', 'key' => 'stripe_test_mode', 'value' => '1', 'label' => 'Test mode (use Stripe test keys)', 'cast' => 'boolean'],
         ];
 
         foreach ($defaults as $setting) {

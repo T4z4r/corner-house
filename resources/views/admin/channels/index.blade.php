@@ -212,6 +212,33 @@
     <div class="col-12">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white">Recent sync logs</div>
+            <div class="card-body pb-0">
+                <form method="GET" class="row g-2 mb-3" id="logFilterForm">
+                    <div class="col-md-4">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" name="log_search" class="form-control" placeholder="Search channel, operation, status…" value="{{ request('log_search') }}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="log_status" class="form-select form-select-sm">
+                            <option value="">All statuses</option>
+                            <option value="success" @selected(request('log_status') === 'success')>Success</option>
+                            <option value="failed" @selected(request('log_status') === 'failed')>Failed</option>
+                            <option value="pending" @selected(request('log_status') === 'pending')>Pending</option>
+                            <option value="partial" @selected(request('log_status') === 'partial')>Partial</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-sm btn-ch-primary w-100" type="submit">Filter</button>
+                    </div>
+                    @if (request('log_search') || request('log_status'))
+                        <div class="col-md-2">
+                            <a href="{{ route('admin.channels.integrations') }}" class="btn btn-sm btn-outline-secondary w-100">Clear</a>
+                        </div>
+                    @endif
+                </form>
+            </div>
             <div class="table-responsive">
                 <table class="table mb-0">
                     <thead><tr><th>Channel</th><th>Operation</th><th>Status</th><th>When</th></tr></thead>
@@ -229,6 +256,9 @@
                     </tbody>
                 </table>
             </div>
+            @if ($logs->hasPages())
+                <div class="card-footer bg-white">{{ $logs->links() }}</div>
+            @endif
         </div>
     </div>
 </div>

@@ -2,6 +2,7 @@
 
 namespace App\Services\Payment;
 
+use App\Models\Setting;
 use Stripe\StripeClient;
 use Stripe\Webhook;
 
@@ -61,7 +62,7 @@ class StripePaymentGateway implements PaymentGatewayInterface
 
     public function parseWebhook(string $payload, string $signature): array
     {
-        $secret = (string) config('services.stripe.webhook_secret');
+        $secret = (string) Setting::getValue('stripe_webhook_secret', config('services.stripe.webhook_secret', ''));
 
         $event = Webhook::constructEvent($payload, $signature, $secret);
 

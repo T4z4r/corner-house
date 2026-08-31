@@ -49,6 +49,15 @@ class SettingsController extends Controller
         ));
     }
 
+    public function stripe(): View
+    {
+        return view('admin.settings', $this->groupViewData(
+            title: 'Stripe settings',
+            subtitle: 'Configure Stripe payment processing and API keys',
+            group: 'stripe',
+        ));
+    }
+
     public function uploadImage(Request $request): JsonResponse
     {
         $validated = $request->validate([

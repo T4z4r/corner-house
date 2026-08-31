@@ -79,7 +79,7 @@
                 <div class="d-flex justify-content-between"><span>Taxes</span><span>£{{ number_format($quote['tax_amount'], 2) }}</span></div>
                 <div class="d-flex justify-content-between ch-price mt-3"><span>Total</span><span id="totalDisplay">£{{ number_format($quote['total'], 2) }}</span></div>
                 <input type="hidden" id="baseTotal" value="{{ $quote['total'] }}">
-                <p class="small text-muted mt-3 mb-0">The final amount is recalculated on the server before payment.</p>
+
             </div>
 
             <div class="ch-booking-card mt-3">

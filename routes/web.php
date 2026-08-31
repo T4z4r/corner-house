@@ -73,6 +73,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::get('/settings/mail', [SettingsController::class, 'mail'])->name('settings.mail');
         Route::get('/settings/notifications', [SettingsController::class, 'notifications'])->name('settings.notifications');
         Route::get('/settings/website', [SettingsController::class, 'website'])->name('settings.website');
+        Route::get('/settings/stripe', [SettingsController::class, 'stripe'])->name('settings.stripe');
         Route::post('/settings/upload-image', [SettingsController::class, 'uploadImage'])->name('settings.upload-image')->middleware('can:settings.update');
         Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
         Route::post('/settings', [SettingsController::class, 'store'])->name('settings.store');
