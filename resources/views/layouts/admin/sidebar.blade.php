@@ -188,6 +188,11 @@
                         <i class="bi bi-bell me-2"></i><span class="nav-text">Email notifications</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="{{ route('admin.schedule-settings') }}" class="nav-link ps-4 {{ request()->routeIs('admin.schedule-settings') ? 'active' : '' }}">
+                        <i class="bi bi-clock-history me-2"></i><span class="nav-text">Schedule settings</span>
+                    </a>
+                </li>
             @endcan
     </ul>
     <hr class="text-secondary">
@@ -292,6 +297,11 @@
             <li class="nav-item">
                 <a href="{{ route('admin.settings.notifications') }}" class="nav-link ps-4 {{ request()->routeIs('admin.settings.notifications') ? 'active' : '' }}">
                     <i class="bi bi-bell me-2"></i><span class="nav-text">Email notifications</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.schedule-settings') }}" class="nav-link ps-4 {{ request()->routeIs('admin.schedule-settings') ? 'active' : '' }}">
+                    <i class="bi bi-clock-history me-2"></i><span class="nav-text">Schedule settings</span>
                 </a>
             </li>
         @endcan

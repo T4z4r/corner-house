@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReservationController;
 use App\Http\Controllers\Admin\RevenueController;
 use App\Http\Controllers\Admin\RoomController;
+use App\Http\Controllers\Admin\ScheduleSettingsController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WebsiteManagementController;
@@ -85,6 +86,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::get('/settings/notifications', [SettingsController::class, 'notifications'])->name('settings.notifications');
         Route::get('/settings/website', [SettingsController::class, 'website'])->name('settings.website');
         Route::get('/settings/stripe', [SettingsController::class, 'stripe'])->name('settings.stripe');
+        Route::get('/settings/schedule', [ScheduleSettingsController::class, 'index'])->name('schedule-settings');
+        Route::put('/settings/schedule', [ScheduleSettingsController::class, 'update'])->name('schedule-settings.update');
         Route::post('/settings/upload-image', [SettingsController::class, 'uploadImage'])->name('settings.upload-image')->middleware('can:settings.update');
         Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
         Route::post('/settings', [SettingsController::class, 'store'])->name('settings.store');

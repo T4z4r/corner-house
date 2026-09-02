@@ -40,6 +40,7 @@ class ChannelController extends Controller
     {
         return view('admin.channels.integrations', [
             'swaggerUrl' => 'https://beds24.com/api/v2/#/',
+            'stats' => $this->buildIntegrationStats(),
             ...$this->channelPageData($request),
         ]);
     }
@@ -721,6 +722,55 @@ class ChannelController extends Controller
             'properties' => Property::query()->withCount('rooms')->orderBy('name')->get(),
             'rooms' => Room::query()->with('property')->orderBy('name')->get(),
             'testEndpoints' => Beds24Client::ALLOWED_TEST_ENDPOINTS,
+        ];
+    }
+
+    /**
+     * @return array{active_accounts: int, total_mappings: int, total_properties: int, total_rooms: int, last_sync_at: ?string, pending_reservations: int, sync_logs_today: int, failed_syncs_today: int}
+     */
+    private function buildIntegrationStats(): array
+    {
+        $activeAccounts = ChannelAccount::query()
+            ->where('provider', 'beds24')
+            ->where('status', 'active')
+            ->count();
+
+        $totalMappings = ChannelMapping::query()
+            ->where('provider', 'beds24')
+            ->count();
+
+        $totalProperties = Property::query()->count();
+        $totalRooms = Room::query()->count();
+
+        $lastSync = ChannelAccount::query()
+            ->where('provider', 'beds24')
+            ->whereNotNull('last_synced_at')
+            ->latest('last_synced_at')
+            ->value('last_synced_at');
+
+        $pendingReservations = Reservation::query()
+            ->whereNull('external_booking_id')
+            ->where('status', 'confirmed')
+            ->count();
+
+        $todayLogs = ChannelSyncLog::query()
+            ->whereDate('created_at', today())
+            ->count();
+
+        $failedToday = ChannelSyncLog::query()
+            ->whereDate('created_at', today())
+            ->where('status', 'failed')
+            ->count();
+
+        return [
+            'active_accounts' => $activeAccounts,
+            'total_mappings' => $totalMappings,
+            'total_properties' => $totalProperties,
+            'total_rooms' => $totalRooms,
+            'last_sync_at' => $lastSync?->diffForHumans(),
+            'pending_reservations' => $pendingReservations,
+            'sync_logs_today' => $todayLogs,
+            'failed_syncs_today' => $failedToday,
         ];
     }
 
