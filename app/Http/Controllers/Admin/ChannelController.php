@@ -121,6 +121,8 @@ class ChannelController extends Controller
             }
         }
 
+        $stats = $this->buildAirbnbStats($selectedAccount, $users, $listings, $reviews, $selectedListing);
+
         return view('admin.channels.airbnb', [
             'accounts' => $accounts,
             'selectedAccount' => $selectedAccount,
@@ -138,7 +140,48 @@ class ChannelController extends Controller
             'rooms' => $rooms,
             'beds24Properties' => $beds24Properties,
             'beds24Rooms' => $beds24Rooms,
+            'stats' => $stats,
         ]);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $users
+     * @param  array<int, array<string, mixed>>  $listings
+     * @param  array<int, array<string, mixed>>  $reviews
+     * @param  array<string, mixed>|null  $selectedListing
+     * @return array<string, mixed>
+     */
+    private function buildAirbnbStats(?ChannelAccount $selectedAccount, array $users, array $listings, array $reviews, ?array $selectedListing): array
+    {
+        $linkedListings = collect($listings)->filter(fn ($listing): bool => ! empty($listing['room_id']))->count();
+        $enabledListings = collect($listings)->filter(fn ($listing): bool => (bool) ($listing['enabled'] ?? false))->count();
+
+        $reviewScores = collect($reviews)->map(fn ($review): ?float => $this->extractReviewScore($review))
+            ->filter(fn (?float $score): bool => $score !== null);
+
+        $airbnbListing = is_array($selectedListing['airbnb_listing'] ?? null) ? $selectedListing['airbnb_listing'] : [];
+
+        return [
+            'user_count' => count($users),
+            'listing_count' => count($listings),
+            'linked_count' => $linkedListings,
+            'enabled_count' => $enabledListings,
+            'review_count' => count($reviews),
+            'review_avg_score' => $reviewScores->isNotEmpty() ? round($reviewScores->average(), 1) : null,
+            'bedrooms' => $airbnbListing['bedrooms'] ?? null,
+            'beds' => $airbnbListing['beds'] ?? null,
+            'mappings' => $selectedAccount?->mappings_count ?? 0,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $review
+     */
+    private function extractReviewScore(array $review): ?float
+    {
+        $score = data_get($review, 'scoring.review_score', data_get($review, 'scoring.reviewScore', data_get($review, 'review_score')));
+
+        return is_numeric($score) ? (float) $score : null;
     }
 
     public function booking(Request $request, Beds24Client $client): View
