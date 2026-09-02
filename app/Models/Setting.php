@@ -6,6 +6,7 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Schema;
 
 class Setting extends Model
 {
@@ -72,6 +73,10 @@ class Setting extends Model
      */
     public static function allCached(bool $fresh = false): Collection
     {
+        if (! Schema::hasTable('settings')) {
+            return collect();
+        }
+
         $rows = cache()->remember('settings.all', now()->addMinutes(5), function (): array {
             return self::query()->get(['key', 'value', 'cast'])->map(fn (Setting $setting): array => [
                 'key' => $setting->key,

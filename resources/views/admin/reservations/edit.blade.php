@@ -46,7 +46,7 @@
                         <select class="form-select" id="room_id" name="room_id" required>
                             <option value="">Select a room...</option>
                             @foreach ($rooms as $room)
-                                <option value="{{ $room->id }}" @selected(old('room_id', $reservation->room_id) == $room->id)>{{ $room->property->name }} — {{ $room->name }}</option>
+                                <option value="{{ $room->id }}" @selected(old('room_id', $reservation->room_id) == $room->id)>{{ $room->property?->name ?? 'Unassigned' }} — {{ $room->name }}</option>
                             @endforeach
                         </select>
                     </div>

@@ -106,11 +106,15 @@
         <div>
             <div class="ch-breadcrumb">
                 <a href="{{ route('admin.properties.index') }}">Properties</a> /
-                <a href="{{ route('admin.rooms.index', $room->property) }}">{{ $room->property->name }}</a> /
+                @if ($room->property)
+                    <a href="{{ route('admin.rooms.index', $room->property) }}">{{ $room->property->name }}</a> /
+                @else
+                    <a href="{{ route('admin.rooms.manage') }}">Rooms</a> /
+                @endif
                 {{ $room->name }}
             </div>
             <h4>{{ $room->name }}</h4>
-            <p class="ch-subtitle">{{ $room->type ?? $room->property->name }}</p>
+            <p class="ch-subtitle">{{ $room->type ?: ($room->property?->name ?? 'Room') }}</p>
         </div>
         <div class="d-flex gap-2">
             <a href="{{ route('admin.rooms.edit', $room) }}" class="btn btn-ch-primary">
@@ -158,7 +162,11 @@
                         <div class="col-md-4">
                             <div class="ch-label">Property</div>
                             <div class="fw-semibold">
-                                <a href="{{ route('admin.properties.show', $room->property) }}" class="text-decoration-none">{{ $room->property->name }}</a>
+                                @if ($room->property)
+                                    <a href="{{ route('admin.properties.show', $room->property) }}" class="text-decoration-none">{{ $room->property->name }}</a>
+                                @else
+                                    <span class="text-muted">Unassigned</span>
+                                @endif
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -244,12 +252,14 @@
                     <a href="{{ route('admin.rooms.edit', $room) }}" class="btn btn-outline-primary">
                         <i class="bi bi-pencil me-2"></i>Edit Room
                     </a>
-                    <a href="{{ route('admin.rooms.index', $room->property) }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-2"></i>Back to Rooms
-                    </a>
-                    <a href="{{ route('admin.properties.show', $room->property) }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-building me-2"></i>View Property
-                    </a>
+                    @if ($room->property)
+                        <a href="{{ route('admin.rooms.index', $room->property) }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Back to Rooms
+                        </a>
+                        <a href="{{ route('admin.properties.show', $room->property) }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-building me-2"></i>View Property
+                        </a>
+                    @endif
                 </div>
             </div>
 

@@ -5,7 +5,14 @@
 @section('content')
     <div class="ch-page-header">
         <div>
-            <div class="ch-breadcrumb"><a href="{{ route('admin.rooms.index', $room->property) }}">{{ $room->property->name }} / Rooms</a> / Edit</div>
+            <div class="ch-breadcrumb">
+                @if ($room->property)
+                    <a href="{{ route('admin.rooms.index', $room->property) }}">{{ $room->property->name }} / Rooms</a>
+                @else
+                    <a href="{{ route('admin.rooms.manage') }}">Rooms</a>
+                @endif
+                / Edit
+            </div>
             <h4>Edit Room</h4>
             <p class="ch-subtitle">{{ $room->name }}</p>
         </div>

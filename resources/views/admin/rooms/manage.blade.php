@@ -84,8 +84,12 @@
                                         <a href="{{ route('admin.rooms.show', $room) }}" class="fw-semibold text-decoration-none">{{ $room->name }}</a>
                                     </div>
                                 </td>
-                                <td class="text-muted" title="{{ $room->property->status }}">
-                                    <i class="bi bi-building me-1"></i>{{ $room->property->name }}
+                                <td class="text-muted" title="{{ $room->property?->status ?? 'Unassigned' }}">
+                                    @if ($room->property)
+                                        <i class="bi bi-building me-1"></i>{{ $room->property->name }}
+                                    @else
+                                        <i class="bi bi-dash me-1"></i>Unassigned
+                                    @endif
                                 </td>
                                 <td>{{ $room->type ?? '-' }}</td>
                                 <td class="text-center">{{ $room->capacity ?? '-' }}</td>

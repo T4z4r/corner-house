@@ -817,10 +817,10 @@ class AdminResourcesTest extends TestCase
         $this->assertDatabaseHas('properties', ['name' => 'Sea View House']);
     }
 
-    public function test_super_admin_can_delete_property_and_cascade_related_records(): void
+    public function test_super_admin_can_delete_property_and_null_orphaned_related_records(): void
     {
         $property = Property::factory()->create(['name' => 'Maple Cottage']);
-        Room::factory()->create(['property_id' => $property->id, 'name' => 'Garden Room']);
+        $room = Room::factory()->create(['property_id' => $property->id, 'name' => 'Garden Room']);
         $property->policies()->create(['type' => 'house_rules', 'title' => 'No smoking', 'content' => 'Strictly no smoking']);
 
         $this->actingAs($this->actingAsSuperAdmin())
@@ -828,8 +828,42 @@ class AdminResourcesTest extends TestCase
             ->assertRedirect(route('admin.properties.index'));
 
         $this->assertDatabaseMissing('properties', ['id' => $property->id]);
-        $this->assertDatabaseMissing('rooms', ['property_id' => $property->id]);
+        // Rooms are orphaned rather than deleted: they survive with a null property_id.
+        $this->assertDatabaseHas('rooms', ['id' => $room->id, 'property_id' => null]);
+        // Property policies still cascade-delete with the property.
         $this->assertDatabaseMissing('property_policies', ['property_id' => $property->id]);
+    }
+
+    public function test_orphaned_room_is_displayed_as_unassigned_in_management_window(): void
+    {
+        $room = Room::factory()->create(['property_id' => null, 'name' => 'Orphan Salon']);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.rooms.manage'))
+            ->assertOk()
+            ->assertSee('Orphan Salon')
+            ->assertSee('Unassigned');
+    }
+
+    public function test_orphaned_room_show_page_renders_without_a_property(): void
+    {
+        $room = Room::factory()->create(['property_id' => null, 'name' => 'Orphan Salon']);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.rooms.show', $room))
+            ->assertOk()
+            ->assertSee('Unassigned')
+            ->assertSee('Orphan Salon');
+    }
+
+    public function test_orphaned_room_edit_page_renders_without_a_property(): void
+    {
+        $room = Room::factory()->create(['property_id' => null, 'name' => 'Orphan Salon']);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.rooms.edit', $room))
+            ->assertOk()
+            ->assertSee('Orphan Salon');
     }
 
     public function test_super_admin_can_create_room_with_image(): void

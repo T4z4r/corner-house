@@ -284,7 +284,7 @@
                                 <select name="room_id" class="form-select">
                                     <option value="">All rooms</option>
                                     @foreach ($rooms as $room)
-                                        <option value="{{ $room->id }}">{{ $room->property->name }} - {{ $room->name }}</option>
+                                        <option value="{{ $room->id }}">{{ $room->property?->name ?? 'Unassigned' }} - {{ $room->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -357,7 +357,7 @@
                             <label class="form-label">Room *</label>
                             <select name="room_id" class="form-select" required>
                                 @foreach ($rooms as $room)
-                                    <option value="{{ $room->id }}">{{ $room->property->name }} - {{ $room->name }}</option>
+                                    <option value="{{ $room->id }}">{{ $room->property?->name ?? 'Unassigned' }} - {{ $room->name }}</option>
                                 @endforeach
                             </select>
                         </div>

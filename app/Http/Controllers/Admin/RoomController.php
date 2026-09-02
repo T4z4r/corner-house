@@ -109,11 +109,15 @@ class RoomController extends Controller
 
     public function destroy(Room $room): RedirectResponse
     {
-        $propertyId = $room->property_id;
+        $property = $room->property;
         $this->auditLogger->log('rooms.deleted', 'rooms', 'room', (string) $room->id, newValues: ['name' => $room->name]);
         $room->delete();
 
-        return redirect()->route('admin.rooms.index', $propertyId)->with('status', 'Room deleted.');
+        if ($property === null) {
+            return redirect()->route('admin.rooms.manage')->with('status', 'Room deleted.');
+        }
+
+        return redirect()->route('admin.rooms.index', $property)->with('status', 'Room deleted.');
     }
 
     public function destroyImage(RoomImage $image): RedirectResponse
