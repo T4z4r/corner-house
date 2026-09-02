@@ -236,7 +236,7 @@
             </div>
             @can('calendar.manage')
                 <button class="btn btn-ch-primary" data-bs-toggle="modal" data-bs-target="#blockModal">
-                    <i class="bi bi-calendar-plus me-1"></i>Add block
+                    <i class="bi bi-calendar-plus me-1"></i>Add Item
                 </button>
             @endcan
         </div>

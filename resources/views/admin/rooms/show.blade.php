@@ -208,7 +208,7 @@
                     <div class="d-flex align-items-center gap-2">
                         @can('calendar.manage')
                             <button class="btn btn-sm btn-ch-primary" data-bs-toggle="modal" data-bs-target="#blockModal">
-                                <i class="bi bi-calendar-plus me-1"></i>Add block
+                                <i class="bi bi-calendar-plus me-1"></i>Add Item
                             </button>
                         @endcan
                         <div class="room-cal-nav">
