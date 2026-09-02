@@ -34,6 +34,22 @@ class SystemNotificationService
         );
     }
 
+    public function reservationUpdated(Reservation $reservation, ?int $actorId = null): void
+    {
+        $this->broadcast(
+            title: 'Reservation updated',
+            message: sprintf('Reservation %s has been updated.', $reservation->reference),
+            url: route('admin.reservations.show', $reservation),
+            level: 'info',
+            icon: 'bi-calendar-check',
+            actorId: $actorId,
+            metadata: [
+                'reservation_id' => $reservation->id,
+                'reference' => $reservation->reference,
+            ],
+        );
+    }
+
     public function reservationCancelled(Reservation $reservation, ?int $actorId = null): void
     {
         $this->broadcast(

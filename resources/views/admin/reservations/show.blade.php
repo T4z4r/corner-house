@@ -19,6 +19,11 @@
             <p class="ch-subtitle">{{ $reservation->room?->name }} · {{ $reservation->room?->property?->name }}</p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
+            @can('reservations.update')
+                <a href="{{ route('admin.reservations.edit', $reservation) }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-pencil me-1"></i>Edit
+                </a>
+            @endcan
             @can('channels.configure')
                 <form method="POST" action="{{ route('admin.channels.bookings.publish', $reservation) }}">
                     @csrf
@@ -48,6 +53,13 @@
                     </button>
                 @endcan
             @endif
+            @can('reservations.delete')
+                <form method="POST" action="{{ route('admin.reservations.destroy', $reservation) }}" onsubmit="return confirm('Delete this booking permanently?');">
+                    @csrf
+                    @method('DELETE')
+                    <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Delete</button>
+                </form>
+            @endcan
         </div>
     </div>
 

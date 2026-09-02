@@ -427,6 +427,99 @@ class AdminResourcesTest extends TestCase
         $this->assertDatabaseHas('reservations', ['source' => 'manual', 'status' => 'confirmed']);
     }
 
+    public function test_super_admin_can_view_the_reservation_edit_form(): void
+    {
+        $reservation = Reservation::factory()->create([
+            'guests_count' => 2,
+        ]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.reservations.edit', $reservation))
+            ->assertOk()
+            ->assertSee('Edit Reservation')
+            ->assertSee($reservation->room->name);
+    }
+
+    public function test_super_admin_can_update_a_reservation(): void
+    {
+        $reservation = Reservation::factory()->create([
+            'check_in' => now()->addDays(10)->toDateString(),
+            'check_out' => now()->addDays(12)->toDateString(),
+            'guests_count' => 2,
+            'notes' => 'Original note',
+        ]);
+
+        $newCheckIn = now()->addDays(20)->toDateString();
+        $newCheckOut = now()->addDays(23)->toDateString();
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->put(route('admin.reservations.update', $reservation), [
+                'room_id' => $reservation->room_id,
+                'check_in' => $newCheckIn,
+                'check_out' => $newCheckOut,
+                'guests_count' => 3,
+                'guest_email' => 'updated@example.com',
+                'guest_first_name' => 'Alice',
+                'guest_last_name' => 'Brown',
+                'notes' => 'Updated note',
+            ])
+            ->assertRedirect(route('admin.reservations.show', $reservation))
+            ->assertSessionHas('status');
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'guests_count' => 3,
+            'notes' => 'Updated note',
+        ]);
+
+        $updated = $reservation->fresh();
+        $this->assertSame($newCheckIn, $updated->check_in->format('Y-m-d'));
+        $this->assertSame($newCheckOut, $updated->check_out->format('Y-m-d'));
+    }
+
+    public function test_super_admin_can_delete_an_unpaid_reservation(): void
+    {
+        $reservation = Reservation::factory()->create([
+            'payment_status' => 'unpaid',
+            'paid_amount' => 0,
+        ]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->delete(route('admin.reservations.destroy', $reservation))
+            ->assertRedirect(route('admin.reservations.index'));
+
+        $this->assertDatabaseMissing('reservations', ['id' => $reservation->id]);
+    }
+
+    public function test_super_admin_cannot_delete_a_paid_reservation(): void
+    {
+        $reservation = Reservation::factory()->create([
+            'payment_status' => 'paid',
+            'paid_amount' => 100,
+        ]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->delete(route('admin.reservations.destroy', $reservation))
+            ->assertRedirect()
+            ->assertSessionHasErrors('error');
+
+        $this->assertDatabaseHas('reservations', ['id' => $reservation->id]);
+    }
+
+    public function test_admin_without_reservation_update_permission_cannot_edit(): void
+    {
+        $role = Role::create(['name' => 'Booking Editor', 'guard_name' => 'web']);
+        $role->givePermissionTo('reservations.view');
+        $user = User::factory()->create();
+        $user->assignRole($role);
+
+        $reservation = Reservation::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('admin.reservations.edit', $reservation))
+            ->assertForbidden();
+    }
+
     public function test_super_admin_can_resync_a_booking_to_beds24_from_the_reservation_page(): void
     {
         $account = ChannelAccount::factory()->create([

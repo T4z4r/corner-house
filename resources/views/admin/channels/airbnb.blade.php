@@ -159,15 +159,21 @@
                     <div class="border-bottom py-3 {{ $selectedUserId === $user['airbnb_user_id'] ? 'bg-light rounded px-2' : '' }}">
                         <div class="d-flex justify-content-between gap-3 align-items-center">
                             <div class="d-flex gap-3 align-items-center">
-                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
-                                    <span class="fw-semibold text-primary">{{ strtoupper(substr($user['first_name'], 0, 1)) }}</span>
-                                </div>
+                                @if ($user['picture'])
+                                    <img
+                                        src="{{ $user['picture'] }}"
+                                        alt="{{ $user['first_name'] }}"
+                                        class="rounded-circle"
+                                        style="width: 42px; height: 42px; object-fit: cover;"
+                                    >
+                                @else
+                                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                                        <span class="fw-semibold text-primary">{{ strtoupper(substr($user['first_name'], 0, 1)) }}</span>
+                                    </div>
+                                @endif
                                 <div>
                                     <strong>{{ $user['first_name'] }}</strong>
                                     <div class="small text-muted">User ID: {{ $user['airbnb_user_id'] }}</div>
-                                    @if ($user['picture'])
-                                        <div class="small text-muted text-break">Avatar available</div>
-                                    @endif
                                 </div>
                             </div>
                             <a

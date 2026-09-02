@@ -85,6 +85,9 @@
                                 </td>
                                 <td class="text-end">
                                     <a href="{{ route('admin.reservations.show', $reservation) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                                    @can('reservations.update')
+                                        <a href="{{ route('admin.reservations.edit', $reservation) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                                    @endcan
                                 </td>
                             </tr>
                             @empty
