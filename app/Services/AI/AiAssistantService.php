@@ -338,6 +338,7 @@ class AiAssistantService
             'about the rooms', 'your rooms', 'do you have rooms', 'what room',
             'bedrooms', 'bedroom', 'sleep', 'capacity', 'how many guests', 'how many people',
             'is there a room', 'room with',
+            'what are the rooms', 'rooms available', 'are there rooms', 'list of rooms', 'show me the rooms',
         ];
 
         foreach ($patterns as $pattern) {

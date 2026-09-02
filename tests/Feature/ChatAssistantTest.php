@@ -111,6 +111,37 @@ class ChatAssistantTest extends TestCase
             ->assertJsonPath('intent', 'rooms');
     }
 
+    public function test_which_rooms_are_available_returns_saved_room_details(): void
+    {
+        $property = Property::factory()->create(['name' => 'Harbour View House']);
+        Room::factory()->create([
+            'property_id' => $property->id,
+            'name' => 'The Admiral Suite',
+            'type' => 'studio',
+            'sleeps' => 2,
+            'bedrooms' => 1,
+            'bathrooms' => 1,
+            'base_rate' => 145,
+            'status' => 'active',
+        ]);
+        Room::factory()->create([
+            'property_id' => $property->id,
+            'name' => 'The Chart Room',
+            'type' => 'double',
+            'sleeps' => 2,
+            'base_rate' => 120,
+            'status' => 'active',
+        ]);
+
+        $this->postJson('/api/v1/chat', [
+            'message' => 'what are the rooms available',
+            'session_id' => 'chat-rooms-available',
+        ])->assertOk()
+            ->assertJsonPath('intent', 'rooms')
+            ->assertSee('The Admiral Suite', false)
+            ->assertSee('The Chart Room', false);
+    }
+
     public function test_availability_without_dates_requests_dates_and_booking_page(): void
     {
         Property::factory()->create();
