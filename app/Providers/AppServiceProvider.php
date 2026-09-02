@@ -11,6 +11,7 @@ use App\Services\Payment\FakePaymentGateway;
 use App\Services\Payment\PaymentGatewayInterface;
 use App\Services\Payment\StripePaymentGateway;
 use App\Services\System\MailConfigurationService;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -50,6 +51,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Schema::defaultStringLength(191);
+
+        Paginator::useBootstrapFive();
 
         $this->app->make(MailConfigurationService::class)->apply();
 
