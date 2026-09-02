@@ -41,6 +41,10 @@
         color: var(--ch-muted);
     }
 
+    .ch-stat-card .min-w-0 {
+        min-width: 0;
+    }
+
     .ch-view-tabs .nav-link {
         font-weight: 600;
         color: var(--ch-muted);
