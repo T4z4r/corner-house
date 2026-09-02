@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FoodAndDrink;
 use App\Services\Audit\AuditLogger;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -60,7 +61,7 @@ class FoodAndDrinkController extends Controller
             'address' => ['nullable', 'string', 'max:500'],
             'phone' => ['nullable', 'string', 'max:50'],
             'website' => ['nullable', 'url', 'max:500'],
-            'image' => ['nullable', 'image', 'max:5120'],
+            'image' => ['nullable', 'max:5120'],
             'is_featured' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
@@ -72,6 +73,9 @@ class FoodAndDrinkController extends Controller
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('food-drink', 'public');
+        } elseif ($request->has('image')) {
+            // The dropzone submits a stored path (or empty string when none uploaded).
+            $data['image'] = $request->string('image')->toString() ?: null;
         }
 
         FoodAndDrink::create($data);
@@ -94,7 +98,7 @@ class FoodAndDrinkController extends Controller
             'address' => ['nullable', 'string', 'max:500'],
             'phone' => ['nullable', 'string', 'max:50'],
             'website' => ['nullable', 'url', 'max:500'],
-            'image' => ['nullable', 'image', 'max:5120'],
+            'image' => ['nullable', 'max:5120'],
             'is_featured' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
@@ -109,6 +113,16 @@ class FoodAndDrinkController extends Controller
                 \Storage::disk('public')->delete($foodAndDrink->image);
             }
             $data['image'] = $request->file('image')->store('food-drink', 'public');
+        } elseif ($request->has('image')) {
+            // The dropzone submits a stored path (or empty string when removed).
+            $newImage = $request->string('image')->toString() ?: null;
+
+            if ($foodAndDrink->image !== $newImage && $foodAndDrink->image
+                && \Storage::disk('public')->exists($foodAndDrink->image)) {
+                \Storage::disk('public')->delete($foodAndDrink->image);
+            }
+
+            $data['image'] = $newImage;
         }
 
         $foodAndDrink->update($data);
@@ -139,5 +153,39 @@ class FoodAndDrinkController extends Controller
         $this->auditLogger->log('food_and_drink.featured_toggled', 'food_and_drinks', 'food_and_drink', (string) $foodAndDrink->id);
 
         return back()->with('status', 'Featured status updated.');
+    }
+
+    public function uploadImage(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'file' => ['required', 'image', 'max:5120'],
+        ]);
+
+        $path = $request->file('file')->store('food-drink', 'public');
+
+        return response()->json([
+            'ok' => true,
+            'path' => $path,
+            'url' => \Storage::disk('public')->url($path),
+        ]);
+    }
+
+    public function destroyUploadedImage(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'path' => ['required', 'string'],
+        ]);
+
+        $path = $validated['path'];
+
+        if (! str_starts_with($path, 'food-drink/')) {
+            return response()->json(['ok' => false], 422);
+        }
+
+        if (\Storage::disk('public')->exists($path)) {
+            \Storage::disk('public')->delete($path);
+        }
+
+        return response()->json(['ok' => true]);
     }
 }

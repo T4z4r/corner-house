@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PlacesOfInterest;
 use App\Services\Audit\AuditLogger;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -62,7 +63,7 @@ class PlacesOfInterestController extends Controller
             'distance' => ['nullable', 'string', 'max:100'],
             'website' => ['nullable', 'url', 'max:500'],
             'phone' => ['nullable', 'string', 'max:50'],
-            'image' => ['nullable', 'image', 'max:5120'],
+            'image' => ['nullable', 'max:5120'],
             'is_active' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
@@ -72,6 +73,9 @@ class PlacesOfInterestController extends Controller
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('places', 'public');
+        } elseif ($request->has('image')) {
+            // The dropzone submits a stored path (or empty string when none uploaded).
+            $data['image'] = $request->string('image')->toString() ?: null;
         }
 
         PlacesOfInterest::create($data);
@@ -95,7 +99,7 @@ class PlacesOfInterestController extends Controller
             'distance' => ['nullable', 'string', 'max:100'],
             'website' => ['nullable', 'url', 'max:500'],
             'phone' => ['nullable', 'string', 'max:50'],
-            'image' => ['nullable', 'image', 'max:5120'],
+            'image' => ['nullable', 'max:5120'],
             'is_active' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
@@ -108,6 +112,16 @@ class PlacesOfInterestController extends Controller
                 \Storage::disk('public')->delete($place->image);
             }
             $data['image'] = $request->file('image')->store('places', 'public');
+        } elseif ($request->has('image')) {
+            // The dropzone submits a stored path (or empty string when removed).
+            $newImage = $request->string('image')->toString() ?: null;
+
+            if ($place->image !== $newImage && $place->image
+                && \Storage::disk('public')->exists($place->image)) {
+                \Storage::disk('public')->delete($place->image);
+            }
+
+            $data['image'] = $newImage;
         }
 
         $place->update($data);
@@ -130,5 +144,39 @@ class PlacesOfInterestController extends Controller
         $this->auditLogger->log('places_of_interest.toggled', 'places_of_interests', 'places_of_interest', (string) $place->id);
 
         return back()->with('status', 'Status updated.');
+    }
+
+    public function uploadImage(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'file' => ['required', 'image', 'max:5120'],
+        ]);
+
+        $path = $request->file('file')->store('places', 'public');
+
+        return response()->json([
+            'ok' => true,
+            'path' => $path,
+            'url' => \Storage::disk('public')->url($path),
+        ]);
+    }
+
+    public function destroyUploadedImage(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'path' => ['required', 'string'],
+        ]);
+
+        $path = $validated['path'];
+
+        if (! str_starts_with($path, 'places/')) {
+            return response()->json(['ok' => false], 422);
+        }
+
+        if (\Storage::disk('public')->exists($path)) {
+            \Storage::disk('public')->delete($path);
+        }
+
+        return response()->json(['ok' => true]);
     }
 }

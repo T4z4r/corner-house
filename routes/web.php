@@ -105,7 +105,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::delete('/food-drink/{foodAndDrink}', [FoodAndDrinkController::class, 'destroy'])->name('food-drink.destroy')->middleware('can:food-drink.delete');
         Route::post('/food-drink/{foodAndDrink}/toggle', [FoodAndDrinkController::class, 'toggle'])->name('food-drink.toggle')->middleware('can:food-drink.update');
         Route::post('/food-drink/{foodAndDrink}/toggle-featured', [FoodAndDrinkController::class, 'toggleFeatured'])->name('food-drink.toggle-featured')->middleware('can:food-drink.update');
-        Route::post('/food-drink/{foodAndDrink}/toggle-featured', [FoodAndDrinkController::class, 'toggleFeatured'])->name('food-drink.toggle-featured')->middleware('can:food-drink.update');
+        Route::post('/food-drink/upload-image', [FoodAndDrinkController::class, 'uploadImage'])->name('food-drink.upload-image')->middleware('can:food-drink.create');
+        Route::post('/food-drink/delete-uploaded-image', [FoodAndDrinkController::class, 'destroyUploadedImage'])->name('food-drink.delete-uploaded-image')->middleware('can:food-drink.create');
     });
 
     Route::middleware('can:places.view')->group(function (): void {
@@ -116,6 +117,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::put('/places/{place}', [PlacesOfInterestController::class, 'update'])->name('places.update')->middleware('can:places.update');
         Route::delete('/places/{place}', [PlacesOfInterestController::class, 'destroy'])->name('places.destroy')->middleware('can:places.delete');
         Route::post('/places/{place}/toggle', [PlacesOfInterestController::class, 'toggle'])->name('places.toggle')->middleware('can:places.update');
+        Route::post('/places/upload-image', [PlacesOfInterestController::class, 'uploadImage'])->name('places.upload-image')->middleware('can:places.create');
+        Route::post('/places/delete-uploaded-image', [PlacesOfInterestController::class, 'destroyUploadedImage'])->name('places.delete-uploaded-image')->middleware('can:places.create');
     });
 
     Route::middleware('can:addons.view')->group(function (): void {

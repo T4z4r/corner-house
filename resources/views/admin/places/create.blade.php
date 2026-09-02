@@ -70,8 +70,11 @@
                     </div>
                     <div class="col-12">
                         <label class="form-label">Image <span class="text-muted">(optional)</span></label>
-                        <input type="file" name="image" class="form-control" accept="image/*">
-                        <div class="form-text">Max 5 MB. JPG, PNG or WebP.</div>
+                        @include('admin.partials.single-image-dropzone', [
+                            'dzId' => 'places-image',
+                            'uploadRoute' => route('admin.places.upload-image'),
+                            'deleteRoute' => route('admin.places.delete-uploaded-image'),
+                        ])
                         @error('image') <div class="text-danger small">{{ $message }}</div> @enderror
                     </div>
                 </div>

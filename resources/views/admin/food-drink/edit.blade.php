@@ -59,13 +59,13 @@
                     </div>
                     <div class="col-12">
                         <label class="form-label">Image <span class="text-muted">(optional)</span></label>
-                        @if ($item->image)
-                            <div class="mb-2">
-                                <img src="{{ asset('storage/'.$item->image) }}" alt="{{ $item->name }}" class="rounded" style="max-height:80px;">
-                            </div>
-                        @endif
-                        <input type="file" name="image" class="form-control" accept="image/*">
-                        <div class="form-text">Max 5 MB. Leave empty to keep current image.</div>
+                        @include('admin.partials.single-image-dropzone', [
+                            'dzId' => 'food-drink-image',
+                            'currentImage' => $item->image,
+                            'itemName' => $item->name,
+                            'uploadRoute' => route('admin.food-drink.upload-image'),
+                            'deleteRoute' => route('admin.food-drink.delete-uploaded-image'),
+                        ])
                         @error('image') <div class="text-danger small">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-12">

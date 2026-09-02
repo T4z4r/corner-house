@@ -515,6 +515,92 @@ class AdminResourcesTest extends TestCase
         $this->assertTrue($item->refresh()->is_featured);
     }
 
+    public function test_super_admin_can_upload_food_and_drink_image(): void
+    {
+        Storage::fake('public');
+
+        $uploaded = $this->actingAs($this->actingAsSuperAdmin())
+            ->post(route('admin.food-drink.upload-image'), [
+                'file' => UploadedFile::fake()->image('dish.jpg', 600, 400),
+            ])
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonStructure(['path', 'url']);
+
+        $path = $uploaded->json('path');
+        $this->assertStringStartsWith('food-drink/', $path);
+        Storage::disk('public')->assertExists($path);
+    }
+
+    public function test_food_and_drink_image_upload_rejects_non_image(): void
+    {
+        Storage::fake('public');
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->post(route('admin.food-drink.upload-image'), [
+                'file' => UploadedFile::fake()->create('notes.txt', 100),
+            ])
+            ->assertSessionHasErrors('file');
+    }
+
+    public function test_super_admin_can_delete_uploaded_food_and_drink_image(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('food-drink/unused.jpg', 'image');
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->post(route('admin.food-drink.delete-uploaded-image'), [
+                'path' => 'food-drink/unused.jpg',
+            ])
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        Storage::disk('public')->assertMissing('food-drink/unused.jpg');
+    }
+
+    public function test_food_and_drink_image_delete_rejects_foreign_paths(): void
+    {
+        Storage::fake('public');
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->post(route('admin.food-drink.delete-uploaded-image'), [
+                'path' => 'places/other.jpg',
+            ])
+            ->assertStatus(422);
+    }
+
+    public function test_super_admin_can_upload_places_image(): void
+    {
+        Storage::fake('public');
+
+        $uploaded = $this->actingAs($this->actingAsSuperAdmin())
+            ->post(route('admin.places.upload-image'), [
+                'file' => UploadedFile::fake()->image('castle.jpg', 800, 600),
+            ])
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonStructure(['path', 'url']);
+
+        $path = $uploaded->json('path');
+        $this->assertStringStartsWith('places/', $path);
+        Storage::disk('public')->assertExists($path);
+    }
+
+    public function test_super_admin_can_delete_uploaded_places_image(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('places/unused.jpg', 'image');
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->post(route('admin.places.delete-uploaded-image'), [
+                'path' => 'places/unused.jpg',
+            ])
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        Storage::disk('public')->assertMissing('places/unused.jpg');
+    }
+
     public function test_super_admin_can_view_addons_index_with_pagination(): void
     {
         for ($i = 1; $i <= 21; $i++) {
