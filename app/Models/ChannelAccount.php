@@ -18,12 +18,15 @@ class ChannelAccount extends Model
         'settings',
         'last_synced_at',
         'last_error',
+        'last_message_synced_at',
+        'last_message_sync_status',
     ];
 
     protected $casts = [
         'credentials' => 'encrypted:array',
         'settings' => 'array',
         'last_synced_at' => 'datetime',
+        'last_message_synced_at' => 'datetime',
     ];
 
     protected $hidden = [

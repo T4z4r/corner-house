@@ -37,4 +37,11 @@ interface ChannelProviderInterface
      * @param  array<string, mixed>  $message
      */
     public function sendMessage(ChannelAccount $account, array $message): bool;
+
+    /**
+     * Fetch guest/channel messages.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function fetchMessages(ChannelAccount $account, array $params = []): array;
 }

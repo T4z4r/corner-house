@@ -126,6 +126,40 @@ class Beds24ChannelProvider implements ChannelProviderInterface
     }
 
     /**
+     * @param  array<string, mixed>  $params
+     * @return array<int, array<string, mixed>>
+     */
+    public function fetchMessages(ChannelAccount $account, array $params = []): array
+    {
+        $payload = $this->client->get($account, 'bookings/messages', $params);
+
+        return $this->messageList($payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<int, array<string, mixed>>
+     */
+    private function messageList(array $payload): array
+    {
+        if (isset($payload['body']) && is_array($payload['body'])) {
+            $payload = $payload['body'];
+        }
+
+        $messages = $payload['data'] ?? $payload['bookings'] ?? $payload['messages'] ?? $payload;
+
+        if (isset($messages['id'], $messages['message'])) {
+            return [$messages];
+        }
+
+        if (! is_array($messages)) {
+            return [];
+        }
+
+        return array_values(array_filter($messages, 'is_array'));
+    }
+
+    /**
      * @return array<int, ChannelMapping>
      */
     public function importPropertyRooms(ChannelAccount $account, int $propertyId): array

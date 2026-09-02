@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FoodAndDrinkController;
 use App\Http\Controllers\Admin\GalleryController;
 use App\Http\Controllers\Admin\GuestController;
+use App\Http\Controllers\Admin\MessageInboxController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PlacesOfInterestController;
@@ -280,6 +281,14 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         });
 
         Route::post('/communications/send', [CommunicationController::class, 'send'])->name('communications.send')->middleware('can:communications.send');
+    });
+
+    Route::middleware('can:communications.view')->group(function (): void {
+        Route::get('/messages', [MessageInboxController::class, 'index'])->name('messages.index');
+        Route::get('/messages/{message}', [MessageInboxController::class, 'show'])->name('messages.show');
+        Route::post('/messages/fetch', [MessageInboxController::class, 'fetch'])->name('messages.fetch')->middleware('can:channels.sync');
+        Route::post('/messages/{message}/read', [MessageInboxController::class, 'markRead'])->name('messages.read')->middleware('can:channels.sync');
+        Route::post('/messages/{message}/reply', [MessageInboxController::class, 'reply'])->name('messages.reply')->middleware('can:communications.send');
     });
 
     Route::middleware('can:chatbot.view')->group(function (): void {

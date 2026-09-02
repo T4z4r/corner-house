@@ -145,6 +145,11 @@
                     <i class="bi bi-earbuds me-2"></i><span class="nav-text">Communications</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.messages.index') }}" class="nav-link {{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
+                    <i class="bi bi-chat-dots me-2"></i><span class="nav-text">Messages</span>
+                </a>
+            </li>
         @endcan
         @can('chatbot.view')
             <li class="nav-item">
