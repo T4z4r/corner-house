@@ -56,6 +56,86 @@ class ChatAssistantTest extends TestCase
             ->assertSee('Oak Suite', false);
     }
 
+    public function test_property_question_uses_property_details(): void
+    {
+        $property = Property::factory()->create([
+            'name' => 'Harbour View House',
+            'city' => 'Brighton',
+            'capacity' => 6,
+            'bedrooms' => 3,
+            'bathrooms' => 2,
+            'check_in_from' => '16:00',
+            'check_out_until' => '11:00',
+        ]);
+
+        $this->postJson('/api/v1/chat', [
+            'message' => 'Tell me about the property and its amenities?',
+            'session_id' => 'chat-property',
+        ])->assertOk()
+            ->assertJsonPath('intent', 'property')
+            ->assertSee('Harbour View House', false)
+            ->assertSee('Brighton', false);
+    }
+
+    public function test_rooms_question_uses_room_details(): void
+    {
+        $property = Property::factory()->create(['name' => 'Harbour View House']);
+        Room::factory()->create([
+            'property_id' => $property->id,
+            'name' => 'The Admiral Suite',
+            'type' => 'studio',
+            'sleeps' => 2,
+            'bedrooms' => 1,
+            'bathrooms' => 1,
+            'base_rate' => 145,
+            'status' => 'active',
+        ]);
+
+        $this->postJson('/api/v1/chat', [
+            'message' => 'What rooms do you have?',
+            'session_id' => 'chat-rooms',
+        ])->assertOk()
+            ->assertJsonPath('intent', 'rooms')
+            ->assertSee('The Admiral Suite', false);
+    }
+
+    public function test_rooms_question_is_not_matched_as_property(): void
+    {
+        Property::factory()->create(['name' => 'Harbour View House']);
+        Room::factory()->create(['name' => 'The Admiral Suite', 'status' => 'active']);
+
+        $this->postJson('/api/v1/chat', [
+            'message' => 'Tell me about the rooms',
+            'session_id' => 'chat-rooms-2',
+        ])->assertOk()
+            ->assertJsonPath('intent', 'rooms');
+    }
+
+    public function test_availability_without_dates_requests_dates_and_booking_page(): void
+    {
+        Property::factory()->create();
+
+        $this->postJson('/api/v1/chat', [
+            'message' => 'Do you have availability?',
+            'session_id' => 'chat-avail-nodates',
+        ])->assertOk()
+            ->assertJsonPath('intent', 'availability')
+            ->assertSee('specific dates', false);
+    }
+
+    public function test_availability_accepts_relative_tomorrow_dates(): void
+    {
+        $property = Property::factory()->create();
+        Room::factory()->create(['property_id' => $property->id, 'status' => 'active', 'name' => 'Oak Suite']);
+
+        $this->postJson('/api/v1/chat', [
+            'message' => 'Are you available tomorrow?',
+            'session_id' => 'chat-avail-tomorrow',
+        ])->assertOk()
+            ->assertJsonPath('intent', 'availability')
+            ->assertSee('Oak Suite', false);
+    }
+
     public function test_weather_and_event_question_uses_area_intelligence(): void
     {
         Property::factory()->create(['latitude' => 52.234, 'longitude' => -0.893]);
