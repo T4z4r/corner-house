@@ -10,6 +10,7 @@
         display: grid;
         grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.9fr);
         gap: 1rem;
+        min-width: 0;
     }
 
     .calendar-toolbar {
@@ -45,6 +46,7 @@
         grid-template-columns: repeat(7, minmax(0, 1fr));
         gap: 0.5rem;
         padding: 1rem;
+        min-width: 0;
     }
 
     .calendar-weekday {
@@ -151,10 +153,20 @@
         display: flex;
         flex-direction: column;
         gap: 1rem;
+        min-width: 0;
+    }
+
+    .calendar-side .card {
+        overflow: hidden;
     }
 
     .calendar-side .card-header {
         background: linear-gradient(180deg, rgba(13, 110, 253, 0.04), rgba(255, 255, 255, 0));
+    }
+
+    .calendar-side .card-body {
+        overflow-y: auto;
+        max-height: 400px;
     }
 
     .calendar-empty {

@@ -27,6 +27,7 @@ use App\Http\Controllers\Auth\AccountController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Website\BookingController;
+use App\Http\Controllers\Website\IcalController;
 use App\Http\Controllers\Website\WebsiteController;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +47,8 @@ Route::post('/contact', [WebsiteController::class, 'submitContact'])->name('cont
 Route::get('/privacy', [WebsiteController::class, 'privacy'])->name('privacy');
 Route::get('/terms', [WebsiteController::class, 'terms'])->name('terms');
 Route::get('/cancellation-policy', [WebsiteController::class, 'cancellation'])->name('cancellation');
+
+Route::get('/ical/{room}', IcalController::class)->name('ical.room');
 
 Route::get('/book', [BookingController::class, 'search'])->name('booking.search');
 Route::get('/book/room/{room}', [BookingController::class, 'details'])->name('booking.details');
