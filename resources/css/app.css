@@ -1941,3 +1941,64 @@ body.ch-collapsed .ch-sidebar hr {
 .gallery-item.is-dragging { opacity: 0.35; }
 .gallery-item.drag-over { border-color: var(--ch-primary, #1f6f43) !important; border-style: dashed !important; background: rgba(31,111,67,0.03); }
 
+/* ============ Device View Switch ============ */
+.ch-device-preview {
+    transition: all 0.3s ease;
+}
+
+body.ch-device-tablet .flex-grow-1.d-flex.flex-column {
+    max-width: 768px;
+    margin: 0 auto;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.15);
+    min-height: 100vh;
+    background: var(--ch-surface);
+}
+
+body.ch-device-mobile .flex-grow-1.d-flex.flex-column {
+    max-width: 375px;
+    margin: 0 auto;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.15);
+    min-height: 100vh;
+    background: var(--ch-surface);
+}
+
+body.ch-device-tablet .ch-sidebar,
+body.ch-device-mobile .ch-sidebar {
+    display: none !important;
+}
+
+body.ch-device-tablet .navbar .d-md-none,
+body.ch-device-mobile .navbar .d-md-none {
+    display: inline-flex !important;
+}
+
+body.ch-device-tablet .navbar .d-none.d-md-inline-flex,
+body.ch-device-mobile .navbar .d-none.d-md-inline-flex {
+    display: none !important;
+}
+
+#deviceSwitcher .dropdown-item.active {
+    background-color: var(--ch-primary);
+    color: white;
+}
+
+.ch-device-indicator {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    background: var(--ch-primary);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    z-index: 1050;
+    box-shadow: var(--ch-shadow-lg);
+    display: none;
+}
+
+body.ch-device-tablet .ch-device-indicator,
+body.ch-device-mobile .ch-device-indicator {
+    display: block;
+}
+

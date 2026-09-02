@@ -19,6 +19,7 @@ window.FullCalendar = { Calendar, dayGridPlugin, timeGridPlugin, listPlugin, int
 document.addEventListener('DOMContentLoaded', function () {
     initChatWidget();
     initNotificationWidget();
+    initDeviceSwitcher();
     try {
         $('select.form-select:not(.no-select2)').each(function () {
             if (!$(this).data('select2')) {
@@ -359,5 +360,51 @@ document.addEventListener('DOMContentLoaded', function () {
         updateSummary(Number(widget.dataset.notificationsCount || 0));
         fetchNotifications();
         window.setInterval(fetchNotifications, 30000);
+    }
+
+    function initDeviceSwitcher() {
+        const STORAGE_KEY = 'cornerhouse.deviceView';
+        const switcher = document.getElementById('deviceSwitcher');
+        if (!switcher) return;
+
+        const buttons = switcher.querySelectorAll('[data-device]');
+        const indicator = document.createElement('div');
+        indicator.className = 'ch-device-indicator';
+        document.body.appendChild(indicator);
+
+        function applyDevice(device) {
+            document.body.classList.remove('ch-device-tablet', 'ch-device-mobile');
+            if (device === 'tablet') {
+                document.body.classList.add('ch-device-tablet');
+                indicator.textContent = 'Tablet View (768px)';
+            } else if (device === 'mobile') {
+                document.body.classList.add('ch-device-mobile');
+                indicator.textContent = 'Mobile View (375px)';
+            } else {
+                indicator.textContent = '';
+            }
+
+            buttons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.device === device);
+            });
+
+            try {
+                localStorage.setItem(STORAGE_KEY, device);
+            } catch (e) { /* storage unavailable */ }
+        }
+
+        function getStoredDevice() {
+            try {
+                return localStorage.getItem(STORAGE_KEY) || 'desktop';
+            } catch (e) {
+                return 'desktop';
+            }
+        }
+
+        applyDevice(getStoredDevice());
+
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => applyDevice(btn.dataset.device));
+        });
     }
 });

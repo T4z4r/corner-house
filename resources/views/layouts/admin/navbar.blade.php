@@ -14,6 +14,16 @@
     </button>
     <span class="navbar-brand mb-0 h6 d-md-none">{{ $propertyName }}</span>
     <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown d-none d-md-inline-block" id="deviceSwitcher">
+            <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Device preview">
+                <i class="bi bi-phone me-1"></i><span class="d-none d-lg-inline">Device</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><button class="dropdown-item" data-device="desktop"><i class="bi bi-display me-2"></i>Desktop</button></li>
+                <li><button class="dropdown-item" data-device="tablet"><i class="bi bi-tablet me-2"></i>Tablet (768px)</button></li>
+                <li><button class="dropdown-item" data-device="mobile"><i class="bi bi-phone me-2"></i>Mobile (375px)</button></li>
+            </ul>
+        </div>
         <span class="ch-badge ch-badge-muted d-none d-sm-inline"><i class="bi bi-calendar3 me-1"></i>{{ now()->format('l, d M Y') }}</span>
         <div
             class="dropdown"
