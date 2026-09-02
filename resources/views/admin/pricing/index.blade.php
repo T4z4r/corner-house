@@ -108,74 +108,6 @@
                                             </form>
                                         </td>
                                     </tr>
-
-                                    <div class="modal fade" id="editRule{{ $rule->id }}" tabindex="-1">
-                                        <div class="modal-dialog">
-                                            <form method="POST" action="{{ route('admin.pricing.rules.update', $rule) }}" class="modal-content">
-                                                @csrf
-                                                @method('PUT')
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title">Edit rule</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Name</label>
-                                                        <input type="text" name="name" class="form-control" value="{{ $rule->name }}" required>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-6 mb-3">
-                                                            <label class="form-label">Start date</label>
-                                                            <input type="date" name="start_date" class="form-control" value="{{ $rule->start_date?->format('Y-m-d') }}">
-                                                        </div>
-                                                        <div class="col-6 mb-3">
-                                                            <label class="form-label">End date</label>
-                                                            <input type="date" name="end_date" class="form-control" value="{{ $rule->end_date?->format('Y-m-d') }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-6 mb-3">
-                                                            <label class="form-label">Priority</label>
-                                                            <input type="number" name="priority" class="form-control" min="1" max="10" value="{{ $rule->priority }}" required>
-                                                        </div>
-                                                        <div class="col-6 mb-3">
-                                                            <label class="form-label">Adjustment</label>
-                                                            <div class="input-group">
-                                                                <select name="adjustment_type" class="form-select">
-                                                                    <option value="percent" @selected($rule->adjustment_type === 'percent')>%</option>
-                                                                    <option value="multiplier" @selected($rule->adjustment_type === 'multiplier')>x</option>
-                                                                    <option value="amount" @selected($rule->adjustment_type === 'amount')>&pound;</option>
-                                                                </select>
-                                                                <input type="number" name="adjustment_value" step="0.01" class="form-control" value="{{ $rule->adjustment_value }}" required>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-6 mb-3">
-                                                            <label class="form-label">Minimum stay</label>
-                                                            <input type="number" name="minimum_stay" min="1" class="form-control" value="{{ $rule->minimum_stay }}">
-                                                        </div>
-                                                        <div class="col-6 mb-3">
-                                                            <label class="form-label">Maximum stay</label>
-                                                            <input type="number" name="max_stay" min="1" class="form-control" value="{{ $rule->max_stay }}">
-                                                        </div>
-                                                        <div class="col-6 mb-3">
-                                                            <label class="form-label">Occupancy %</label>
-                                                            <input type="number" name="occupancy_threshold" min="0" max="100" class="form-control" value="{{ $rule->occupancy_threshold }}">
-                                                        </div>
-                                                    </div>
-                                                    <div class="form-check form-switch mb-2">
-                                                        <input class="form-check-input" type="checkbox" name="is_enabled" value="1" @checked($rule->is_enabled)>
-                                                        <label class="form-check-label">Enabled</label>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                                                    <button class="btn btn-ch-primary">Save</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
                                 @empty
                                     @include('layouts.admin._empty', [
                                         'icon' => 'bi-tags',
@@ -190,6 +122,90 @@
                 </div>
             </div>
         </div>
+
+        @foreach ($rules as $rule)
+            <div class="modal fade" id="editRule{{ $rule->id }}" tabindex="-1" aria-labelledby="editRule{{ $rule->id }}Label" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                    <form method="POST" action="{{ route('admin.pricing.rules.update', $rule) }}" class="modal-content">
+                        @csrf
+                        @method('PUT')
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editRule{{ $rule->id }}Label">Edit rule</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">Name *</label>
+                                    <input type="text" name="name" class="form-control" value="{{ $rule->name }}" required>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">Rule type</label>
+                                    <input type="text" class="form-control" value="{{ ucfirst(str_replace('_', ' ', $rule->rule_type)) }}" disabled>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">Start date <span class="text-muted small">(optional)</span></label>
+                                    <input type="date" name="start_date" class="form-control" value="{{ $rule->start_date?->format('Y-m-d') }}">
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">End date</label>
+                                    <input type="date" name="end_date" class="form-control" value="{{ $rule->end_date?->format('Y-m-d') }}">
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">Priority *</label>
+                                    <input type="number" name="priority" class="form-control" min="1" max="10" value="{{ $rule->priority }}" required>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">Adjustment *</label>
+                                    <div class="input-group">
+                                        <select name="adjustment_type" class="form-select">
+                                            <option value="percent" @selected($rule->adjustment_type === 'percent')>%</option>
+                                            <option value="multiplier" @selected($rule->adjustment_type === 'multiplier')>x</option>
+                                            <option value="amount" @selected($rule->adjustment_type === 'amount')>&pound;</option>
+                                        </select>
+                                        <input type="number" name="adjustment_value" step="0.01" class="form-control" value="{{ $rule->adjustment_value }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">Minimum stay</label>
+                                    <input type="number" name="minimum_stay" min="1" class="form-control" value="{{ $rule->minimum_stay }}">
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">Maximum stay</label>
+                                    <input type="number" name="max_stay" min="1" class="form-control" value="{{ $rule->max_stay }}">
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">Occupancy threshold %</label>
+                                    <input type="number" name="occupancy_threshold" min="0" max="100" class="form-control" value="{{ $rule->occupancy_threshold }}">
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">Days before check-in</label>
+                                    <input type="number" name="days_before_checkin" min="0" class="form-control" value="{{ $rule->days_before_checkin }}">
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-check-label form-label d-block">&nbsp;</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="apply_weekends_only" value="1" @checked($rule->apply_weekends_only)>
+                                        <label class="form-check-label">Weekends only</label>
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-check-label form-label d-block">&nbsp;</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="is_enabled" value="1" @checked($rule->is_enabled)>
+                                        <label class="form-check-label">Enabled</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                            <button class="btn btn-ch-primary">Save changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endforeach
 
         <div class="tab-pane fade" id="overrides" role="tabpanel">
             <div class="card border-0 shadow-sm">

@@ -10,6 +10,7 @@ use App\Models\FoodAndDrink;
 use App\Models\Guest;
 use App\Models\KnowledgeBaseArticle;
 use App\Models\PlacesOfInterest;
+use App\Models\PricingRule;
 use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Room;
@@ -253,6 +254,52 @@ class AdminResourcesTest extends TestCase
             ->assertSee('New override')
             ->assertSee('Generate seasonal pricing')
             ->assertDontSee('Post to Beds24');
+    }
+
+    public function test_super_admin_can_edit_a_pricing_rule_via_modal(): void
+    {
+        $property = Property::factory()->create();
+        $rule = PricingRule::create([
+            'property_id' => $property->id,
+            'name' => 'Summer high season',
+            'rule_type' => 'seasonal',
+            'priority' => 4,
+            'adjustment_type' => 'percent',
+            'adjustment_value' => 15,
+            'minimum_stay' => 2,
+            'max_stay' => 5,
+            'is_enabled' => true,
+        ]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.pricing.index'))
+            ->assertOk()
+            ->assertSee('Summer high season')
+            ->assertSee('id="editRule'.$rule->id.'"', false)
+            ->assertSee($rule->adjustment_value, false);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->put(route('admin.pricing.rules.update', $rule), [
+                'name' => 'Summer high season',
+                'priority' => 5,
+                'adjustment_type' => 'percent',
+                'adjustment_value' => 20,
+                'minimum_stay' => 2,
+                'max_stay' => 5,
+                'occupancy_threshold' => null,
+                'days_before_checkin' => null,
+                'apply_weekends_only' => false,
+                'is_enabled' => true,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Pricing rule updated.');
+
+        $this->assertDatabaseHas('pricing_rules', [
+            'id' => $rule->id,
+            'name' => 'Summer high season',
+            'priority' => 5,
+            'adjustment_value' => 20.0,
+        ]);
     }
 
     public function test_super_admin_can_generate_ai_seasonal_pricing_rules(): void
