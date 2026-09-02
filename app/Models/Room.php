@@ -26,6 +26,7 @@ class Room extends Model
         'base_rate',
         'min_stay',
         'max_stay',
+        'features',
     ];
 
     protected $casts = [
@@ -37,6 +38,7 @@ class Room extends Model
         'base_rate' => 'decimal:2',
         'min_stay' => 'integer',
         'max_stay' => 'integer',
+        'features' => 'array',
     ];
 
     public function property(): BelongsTo

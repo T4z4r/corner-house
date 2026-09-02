@@ -4,80 +4,86 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', $propertyName) | {{ $propertyName }}</title>
+    <title>@yield('title', $propertyName) | Corner House, Braunston</title>
+    <meta name="description" content="Corner House is a 175-year-old ivy-clad country house in Braunston, the Heart of the Waterways. Five ensuite bedrooms, a 25-foot kitchen, hot tub, cinema room and gym. Sleeps 12 adults and 2 children.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400&family=Karla:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+    @vite(['resources/css/website.css', 'resources/js/website.js'])
+    @stack('styles')
 </head>
-<body class="ch-website">
-<div class="ch-site-grain" aria-hidden="true"></div>
-<nav class="navbar navbar-expand-lg ch-public-nav sticky-top">
-    <div class="container">
-        <a class="navbar-brand" href="{{ route('home') }}">
-            <span class="ch-brand-mark"></span>{{ $propertyName }}
+<body>
+
+<header class="site-header">
+    <div class="wrap">
+        <a class="brand" href="#home" aria-label="Corner House, Braunston - home">
+            @if ($site['logo'])
+                <img src="{{ asset('storage/'.$site['logo']) }}" alt="{{ $propertyName }}">
+            @else
+                <span>{{ $propertyName }}</span>
+            @endif
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#publicNav" aria-label="Menu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="publicNav">
-            <ul class="navbar-nav ms-auto align-items-lg-center">
-                <li class="nav-item"><a class="nav-link {{ request()->routeIs('property') ? 'active' : '' }}" href="{{ route('property') }}">The House</a></li>
-                <li class="nav-item"><a class="nav-link {{ request()->routeIs('amenities') ? 'active' : '' }}" href="{{ route('amenities') }}">Amenities</a></li>
-                <li class="nav-item"><a class="nav-link {{ request()->routeIs('gallery') ? 'active' : '' }}" href="{{ route('gallery') }}">Gallery</a></li>
-                <li class="nav-item"><a class="nav-link {{ request()->routeIs('food-drink') ? 'active' : '' }}" href="{{ route('food-drink') }}">Food & Drink</a></li>
-                <li class="nav-item"><a class="nav-link {{ request()->routeIs('places') ? 'active' : '' }}" href="{{ route('places') }}">Places</a></li>
-                <li class="nav-item"><a class="nav-link {{ request()->routeIs('location') ? 'active' : '' }}" href="{{ route('location') }}">Location</a></li>
-                <li class="nav-item"><a class="nav-link {{ request()->routeIs('area-guide') ? 'active' : '' }}" href="{{ route('area-guide') }}">Area Guide</a></li>
-                <li class="nav-item"><a class="nav-link {{ request()->routeIs('faq') ? 'active' : '' }}" href="{{ route('faq') }}">FAQ</a></li>
-                <li class="nav-item"><a class="nav-link {{ request()->routeIs('contact') ? 'active' : '' }}" href="{{ route('contact') }}">Contact</a></li>
-                <li class="nav-item"><a class="btn btn-ch-book ms-lg-3 {{ request()->routeIs('booking.*') ? 'active' : '' }}" href="{{ route('booking.search') }}">Book now</a></li>
-            </ul>
-        </div>
+        <button class="nav-toggle" aria-expanded="false" aria-controls="nav">Menu</button>
+        <nav class="nav" id="nav" aria-label="Main">
+            <a href="#home" data-nav="home">Home</a>
+            <a href="#about" data-nav="about">About</a>
+            <a href="#rooms" data-nav="rooms">The house</a>
+            <a href="#places" data-nav="places">Places of interest</a>
+            <a href="#spirits" data-nav="spirits">Serengeti Spirits</a>
+            <a href="#foundation" data-nav="foundation">Wright Foundation &amp; Sustainability</a>
+            <a href="#book" data-nav="book" class="btn btn-primary">Check availability</a>
+        </nav>
     </div>
-</nav>
+</header>
 
 <main>
-    @if (session('status'))
-        <div class="container pt-4">
-            <div class="alert alert-success">{{ session('status') }}</div>
-        </div>
-    @endif
-    @if ($errors->any())
-        <div class="container pt-4">
-            <div class="alert alert-danger">{{ $errors->first() }}</div>
-        </div>
-    @endif
     @yield('content')
 </main>
 
-<footer class="ch-public-footer">
-    <div class="container">
-        <div class="row g-5 py-5">
-            <div class="col-lg-5">
-                <div class="ch-footer-brand">{{ $propertyName }}</div>
-                <p class="ch-footer-lead">An independently hosted stay. Book direct for the quietest rate and a more considered welcome.</p>
-            </div>
-            <div class="col-6 col-lg-3">
-                <div class="ch-footer-heading">Stay</div>
-                <a href="{{ route('booking.search') }}">Availability</a>
-                <a href="{{ route('property') }}">The House</a>
-                <a href="{{ route('amenities') }}">Amenities</a>
-                <a href="{{ route('gallery') }}">Gallery</a>
-            </div>
-            <div class="col-6 col-lg-4">
-                <div class="ch-footer-heading">Details</div>
-                <a href="{{ route('cancellation') }}">Cancellation policy</a>
-                <a href="{{ route('privacy') }}">Privacy</a>
-                <a href="{{ route('terms') }}">Terms</a>
-                <a href="{{ route('login') }}">Staff login</a>
-            </div>
+<footer class="site-footer">
+    <div class="wrap">
+        <div>
+            @if ($site['footer_logo'])
+                <img class="footer-logo" src="{{ asset('storage/'.$site['footer_logo']) }}" alt="{{ $propertyName }}">
+            @endif
+            <h4>{{ $propertyName }}</h4>
+            <p>{{ $site['footer_address'] }}<br>{{ $site['footer_capacity_note'] }}</p>
+            <p><a href="mailto:{{ $site['contact_email'] }}" id="footer-email">{{ $site['contact_email'] }}</a></p>
         </div>
-        <div class="ch-footer-bar">Direct booking · Northamptonshire</div>
+        <div>
+            <h4>The house</h4>
+            <ul>
+                <li><a href="#about">About</a></li>
+                <li><a href="#rooms">The house</a></li>
+                <li><a href="#places">Places of interest</a></li>
+                <li><a href="#book">Make a booking</a></li>
+            </ul>
+        </div>
+        <div>
+            <h4>Serengeti Spirits</h4>
+            <ul>
+                <li><a href="#spirits">Spirits and drinks packages</a></li>
+                <li><a href="#foundation">Wright Foundation</a></li>
+                <li><a href="{{ $site['spirits_website'] ?? 'https://www.serengetispirits.com' }}" target="_blank" rel="noopener">serengetispirits.com</a></li>
+            </ul>
+        </div>
+        <div>
+            <h4>Booking</h4>
+            <ul>
+                <li><a href="#book">Make a booking</a></li>
+                <li><a href="#rules">Booking rules</a></li>
+                <li><a href="#house-rules">House rules</a></li>
+                <li><a href="#terms">Terms and conditions</a></li>
+                <li><a href="#refunds">Refund policy</a></li>
+            </ul>
+        </div>
+        <p class="copyright">&copy; <span id="year"></span> {{ $propertyName }}, Braunston. Serengeti Spirits is a separate business; purchases are completed on its own website.</p>
     </div>
 </footer>
 
-<x-chat-widget source="website" title="Ask {{ $propertyName }}" :show-message="true" />
+<script>
+    window.__SITE__ = @json($site['config']);
+</script>
 @stack('scripts')
 </body>
 </html>

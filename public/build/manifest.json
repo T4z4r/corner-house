@@ -20,17 +20,32 @@
       "assets/bootstrap-icons-BeopsB42.woff"
     ]
   },
+  "resources/css/website.css": {
+    "file": "assets/website-Bzkzc9zD.css",
+    "name": "website",
+    "names": [
+      "website.css"
+    ],
+    "src": "resources/css/website.css",
+    "isEntry": true
+  },
   "resources/js/app.js": {
-    "file": "assets/app-xBDfU2U0.js",
+    "file": "assets/app-BccNP_mT.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "css": [
-      "assets/app-DVh5f3u_.css"
+      "assets/app-CBg-kT3m.css"
     ],
     "assets": [
       "assets/bootstrap-icons-mSm7cUeB.woff2",
       "assets/bootstrap-icons-BeopsB42.woff"
     ]
+  },
+  "resources/js/website.js": {
+    "file": "assets/website-BVcuHU63.js",
+    "name": "website",
+    "src": "resources/js/website.js",
+    "isEntry": true
   }
 }

@@ -70,6 +70,7 @@ class AppServiceProvider extends ServiceProvider
             ['layouts.website.*', 'website.*'],
             function ($view): void {
                 $view->with('propertyName', Setting::getValue('property_name', config('app.name')));
+                $view->with('site', $this->app->make(\App\Services\Website\WebsiteContentService::class)->data());
             },
         );
     }

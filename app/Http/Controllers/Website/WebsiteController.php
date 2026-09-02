@@ -10,6 +10,7 @@ use App\Models\KnowledgeBaseArticle;
 use App\Models\PlacesOfInterest;
 use App\Models\Property;
 use App\Models\Room;
+use App\Models\Setting;
 use App\Services\Area\AreaIntelligenceService;
 use App\Services\System\MailConfigurationService;
 use Illuminate\Http\RedirectResponse;
@@ -152,6 +153,89 @@ class WebsiteController extends Controller
         );
 
         return back()->with('status', 'Thank you. We will get back to you shortly.');
+    }
+
+    /**
+     * Accept a booking enquiry from the single-page enquiry form.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function enquiry(Request $request, MailConfigurationService $mailConfigurationService)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email'],
+            'phone' => ['nullable', 'string', 'max:60'],
+            'guests' => ['nullable', 'string', 'max:60'],
+            'checkIn' => ['nullable', 'date'],
+            'checkOut' => ['nullable', 'date'],
+            'nights' => ['nullable', 'integer', 'min:1'],
+            'message' => ['nullable', 'string', 'max:5000'],
+            'drinksPackage' => ['nullable', 'boolean'],
+            'acceptedTerms' => ['nullable', 'boolean'],
+        ]);
+
+        $mailConfigurationService->apply();
+
+        $lines = [
+            'New booking enquiry from the website',
+            '---',
+            "Name: {$data['name']}",
+            "Email: {$data['email']}",
+            $data['phone'] ? "Phone: {$data['phone']}" : '',
+            $data['guests'] ? "Guests: {$data['guests']}" : '',
+            $data['checkIn'] ? "Check in: {$data['checkIn']}" : '',
+            $data['checkOut'] ? "Check out: {$data['checkOut']}" : '',
+            $data['nights'] ? "Nights: {$data['nights']}" : '',
+            ($data['drinksPackage'] ?? false) ? 'Drinks package: requested' : '',
+            ($data['acceptedTerms'] ?? false) ? 'Terms and house rules: accepted' : '',
+            '---',
+            $data['message'] ?: 'No message.',
+        ];
+
+        Mail::raw(
+            implode("\n", array_filter($lines)),
+            function ($message): void {
+                $message->to(Setting::getValue('website_contact_email', config('mail.from.address')))
+                    ->subject('Booking enquiry');
+            },
+        );
+
+        return response()->json(['status' => 'ok']);
+    }
+
+    /**
+     * Return the blocked-date ranges for the booking widget.
+     *
+     * The front end expects an array of {start, end} objects where "end" is
+     * exclusive, so each blocked night is one range.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function availability(Request $request)
+    {
+        $blocked = Setting::getValue('website_blocked_dates', []) ?: [];
+
+        $ranges = [];
+
+        foreach ((array) $blocked as $date) {
+            if (! $date) {
+                continue;
+            }
+
+            try {
+                $start = Carbon::parse($date);
+            } catch (\Throwable) {
+                continue;
+            }
+
+            $ranges[] = [
+                'start' => $start->toDateString(),
+                'end' => $start->copy()->addDay()->toDateString(),
+            ];
+        }
+
+        return response()->json($ranges);
     }
 
     public function privacy(): View

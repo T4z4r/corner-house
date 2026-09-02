@@ -57,6 +57,9 @@ Route::get('/book/room/{room}', [BookingController::class, 'details'])->name('bo
 Route::post('/book/pay', [BookingController::class, 'holdAndPay'])->name('booking.pay');
 Route::get('/book/confirmation', [BookingController::class, 'confirmation'])->name('booking.confirmation');
 
+Route::post('/booking/enquiry', [WebsiteController::class, 'enquiry'])->name('booking.enquiry');
+Route::get('/booking/availability', [WebsiteController::class, 'availability'])->name('booking.availability');
+
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::get('/register', [RegisterController::class, 'showRegisterForm'])->name('register');
