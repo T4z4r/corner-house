@@ -88,14 +88,23 @@ class BookingService
             );
 
             // Calculate the final price server-side; never trust the browser.
+            $isDirectBooking = ($data['source'] ?? 'direct') === 'direct';
             $price = $this->pricing->calculateForRange(
                 $lockedRoom,
                 $checkIn,
                 $checkOut,
                 $data['guests_count'] ?? 1,
+                null,
+                $isDirectBooking,
             );
 
             $guest = $this->firstOrCreateGuest($data);
+
+            // Add-ons and the damage deposit are part of what the guest is
+            // quoted and charged, so they must be included in the stored total.
+            $addonsTotal = (float) ($data['addons_total'] ?? 0);
+            $damageDeposit = (float) ($data['damage_deposit'] ?? 0);
+            $finalTotal = round($price['total'] + $addonsTotal + $damageDeposit, 2);
 
             $reservation = Reservation::create([
                 'reference' => Reservation::generateReference(),
@@ -113,8 +122,8 @@ class BookingService
                 'base_amount' => $price['base_amount'],
                 'discount_amount' => $price['discount_amount'],
                 'tax_amount' => $price['tax_amount'],
-                'fees_amount' => $price['fees_amount'],
-                'total_amount' => $price['total'],
+                'fees_amount' => round($price['fees_amount'] + $addonsTotal + $damageDeposit, 2),
+                'total_amount' => $finalTotal,
                 'paid_amount' => 0,
                 'payment_status' => 'unpaid',
                 'sync_status' => $data['skip_sync'] ?? false ? 'none' : 'pending',

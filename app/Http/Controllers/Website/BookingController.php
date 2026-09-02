@@ -202,6 +202,8 @@ class BookingController extends Controller
                 'status' => 'hold',
                 'source' => 'direct',
                 'hold_token' => $hold['hold']->hold_token,
+                'damage_deposit' => $damageDeposit,
+                'addons_total' => $addonsTotal,
             ]);
 
             // Attach add-ons to reservation

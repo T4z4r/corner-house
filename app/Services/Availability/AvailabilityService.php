@@ -47,7 +47,11 @@ class AvailabilityService
         }
 
         $blockOverlap = CalendarBlock::query()
-            ->where('room_id', $room->id)
+            ->blockingInventory()
+            ->where(function ($q) use ($room) {
+                $q->where('room_id', $room->id)
+                    ->orWhere(fn ($q2) => $q2->whereNull('room_id')->where('property_id', $room->property_id));
+            })
             ->whereDate('start_date', '<=', $checkOut->toDateString())
             ->whereDate('end_date', '>=', $checkIn->toDateString())
             ->exists();

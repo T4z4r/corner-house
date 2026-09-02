@@ -147,7 +147,18 @@ class CalendarController extends Controller
                 'start' => $block->start_date->toDateString(),
                 'end' => $block->end_date->copy()->addDay()->toDateString(),
                 'className' => $this->blockCalendarClass($block),
-                'extendedProps' => ['type' => 'block', 'block_type' => $block->type, 'room_id' => $block->room_id, 'room_name' => $roomName],
+                'extendedProps' => [
+                    'type' => 'block',
+                    'block_id' => $block->id,
+                    'block_type' => $block->type,
+                    'block_title' => $block->title,
+                    'block_value' => $block->value,
+                    'block_min_stay' => $block->min_stay,
+                    'block_max_stay' => $block->max_stay,
+                    'block_active' => $block->is_active,
+                    'room_id' => $block->room_id,
+                    'room_name' => $roomName,
+                ],
             ]);
         }
 
@@ -179,6 +190,50 @@ class CalendarController extends Controller
         $this->auditLogger->log('calendar.block_created', 'calendar', 'calendar_block', (string) $block->id, newValues: $validated);
 
         return response()->json(['ok' => true, 'block' => $block]);
+    }
+
+    public function updateBlock(Request $request, CalendarBlock $block): JsonResponse
+    {
+        $validated = $request->validate([
+            'property_id' => ['sometimes', 'exists:properties,id'],
+            'room_id' => ['nullable', 'exists:rooms,id'],
+            'start_date' => ['sometimes', 'date'],
+            'end_date' => ['sometimes', 'date', 'after_or_equal:start_date'],
+            'title' => ['nullable', 'string'],
+            'type' => ['sometimes', 'in:availability,min_stay,max_stay,daily_price,fixed_prices,multiplier,manual,owner,maintenance,seasonal,rates,restrictions'],
+            'value' => ['nullable', 'numeric', 'min:0'],
+            'min_stay' => ['nullable', 'integer', 'min:1'],
+            'max_stay' => ['nullable', 'integer', 'min:1'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        if (isset($validated['type'])) {
+            $validated['type'] = $this->normalizeBlockType((string) $validated['type']);
+        }
+
+        $block->update($validated);
+
+        $this->auditLogger->log('calendar.block_updated', 'calendar', 'calendar_block', (string) $block->id, newValues: $validated);
+
+        return response()->json(['ok' => true, 'block' => $block->fresh()]);
+    }
+
+    public function toggleBlock(CalendarBlock $block): JsonResponse
+    {
+        $block->update(['is_active' => ! $block->is_active]);
+
+        $this->auditLogger->log('calendar.block_toggled', 'calendar', 'calendar_block', (string) $block->id, newValues: ['is_active' => $block->is_active]);
+
+        return response()->json(['ok' => true, 'block' => $block->fresh()]);
+    }
+
+    public function destroyBlock(CalendarBlock $block): JsonResponse
+    {
+        $block->delete();
+
+        $this->auditLogger->log('calendar.block_deleted', 'calendar', 'calendar_block', (string) $block->id);
+
+        return response()->json(['ok' => true]);
     }
 
     private function reservationCalendarClass(Reservation $reservation): string

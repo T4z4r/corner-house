@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AddOn;
+use App\Models\CalendarBlock;
 use App\Models\ChannelAccount;
 use App\Models\ChannelMapping;
 use App\Models\FoodAndDrink;
@@ -167,6 +168,77 @@ class AdminResourcesTest extends TestCase
             'type' => 'daily_price',
             'title' => 'Beds24 rate change',
         ]);
+    }
+
+    public function test_super_admin_can_update_a_calendar_block(): void
+    {
+        $property = Property::factory()->create();
+        $room = Room::factory()->create(['property_id' => $property->id]);
+        $block = CalendarBlock::create([
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'type' => 'daily_price',
+            'value' => 150,
+            'start_date' => now()->addDays(3)->toDateString(),
+            'end_date' => now()->addDays(5)->toDateString(),
+        ]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->postJson(route('admin.calendar.blocks.update', $block), [
+                'value' => 220,
+                'title' => 'Updated rate',
+            ])
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        $this->assertDatabaseHas('calendar_blocks', [
+            'id' => $block->id,
+            'value' => 220,
+            'title' => 'Updated rate',
+        ]);
+    }
+
+    public function test_super_admin_can_toggle_a_calendar_block(): void
+    {
+        $property = Property::factory()->create();
+        $room = Room::factory()->create(['property_id' => $property->id]);
+        $block = CalendarBlock::create([
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'type' => 'availability',
+            'start_date' => now()->addDays(3)->toDateString(),
+            'end_date' => now()->addDays(5)->toDateString(),
+        ]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->postJson(route('admin.calendar.blocks.toggle', $block))
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        $this->assertDatabaseHas('calendar_blocks', [
+            'id' => $block->id,
+            'is_active' => false,
+        ]);
+    }
+
+    public function test_super_admin_can_delete_a_calendar_block(): void
+    {
+        $property = Property::factory()->create();
+        $room = Room::factory()->create(['property_id' => $property->id]);
+        $block = CalendarBlock::create([
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'type' => 'availability',
+            'start_date' => now()->addDays(3)->toDateString(),
+            'end_date' => now()->addDays(5)->toDateString(),
+        ]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->deleteJson(route('admin.calendar.blocks.destroy', $block))
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        $this->assertDatabaseMissing('calendar_blocks', ['id' => $block->id]);
     }
 
     public function test_super_admin_can_view_pricing(): void

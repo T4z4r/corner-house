@@ -2,6 +2,8 @@
 
 namespace App\Services\Pricing;
 
+use App\Models\CalendarBlock;
+use App\Models\CompetitorRate;
 use App\Models\PricingOverride;
 use App\Models\PricingRule;
 use App\Models\Room;
@@ -104,6 +106,20 @@ class PricingEngine
             }
         }
 
+        // Min-stay calendar blocks raise the minimum for the covered range.
+        $blockMinimum = CalendarBlock::query()
+            ->active()
+            ->where('type', 'min_stay')
+            ->whereNotNull('min_stay')
+            ->where($this->blockScopeFor($room))
+            ->whereDate('start_date', '<=', $checkOut->toDateString())
+            ->whereDate('end_date', '>=', $checkIn->toDateString())
+            ->max('min_stay');
+
+        if ($blockMinimum !== null) {
+            $minimum = max($minimum, (int) $blockMinimum);
+        }
+
         return $minimum;
     }
 
@@ -130,6 +146,20 @@ class PricingEngine
             $maximum = $maximum === null ? $ruleMaximum : min($maximum, $ruleMaximum);
         }
 
+        // Max-stay calendar blocks cap the allowed length of stay.
+        $blockMaximum = CalendarBlock::query()
+            ->active()
+            ->where('type', 'max_stay')
+            ->whereNotNull('max_stay')
+            ->where($this->blockScopeFor($room))
+            ->whereDate('start_date', '<=', $checkOut->toDateString())
+            ->whereDate('end_date', '>=', $checkIn->toDateString())
+            ->min('max_stay');
+
+        if ($blockMaximum !== null) {
+            $maximum = $maximum === null ? (int) $blockMaximum : min($maximum, (int) $blockMaximum);
+        }
+
         return $maximum;
     }
 
@@ -147,16 +177,22 @@ class PricingEngine
         $baseRate = (float) $room->base_rate;
         $rate = $baseRate;
 
-        // Only the highest-priority applicable rule tier applies. Lower-priority
-        // tiers (defined by PRIORITY_ORDER) do NOT stack. This matches the
-        // pricing priority documented in the platform spec (manual override >
-        // event > holiday > seasonal > occupancy > demand > competitor > base).
-        $applicable = $this->collectAdjustments($room, $date, $occupancyPct)
-            ->sortBy(fn ($a) => self::PRIORITY_ORDER[$a['type']] ?? 99)
-            ->first();
+        // 2. Calendar price blocks set an explicit nightly rate for the date.
+        $blockRate = $this->findPriceBlockRate($room, $date);
+        if ($blockRate !== null) {
+            $rate = $blockRate;
+        } else {
+            // 3. Only the highest-priority applicable rule tier applies. Lower-priority
+            // tiers (defined by PRIORITY_ORDER) do NOT stack. This matches the
+            // pricing priority documented in the platform spec (manual override >
+            // event > holiday > seasonal > occupancy > demand > competitor > base).
+            $applicable = $this->collectAdjustments($room, $date, $occupancyPct)
+                ->sortBy(fn ($a) => self::PRIORITY_ORDER[$a['type']] ?? 99)
+                ->first();
 
-        if ($applicable) {
-            $rate = $this->applyAdjustment($rate, $applicable['adjustment_type'], (float) $applicable['adjustment_value']);
+            if ($applicable) {
+                $rate = $this->applyAdjustment($rate, $applicable['adjustment_type'], (float) $applicable['adjustment_value'], $applicable['competitor_avg'] ?? null);
+            }
         }
 
         // Enforce minimum price floors
@@ -192,6 +228,9 @@ class PricingEngine
                 'adjustment_type' => $rule->adjustment_type,
                 'adjustment_value' => $rule->adjustment_value,
                 'minimum_stay' => $rule->minimum_stay,
+                'competitor_avg' => $rule->rule_type === 'competitor'
+                    ? $this->averageCompetitorRateForDate($room, $date)
+                    : null,
             ]);
         }
 
@@ -224,7 +263,7 @@ class PricingEngine
         return true;
     }
 
-    private function applyAdjustment(float $rate, string $type, float $value): float
+    private function applyAdjustment(float $rate, string $type, float $value, ?float $competitorAvg = null): float
     {
         if ($type === 'percent') {
             return $rate * (1 + ($value / 100));
@@ -232,6 +271,12 @@ class PricingEngine
 
         if ($type === 'multiplier') {
             return $rate * $value;
+        }
+
+        if ($type === 'relative') {
+            // "Match competitor": the rate becomes the latest average competitor
+            // rate for the date when competitor data exists, otherwise unchanged.
+            return $competitorAvg ?? $rate;
         }
 
         // fixed
@@ -249,27 +294,142 @@ class PricingEngine
             ->first();
     }
 
+    /**
+     * Resolve a nightly rate set directly on the calendar for the date.
+     * The most recent matching block wins. Multiplier blocks are applied
+     * against the room base rate.
+     */
+    private function findPriceBlockRate(Room $room, Carbon $date): ?float
+    {
+        $block = CalendarBlock::query()
+            ->active()
+            ->whereIn('type', ['daily_price', 'fixed_prices', 'multiplier'])
+            ->where($this->blockScopeFor($room))
+            ->whereDate('start_date', '<=', $date->toDateString())
+            ->whereDate('end_date', '>=', $date->toDateString())
+            ->orderByDesc('start_date')
+            ->first();
+
+        if (! $block || $block->value === null) {
+            return null;
+        }
+
+        if ($block->type === 'multiplier') {
+            return (float) $room->base_rate * (float) $block->value;
+        }
+
+        return round((float) $block->value, 2);
+    }
+
+    /**
+     * Scope matching a room's own blocks plus property-wide blocks
+     * (no room_id) for the same property.
+     */
+    private function blockScopeFor(Room $room): \Closure
+    {
+        return fn ($q) => $q->where('room_id', $room->id)
+            ->orWhere(fn ($q2) => $q2->whereNull('room_id')->where('property_id', $room->property_id));
+    }
+
+    /**
+     * Average of the most recently captured competitor rate per competitor
+     * for the given date, or null when no competitor data exists.
+     */
+    private function averageCompetitorRateForDate(Room $room, Carbon $date): ?float
+    {
+        $latestByCompetitor = CompetitorRate::query()
+            ->whereDate('date', $date->toDateString())
+            ->where(function ($q) use ($room) {
+                $q->where('room_id', $room->id)
+                    ->orWhere(fn ($q2) => $q2->whereNull('room_id')->where('property_id', $room->property_id));
+            })
+            ->get()
+            ->groupBy('competitor')
+            ->map(fn ($group) => $group->sortByDesc('captured_at')->first());
+
+        if ($latestByCompetitor->isEmpty()) {
+            return null;
+        }
+
+        $rates = $latestByCompetitor->map(fn ($rate) => (float) $rate->rate);
+
+        return round($rates->avg(), 2);
+    }
+
     private function isBankHolidayWeekend(Carbon $checkIn, Carbon $checkOut): bool
     {
-        $year = $checkIn->year;
+        $months = [$checkIn->month, $checkOut->month];
 
-        $bankHolidays = [
-            Carbon::create($year, 1, 1),
-            Carbon::create($year, 4, 18),
-            Carbon::create($year, 4, 21),
-            Carbon::create($year, 5, 5),
-            Carbon::create($year, 5, 26),
-            Carbon::create($year, 8, 25),
-            Carbon::create($year, 12, 25),
-            Carbon::create($year, 12, 26),
-        ];
-
-        foreach ($bankHolidays as $bh) {
-            if ($bh->gte($checkIn) && $bh->lt($checkOut)) {
+        foreach ($months as $month) {
+            $holiday = $this->bankHolidayForMonth($checkIn->year, $month);
+            if ($holiday && $holiday->gte($checkIn) && $holiday->lt($checkOut)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Compute the England & Wales bank holiday for a given year and month,
+     * using PHP's built-in Easter date plus the fixed/schedule rules observed
+     * by the UK government. Returns null when no holiday falls within the month.
+     */
+    private function bankHolidayForMonth(int $year, int $month): ?Carbon
+    {
+        $easter = Carbon::createFromTimestamp(easter_date($year))->startOfDay();
+
+        $holidays = [
+            // New Year's Day (first Monday if 1 Jan is a weekend)
+            $this->nextWeekdayOrSubstitute(Carbon::create($year, 1, 1)),
+            $easter->copy()->subDays(2),            // Good Friday
+            $easter->copy()->addDay(),              // Easter Monday
+            $this->firstMondayOfMonth($year, 5),    // Early May
+            $this->lastMondayOfMonth($year, 5),     // Spring
+            $this->lastMondayOfMonth($year, 8),     // Summer
+            $this->nextWeekdayOrSubstitute(Carbon::create($year, 12, 25)), // Christmas
+            $this->nextWeekdayOrSubstitute(Carbon::create($year, 12, 26)), // Boxing Day
+        ];
+
+        foreach ($holidays as $holiday) {
+            if ($holiday->month === $month) {
+                return $holiday;
+            }
+        }
+
+        return null;
+    }
+
+    private function firstMondayOfMonth(int $year, int $month): Carbon
+    {
+        $date = Carbon::create($year, $month, 1);
+        while ($date->dayOfWeek !== Carbon::MONDAY) {
+            $date->addDay();
+        }
+
+        return $date->startOfDay();
+    }
+
+    private function lastMondayOfMonth(int $year, int $month): Carbon
+    {
+        $date = Carbon::create($year, $month)->endOfMonth();
+        while ($date->dayOfWeek !== Carbon::MONDAY) {
+            $date->subDay();
+        }
+
+        return $date->startOfDay();
+    }
+
+    /**
+     * Return the date itself if it's a weekday, otherwise the next weekday
+     * (Monday) since a bank holiday falling on a weekend is substituted.
+     */
+    private function nextWeekdayOrSubstitute(Carbon $date): Carbon
+    {
+        while (in_array($date->dayOfWeek, [Carbon::SATURDAY, Carbon::SUNDAY])) {
+            $date->addDay();
+        }
+
+        return $date->startOfDay();
     }
 }

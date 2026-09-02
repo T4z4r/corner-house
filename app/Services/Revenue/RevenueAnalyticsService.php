@@ -22,6 +22,7 @@ class RevenueAnalyticsService
      *     revpar: float,
      *     pending_payments: int,
      *     cancellation_rate: float,
+     *     cancellations: int,
      *     average_booking_value: float,
      *     direct_bookings: int,
      *     ota_bookings: int
@@ -64,7 +65,7 @@ class RevenueAnalyticsService
         $revpar = round($adr * ($occupancy / 100), 2);
 
         $cancelled = (clone $base)->where('status', 'cancelled')
-            ->whereDate('created_at', '>=', $from)->whereDate('created_at', '<=', $to)->count();
+            ->whereDate('cancelled_at', '>=', $from)->whereDate('cancelled_at', '<=', $to)->count();
         $created = (clone $base)->whereDate('created_at', '>=', $from)->whereDate('created_at', '<=', $to)->count();
 
         return [
@@ -77,6 +78,7 @@ class RevenueAnalyticsService
             'revpar' => $revpar,
             'pending_payments' => (clone $base)->where('payment_status', 'unpaid')->whereNotIn('status', ['cancelled', 'no_show'])->count(),
             'cancellation_rate' => $created > 0 ? round(($cancelled / $created) * 100, 1) : 0.0,
+            'cancellations' => $cancelled,
             'average_booking_value' => $bookings > 0 ? round($revenue / $bookings, 2) : 0.0,
             'direct_bookings' => (clone $period)->whereIn('source', ['direct', 'manual'])->count(),
             'ota_bookings' => (clone $period)->whereNotIn('source', ['direct', 'manual'])->count(),
@@ -132,7 +134,7 @@ class RevenueAnalyticsService
                 'adr' => $stats['adr'],
                 'revpar' => $stats['revpar'],
                 'bookings_count' => $stats['direct_bookings'] + $stats['ota_bookings'],
-                'cancellations_count' => 0,
+                'cancellations_count' => $stats['cancellations'],
                 'direct_bookings' => $stats['direct_bookings'],
                 'ota_bookings' => $stats['ota_bookings'],
             ],

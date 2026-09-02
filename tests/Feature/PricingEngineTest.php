@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\CalendarBlock;
+use App\Models\CompetitorRate;
 use App\Models\PricingOverride;
 use App\Models\PricingRule;
 use App\Models\Property;
@@ -200,5 +202,132 @@ class PricingEngineTest extends TestCase
 
         $this->assertSame(90.0, $this->engine->calculateRateForDate($room, $date));
         $this->assertSame(100.0, $this->engine->calculateRateForDate($room, now()->addDays(10)));
+    }
+
+    public function test_daily_price_calendar_block_sets_nightly_rate(): void
+    {
+        $room = $this->makeRoom(100);
+        $date = now()->addDays(10);
+
+        CalendarBlock::create([
+            'property_id' => $room->property_id,
+            'room_id' => $room->id,
+            'type' => 'daily_price',
+            'value' => 250,
+            'start_date' => $date->copy()->subDay(),
+            'end_date' => $date->copy()->addDay(),
+        ]);
+
+        $this->assertSame(250.0, $this->engine->calculateRateForDate($room, $date));
+    }
+
+    public function test_inactive_price_block_is_ignored(): void
+    {
+        $room = $this->makeRoom(100);
+        $date = now()->addDays(10);
+
+        CalendarBlock::create([
+            'property_id' => $room->property_id,
+            'room_id' => $room->id,
+            'type' => 'daily_price',
+            'value' => 250,
+            'start_date' => $date->copy()->subDay(),
+            'end_date' => $date->copy()->addDay(),
+            'is_active' => false,
+        ]);
+
+        $this->assertSame(100.0, $this->engine->calculateRateForDate($room, $date));
+    }
+
+    public function test_multiplier_calendar_block_applies_to_base_rate(): void
+    {
+        $room = $this->makeRoom(100);
+        $date = now()->addDays(10);
+
+        CalendarBlock::create([
+            'property_id' => $room->property_id,
+            'room_id' => $room->id,
+            'type' => 'multiplier',
+            'value' => 1.25,
+            'start_date' => $date->copy()->subDay(),
+            'end_date' => $date->copy()->addDay(),
+        ]);
+
+        $this->assertSame(125.0, $this->engine->calculateRateForDate($room, $date));
+    }
+
+    public function test_minimum_stay_calendar_block_raises_minimum(): void
+    {
+        $room = $this->makeRoom(100);
+        $checkIn = now()->addDays(10);
+        $checkOut = $checkIn->copy()->addDays(2);
+
+        CalendarBlock::create([
+            'property_id' => $room->property_id,
+            'room_id' => $room->id,
+            'type' => 'min_stay',
+            'min_stay' => 5,
+            'start_date' => $checkIn->copy()->subDay(),
+            'end_date' => $checkOut->copy()->addDay(),
+        ]);
+
+        $this->assertSame(5, $this->engine->minimumStayForRange($room, $checkIn, $checkOut));
+    }
+
+    public function test_maximum_stay_calendar_block_caps_maximum(): void
+    {
+        $room = $this->makeRoom(100);
+        $checkIn = now()->addDays(10);
+        $checkOut = $checkIn->copy()->addDays(2);
+
+        CalendarBlock::create([
+            'property_id' => $room->property_id,
+            'room_id' => $room->id,
+            'type' => 'max_stay',
+            'max_stay' => 3,
+            'start_date' => $checkIn->copy()->subDay(),
+            'end_date' => $checkOut->copy()->addDay(),
+        ]);
+
+        $this->assertSame(3, $this->engine->maximumStayForRange($room, $checkIn, $checkOut));
+    }
+
+    public function test_relative_competitor_rule_matches_average_competitor_rate(): void
+    {
+        $room = $this->makeRoom(100);
+        $date = now()->addDays(10);
+
+        CompetitorRate::create([
+            'property_id' => $room->property_id,
+            'room_id' => $room->id,
+            'competitor' => 'Airbnb',
+            'date' => $date->toDateString(),
+            'rate' => 120,
+            'source' => 'scrape',
+            'captured_at' => now(),
+        ]);
+        CompetitorRate::create([
+            'property_id' => $room->property_id,
+            'room_id' => $room->id,
+            'competitor' => 'Booking',
+            'date' => $date->toDateString(),
+            'rate' => 140,
+            'source' => 'scrape',
+            'captured_at' => now(),
+        ]);
+
+        PricingRule::create([
+            'room_id' => $room->id,
+            'name' => 'Match competitor',
+            'rule_type' => 'competitor',
+            'start_date' => $date->copy()->subDay(),
+            'end_date' => $date->copy()->addDay(),
+            'adjustment_type' => 'relative',
+            'adjustment_value' => 0,
+            'priority' => 5,
+        ]);
+
+        // Average competitor rate for the date: (120 + 140) / 2 = 130
+        $this->assertSame(130.0, $this->engine->calculateRateForDate($room, $date));
     }
 }

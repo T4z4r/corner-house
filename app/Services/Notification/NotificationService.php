@@ -34,6 +34,25 @@ class NotificationService
             return null;
         }
 
+        // Idempotency: never re-send a template-driven event notification that
+        // has already been dispatched for this reservation. Pending deliveries
+        // are allowed to be retried after a failure, but a completed send is
+        // not duplicated (guard against scheduled-job re-runs and retries).
+        $alreadyDelivered = Communication::query()
+            ->where('reservation_id', $reservation->id)
+            ->where('communication_template_id', $template->id)
+            ->whereNotIn('status', ['failed'])
+            ->exists();
+
+        if ($alreadyDelivered) {
+            Log::info('Event notification already sent for reservation', [
+                'event' => $event,
+                'reservation_id' => $reservation->id,
+            ]);
+
+            return null;
+        }
+
         $reservation->loadMissing(['guest', 'room', 'property']);
         $recipient = $reservation->guest?->email;
 
@@ -86,6 +105,11 @@ class NotificationService
                     $communication->subject ?: 'Corner House',
                     $communication->body,
                 ));
+            } else {
+                // Only email delivery is currently wired up. Mark unsupported
+                // channels as failed with an explicit reason rather than falsely
+                // reporting them as sent.
+                throw new \DomainException("Unsupported communication channel: {$communication->channel}");
             }
 
             $communication->update([

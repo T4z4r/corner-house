@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Property;
+use App\Models\RevenueSnapshot;
 use App\Services\Revenue\RevenueAnalyticsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,10 +21,17 @@ class RevenueController extends Controller
         $series = $this->analytics->monthlySeries($propertyId);
         $sources = $this->analytics->bookingsBySource($propertyId);
 
+        $snapshots = RevenueSnapshot::query()
+            ->when($propertyId, fn ($q) => $q->where('property_id', $propertyId), fn ($q) => $q->whereNull('property_id'))
+            ->orderByDesc('snapshot_date')
+            ->take(30)
+            ->get();
+
         return view('admin.revenue.index', [
             'stats' => $stats,
             'series' => $series,
             'sources' => $sources,
+            'snapshots' => $snapshots,
             'properties' => Property::query()->orderBy('name')->get(),
             'propertyId' => $propertyId,
         ]);

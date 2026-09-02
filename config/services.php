@@ -58,4 +58,10 @@ return [
         'version' => env('CLAUDE_API_VERSION', '2023-06-01'),
     ],
 
+    'ai' => [
+        'provider' => env('AI_PROVIDER', 'openai'),
+        'openai_model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
+        'claude_model' => env('CLAUDE_MODEL', 'claude-sonnet-4-5'),
+    ],
+
 ];

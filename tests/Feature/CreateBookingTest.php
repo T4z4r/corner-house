@@ -27,6 +27,7 @@ class CreateBookingTest extends TestCase
         Setting::firstOrCreate(['key' => 'min_price_weekend'], ['value' => '0', 'group' => 'booking', 'label' => 'Min weekend', 'cast' => 'decimal:2']);
         Setting::firstOrCreate(['key' => 'cleaning_fee'], ['value' => '0', 'group' => 'booking', 'label' => 'Cleaning', 'cast' => 'decimal:2']);
         Setting::firstOrCreate(['key' => 'damage_deposit'], ['value' => '0', 'group' => 'booking', 'label' => 'Deposit', 'cast' => 'decimal:2']);
+        Setting::firstOrCreate(['key' => 'direct_booking_discount'], ['value' => '0', 'group' => 'booking', 'label' => 'Discount', 'cast' => 'decimal:2']);
     }
 
     private function makeRoom(array $attributes = []): Room
@@ -135,5 +136,32 @@ class CreateBookingTest extends TestCase
 
         $this->assertSame($first->id, $second->id);
         $this->assertSame(1, Reservation::query()->where('room_id', $room->id)->count());
+    }
+
+    public function test_direct_booking_discount_applies_to_charged_total(): void
+    {
+        Setting::updateOrCreate(['key' => 'direct_booking_discount'], ['value' => '10', 'group' => 'booking', 'label' => 'Discount', 'cast' => 'decimal:2']);
+
+        $room = $this->makeRoom(['base_rate' => 100]);
+
+        $result = $this->service->create($this->basePayload($room, ['source' => 'direct']));
+
+        // 2 nights x 100 = 200, minus 10% discount = 180 (no tax/cleaning in this setup)
+        $this->assertSame(180.0, (float) $result['reservation']->total_amount);
+        $this->assertSame(20.0, (float) $result['reservation']->discount_amount);
+    }
+
+    public function test_addons_and_deposit_are_included_in_charged_total(): void
+    {
+        $room = $this->makeRoom(['base_rate' => 100]);
+
+        $result = $this->service->create($this->basePayload($room, [
+            'source' => 'direct',
+            'damage_deposit' => 50,
+            'addons_total' => 30,
+        ]));
+
+        // 200 base + 30 add-ons + 50 deposit = 280
+        $this->assertSame(280.0, (float) $result['reservation']->total_amount);
     }
 }

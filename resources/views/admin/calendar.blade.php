@@ -292,11 +292,12 @@
             <div class="modal-dialog modal-dialog-centered">
                 <form id="blockForm" class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Add calendar block</h5>
+                        <h5 class="modal-title" id="blockModalTitle">Add calendar block</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <input type="hidden" name="property_id" id="block_property" value="{{ $selectedPropertyId }}">
+                        <input type="hidden" name="block_id" id="blockId">
                         <div class="mb-3">
                             <label class="form-label">Room <span class="text-muted">(optional)</span></label>
                             <select name="room_id" id="blockRoom" class="form-select">
@@ -340,23 +341,27 @@
 
                         <div class="mb-3">
                             <label class="form-label">Title <span class="text-muted">(optional)</span></label>
-                            <input type="text" name="title" class="form-control" placeholder="e.g. Owner away, Repainting">
+                            <input type="text" name="title" id="blockTitle" class="form-control" placeholder="e.g. Owner away, Repainting">
                         </div>
 
                         <div class="row">
                             <div class="col-6">
                                 <label class="form-label">Start date</label>
-                                <input type="date" name="start_date" class="form-control" required>
+                                <input type="date" name="start_date" id="blockStartDate" class="form-control" required>
                             </div>
                             <div class="col-6">
                                 <label class="form-label">End date</label>
-                                <input type="date" name="end_date" class="form-control" required>
+                                <input type="date" name="end_date" id="blockEndDate" class="form-control" required>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
+                        <div class="me-auto d-flex gap-2" id="blockModifyActions" style="display:none !important;">
+                            <button type="button" class="btn btn-outline-danger btn-sm" id="blockDeleteButton"><i class="bi bi-trash me-1"></i>Delete</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="blockToggleButton">Toggle</button>
+                        </div>
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                        <button class="btn btn-ch-primary">Save block</button>
+                        <button class="btn btn-ch-primary" id="blockSaveButton">Save block</button>
                     </div>
                 </form>
             </div>
@@ -372,6 +377,9 @@
         const initialMonth = @json($initialMonth);
         const eventsEndpoint = @json(route('admin.calendar.events'));
         const blocksStoreEndpoint = @json(route('admin.calendar.blocks.store'));
+        const blockUpdateTemplate = @json(route('admin.calendar.blocks.update', ['block' => '__ID__']));
+        const blockToggleTemplate = @json(route('admin.calendar.blocks.toggle', ['block' => '__ID__']));
+        const blockDestroyTemplate = @json(route('admin.calendar.blocks.destroy', ['block' => '__ID__']));
         const roomsData = @json($rooms->map(fn($r) => ['id' => $r->id, 'name' => $r->name]));
         const today = startOfDay(new Date());
         let visibleMonth = startOfMonth(parseMonthKey(initialMonth));
@@ -379,6 +387,7 @@
         let events = [];
         let activePropertyId = propertyId || '';
         let activeRoomId = selectedRoomId || '';
+        let editingBlockId = null;
 
         const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         const monthLabelEl = document.getElementById('monthLabel');
@@ -654,8 +663,17 @@
                     event.stopPropagation();
                     const matched = events.find((item) => item.id === button.dataset.eventId);
 
-                    if (matched?.extendedProps?.url) {
+                    if (! matched) {
+                        return;
+                    }
+
+                    if (matched.extendedProps?.url) {
                         window.location = matched.extendedProps.url;
+                        return;
+                    }
+
+                    if (matched.extendedProps?.type === 'block' && matched.extendedProps?.block_id) {
+                        openBlockEditor(matched);
                     }
                 });
             });
@@ -786,13 +804,111 @@
         }
 
         const blockForm = document.getElementById('blockForm');
+        const blockModalTitle = document.getElementById('blockModalTitle');
+        const blockModifyActions = document.getElementById('blockModifyActions');
+        const blockDeleteButton = document.getElementById('blockDeleteButton');
+        const blockToggleButton = document.getElementById('blockToggleButton');
+
+        function setModalMode(editing) {
+            editingBlockId = editing ? Number(document.getElementById('blockId').value) : null;
+            blockModalTitle.textContent = editing ? 'Edit calendar block' : 'Add calendar block';
+            blockModifyActions.style.display = editing ? 'flex' : 'none';
+            document.getElementById('blockSaveButton').textContent = editing ? 'Update block' : 'Save block';
+        }
+
+        function openBlockEditor(matchedEvent) {
+            const props = matchedEvent.extendedProps;
+
+            document.getElementById('blockId').value = props.block_id;
+            document.getElementById('block_property').value = props.room_id ? '' : (activePropertyId || '');
+            document.getElementById('blockRoom').value = props.room_id || '';
+            document.getElementById('blockType').value = props.block_type || 'availability';
+            document.getElementById('blockTitle').value = props.block_title || '';
+            document.getElementById('blockValue').value = props.block_value ?? '';
+            document.getElementById('blockMinStay').value = props.block_min_stay ?? '';
+            document.getElementById('blockMaxStay').value = props.block_max_stay ?? '';
+            document.getElementById('blockActive').value = props.block_active ? '1' : '0';
+            document.getElementById('blockStartDate').value = dateKey(parseLocalDate(matchedEvent.start));
+            const endDate = parseLocalDate(matchedEvent.end);
+            endDate.setDate(endDate.getDate() - 1);
+            document.getElementById('blockEndDate').value = dateKey(endDate);
+
+            toggleFields();
+            setModalMode(true);
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('blockModal')).show();
+        }
+
+        if (blockDeleteButton) {
+            blockDeleteButton.addEventListener('click', () => {
+                if (! editingBlockId) {
+                    return;
+                }
+                if (! confirm('Delete this block?')) {
+                    return;
+                }
+                fetch(blockDestroyTemplate.replace('__ID__', editingBlockId), {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.ok) {
+                            bootstrap.Modal.getInstance(document.getElementById('blockModal')).hide();
+                            blockForm.reset();
+                            toggleFields();
+                            setModalMode(false);
+                            loadEvents().then(renderMonth);
+                        }
+                    });
+            });
+        }
+
+        if (blockToggleButton) {
+            blockToggleButton.addEventListener('click', () => {
+                if (! editingBlockId) {
+                    return;
+                }
+                fetch(blockToggleTemplate.replace('__ID__', editingBlockId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.ok) {
+                            bootstrap.Modal.getInstance(document.getElementById('blockModal')).hide();
+                            blockForm.reset();
+                            toggleFields();
+                            setModalMode(false);
+                            loadEvents().then(renderMonth);
+                        }
+                    });
+            });
+        }
+
         if (blockForm) {
             blockForm.addEventListener('submit', (event) => {
                 event.preventDefault();
                 const formData = new FormData(blockForm);
+                const blockId = document.getElementById('blockId').value;
 
-                fetch(blocksStoreEndpoint, {
-                    method: 'POST',
+                const request = blockId
+                    ? {
+                        url: blockUpdateTemplate.replace('__ID__', blockId),
+                        method: 'POST',
+                    }
+                    : {
+                        url: blocksStoreEndpoint,
+                        method: 'POST',
+                    };
+
+                fetch(request.url, {
+                    method: request.method,
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                         'Accept': 'application/json',
@@ -808,6 +924,7 @@
                             }
                             blockForm.reset();
                             toggleFields();
+                            setModalMode(false);
                             loadEvents().then(renderMonth);
                         } else {
                             alert('Unable to save block');
