@@ -49,6 +49,16 @@
                 @if (request('status') || request('source') || request('search') || request('check_in_from') || request('check_in_to'))
                     <a href="{{ route('admin.reservations.index') }}" class="btn btn-light">Clear</a>
                 @endif
+                @php
+                    $q = collect(request()->only(['status', 'source', 'search', 'check_in_from', 'check_in_to']))->filter(fn ($v) => $v !== null && $v !== '')->all();
+                @endphp
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-download me-1"></i>Export</button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ route('admin.reservations.export', array_merge($q, ['format' => 'csv'])) }}"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Export as CSV (Excel)</a></li>
+                        <li><a class="dropdown-item" href="{{ route('admin.reservations.export', array_merge($q, ['format' => 'html'])) }}"><i class="bi bi-file-earmark-pdf me-2"></i>Export as PDF</a></li>
+                    </ul>
+                </div>
             </div>
         </form>
     </div>

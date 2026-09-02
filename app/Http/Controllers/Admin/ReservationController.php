@@ -10,7 +10,9 @@ use App\Services\Booking\BookingService;
 use App\Services\Notification\SystemNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReservationController extends Controller
 {
@@ -46,6 +48,80 @@ class ReservationController extends Controller
         $reservations = $query->paginate(20)->withQueryString();
 
         return view('admin.reservations.index', ['reservations' => $reservations]);
+    }
+
+    public function export(Request $request): StreamedResponse|View
+    {
+        $query = Reservation::query()->with(['property', 'room', 'guest'])->latest();
+
+        if ($status = $request->query('status')) {
+            $query->where('status', $status);
+        }
+        if ($source = $request->query('source')) {
+            $query->where('source', $source);
+        }
+        if ($search = $request->query('search')) {
+            $query->where(function ($q) use ($search): void {
+                $q->where('reference', 'like', "%{$search}%")
+                    ->orWhereHas('guest', fn ($g) => $g->where('last_name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"));
+            });
+        }
+        if ($checkInFrom = $request->query('check_in_from')) {
+            $query->where('check_in', '>=', $checkInFrom);
+        }
+        if ($checkInTo = $request->query('check_in_to')) {
+            $query->where('check_in', '<=', $checkInTo);
+        }
+
+        $reservations = $query->get();
+        $format = $request->query('format', 'csv');
+        $filename = 'bookings-'.Str::slug(now()->format('Y-m-d H-i')).'.'.$format;
+
+        if ($format === 'html') {
+            return view('admin.reservations.export-pdf', [
+                'reservations' => $reservations,
+                'filters' => $request->only(['status', 'source', 'search', 'check_in_from', 'check_in_to']),
+            ]);
+        }
+
+        return response()->streamDownload(function () use ($reservations): void {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, [
+                'Reference',
+                'Guest',
+                'Email',
+                'Room',
+                'Check-in',
+                'Check-out',
+                'Nights',
+                'Guests',
+                'Total',
+                'Paid',
+                'Payment Status',
+                'Source',
+                'Status',
+                'Created',
+            ]);
+            foreach ($reservations as $r) {
+                fputcsv($handle, [
+                    $r->reference,
+                    $r->guest?->full_name ?? '',
+                    $r->guest?->email ?? '',
+                    $r->room?->name ?? '',
+                    $r->check_in->format('d/m/Y'),
+                    $r->check_out->format('d/m/Y'),
+                    $r->check_in->diffInDays($r->check_out),
+                    $r->guests_count,
+                    $r->total_amount,
+                    $r->paid_amount,
+                    ucfirst($r->payment_status),
+                    ucfirst($r->source),
+                    ucfirst(str_replace('_', ' ', $r->status)),
+                    $r->created_at->format('d/m/Y H:i'),
+                ]);
+            }
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv']);
     }
 
     public function create(): View
