@@ -817,6 +817,21 @@ class AdminResourcesTest extends TestCase
         $this->assertDatabaseHas('properties', ['name' => 'Sea View House']);
     }
 
+    public function test_super_admin_can_delete_property_and_cascade_related_records(): void
+    {
+        $property = Property::factory()->create(['name' => 'Maple Cottage']);
+        Room::factory()->create(['property_id' => $property->id, 'name' => 'Garden Room']);
+        $property->policies()->create(['type' => 'house_rules', 'title' => 'No smoking', 'content' => 'Strictly no smoking']);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->delete(route('admin.properties.destroy', $property))
+            ->assertRedirect(route('admin.properties.index'));
+
+        $this->assertDatabaseMissing('properties', ['id' => $property->id]);
+        $this->assertDatabaseMissing('rooms', ['property_id' => $property->id]);
+        $this->assertDatabaseMissing('property_policies', ['property_id' => $property->id]);
+    }
+
     public function test_super_admin_can_create_room_with_image(): void
     {
         Storage::fake('public');

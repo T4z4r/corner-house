@@ -55,6 +55,14 @@
                                     @can('properties.update')
                                         <a href="{{ route('admin.properties.edit', $property) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
                                     @endcan
+                                    @can('properties.delete')
+                                        <form method="POST" action="{{ route('admin.properties.destroy', $property) }}" class="d-inline"
+                                              onsubmit="return confirm('Delete "{{ $property->name }}" and all its rooms, images, and policies? This cannot be undone.');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                                        </form>
+                                    @endcan
                                 </td>
                             </tr>
                         @empty

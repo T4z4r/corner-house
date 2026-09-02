@@ -9,25 +9,6 @@ use Illuminate\Support\Carbon;
 
 class IcalService
 {
-    private const HEADER = <<<'ICS'
-    BEGIN:VCALENDAR
-    VERSION:2.0
-    PRODID:-//Corner House//Calendar Feed//EN
-    CALSCALE:GREGORIAN
-    METHOD:PUBLISH
-    X-WR-CALNAME:Corner House
-    X-WR-TIMEZONE:Europe/London
-    ICS;
-
-    private const FOOTER = <<<'ICS'
-    END:VCALENDAR
-    ICS;
-
-    private const BLOCKING_TYPES = ['availability', 'manual', 'channel', 'owner', 'maintenance'];
-
-    /**
-     * Generate an iCal (.ics) feed for the given room.
-     */
     public function exportForRoom(Room $room): string
     {
         $from = now()->subYear()->startOfMonth();
@@ -49,7 +30,13 @@ class IcalService
     private function buildCalendar(array $entries): string
     {
         $lines = [
-            self::HEADER,
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//Corner House//Calendar Feed//EN',
+            'CALSCALE:GREGORIAN',
+            'METHOD:PUBLISH',
+            'X-WR-CALNAME:Corner House',
+            'X-WR-TIMEZONE:Europe/London',
         ];
 
         foreach ($entries as $entry) {
@@ -67,7 +54,7 @@ class IcalService
             $lines[] = 'END:VEVENT';
         }
 
-        $lines[] = self::FOOTER;
+        $lines[] = 'END:VCALENDAR';
 
         return implode("\r\n", $lines)."\r\n";
     }
