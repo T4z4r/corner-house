@@ -19,431 +19,562 @@
         @endcan
     </div>
 </div>
-<div class="row g-3">
-    <div class="col-lg-6" id="beds24-integrations">
+
+{{-- Statistics Cards --}}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
         <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white">Accounts</div>
             <div class="card-body">
-                @can('channels.configure')
-                    <form method="POST" action="{{ route('admin.channels.store') }}" class="row g-2 mb-4">
-                        @csrf
-                        <div class="col-md-4"><input name="name" class="form-control" placeholder="Name" required></div>
-                        <div class="col-md-4">
-                            <select name="provider" class="form-select"><option value="beds24">Beds24</option></select>
-                        </div>
-                        <div class="col-md-4">
-                            <select name="status" class="form-select"><option value="inactive">Inactive</option><option value="active">Active</option></select>
-                        </div>
-                        <div class="col-12"><input name="refresh_token" class="form-control" placeholder="Refresh token (optional if using invite code)"></div>
-                        <div class="col-12"><button class="btn btn-ch-primary btn-sm">Save account</button></div>
-                    </form>
-                @endcan
-                @foreach ($accounts as $account)
-                    <div class="border-bottom py-3">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <strong>{{ $account->name }}</strong>
-                                <div class="small text-muted">{{ $account->provider }} · {{ $account->status }} · {{ $account->mappings_count }} mappings</div>
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="small">{{ $account->last_synced_at?->diffForHumans() ?? 'Never synced' }}</span>
-                                @can('channels.configure')
-                                    <a href="{{ route('admin.channels.edit', $account) }}" class="btn btn-sm btn-outline-primary" title="Edit account"><i class="bi bi-pencil"></i></a>
-                                    <form method="POST" action="{{ route('admin.channels.destroy', $account) }}" class="d-inline" onsubmit="return confirm('Delete this account and all its mappings?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete account"><i class="bi bi-trash"></i></button>
-                                    </form>
-                                @endcan
-                            </div>
-                        </div>
-                        @can('channels.configure')
-                            @if ($account->provider === 'beds24')
-                                <form method="POST" action="{{ route('admin.channels.setup', $account) }}" class="row g-2 mt-2">
-                                    @csrf
-                                    <div class="col-8"><input name="invite_code" class="form-control form-control-sm" placeholder="Beds24 invite code" required></div>
-                                    <div class="col-4"><button class="btn btn-sm btn-outline-primary w-100">Exchange code</button></div>
-                                </form>
-                                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" data-inspect-token="{{ $account->id }}">Inspect token</button>
-                                <form method="POST" action="{{ route('admin.channels.properties.sync') }}" class="mt-2">
-                                    @csrf
-                                    <input type="hidden" name="channel_account_id" value="{{ $account->id }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-success">Save properties to system</button>
-                                </form>
-                                <form method="POST" action="{{ route('admin.channels.rooms.sync') }}" class="mt-2">
-                                    @csrf
-                                    <input type="hidden" name="channel_account_id" value="{{ $account->id }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-success">Save rooms to system</button>
-                                </form>
-                                @if (! empty($account->settings['scopes']))
-                                    <div class="small text-muted mt-1">Scopes: {{ implode(', ', $account->settings['scopes']) }}</div>
-                                @endif
-                                <pre class="small bg-light p-2 rounded mt-2 d-none" id="tokenDetails-{{ $account->id }}"></pre>
-                            @endif
-                        @endcan
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                        <i class="bi bi-key-fill text-success fs-4"></i>
                     </div>
-                @endforeach
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white">Room mappings</div>
-            <div class="card-body">
-                @can('channels.configure')
-                    <form method="POST" action="{{ route('admin.channels.import') }}" class="row g-2 mb-3">
-                        @csrf
-                        <div class="col-md-5">
-                            <select name="channel_account_id" class="form-select" required>
-                                @foreach ($accounts as $account)
-                                    <option value="{{ $account->id }}">{{ $account->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-5">
-                            <select name="property_id" class="form-select" required>
-                                @foreach ($properties as $property)
-                                    <option value="{{ $property->id }}">{{ $property->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-2"><button class="btn btn-outline-primary w-100">Import</button></div>
-                    </form>
-                    <form method="POST" action="{{ route('admin.channels.mappings.store') }}" class="row g-2 mb-3">
-                        @csrf
-                        <div class="col-md-6">
-                            <select name="channel_account_id" class="form-select" required>
-                                @foreach ($accounts as $account)
-                                    <option value="{{ $account->id }}">{{ $account->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <select name="property_id" class="form-select" required>
-                                @foreach ($properties as $property)
-                                    <option value="{{ $property->id }}">{{ $property->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <select name="room_id" class="form-select">
-                                <option value="">Corner House room</option>
-                                @foreach ($rooms as $room)
-                                    <option value="{{ $room->id }}">{{ $room->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-6"><input name="external_room_id" class="form-control" placeholder="Beds24 room ID"></div>
-                        <div class="col-12"><button class="btn btn-ch-primary btn-sm">Save mapping</button></div>
-                    </form>
-                @endcan
-                @foreach ($mappings as $mapping)
-                    <div class="small border-bottom py-2">
-                        {{ $mapping->room?->name ?? 'Unmapped' }}
-                        → {{ $mapping->provider }} room {{ $mapping->external_room_id }}
-                        @if ($mapping->metadata['beds24_room_name'] ?? null)
-                            ({{ $mapping->metadata['beds24_room_name'] }})
-                        @endif
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </div>
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <span>Bookings publishing</span>
-                <span class="small text-muted">Send bookings and guest details to Beds24</span>
-            </div>
-            <div class="card-body">
-                @can('channels.configure')
-                    @if ($reservations->isNotEmpty())
-                        <div class="list-group list-group-flush bg-white rounded">
-                            @foreach ($reservations as $reservation)
-                                <div class="list-group-item d-flex justify-content-between align-items-center gap-3">
-                                    <div>
-                                        <div class="fw-semibold">{{ $reservation->reference }}</div>
-                                        <div class="small text-muted">
-                                            {{ $reservation->guest?->full_name ?? 'Guest' }}
-                                            · {{ $reservation->room?->name ?? 'Room' }}
-                                            · {{ $reservation->check_in?->format('d M Y') }} to {{ $reservation->check_out?->format('d M Y') }}
-                                        </div>
-                                    </div>
-                                    <div class="d-flex flex-wrap justify-content-end gap-2">
-                                        <form method="POST" action="{{ route('admin.channels.bookings.publish', $reservation) }}">
-                                            @csrf
-                                            <button class="btn btn-sm btn-ch-primary" type="submit">Publish booking</button>
-                                        </form>
-                                        <form method="POST" action="{{ route('admin.channels.bookings.guests.publish', $reservation) }}">
-                                            @csrf
-                                            <button class="btn btn-sm btn-outline-primary" type="submit">Post guests</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="text-muted small">No bookings available to publish.</div>
-                    @endif
-                @endcan
-            </div>
-        </div>
-    </div>
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <span>Price import</span>
-                <span class="small text-muted">Fetch Beds24 calendar prices and store them locally</span>
-            </div>
-            <div class="card-body">
-                @can('channels.configure')
-                    <form method="POST" action="{{ route('admin.channels.prices.import') }}" class="row g-2 align-items-end">
-                        @csrf
-                        <div class="col-md-4">
-                            <label class="form-label">Beds24 account</label>
-                            <select name="account_id" class="form-select" required>
-                                @foreach ($accounts as $account)
-                                    <option value="{{ $account->id }}">{{ $account->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <p class="text-muted small mb-0">This pulls Beds24 calendar prices into local pricing overrides and calendar blocks.</p>
-                        </div>
-                        <div class="col-md-4 text-md-end">
-                            <button class="btn btn-ch-primary" type="submit">Import prices from Beds24</button>
-                        </div>
-                    </form>
-                @endcan
-            </div>
-        </div>
-    </div>
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <span>Property publishing</span>
-                <span class="small text-muted">Send local properties and rooms to Beds24</span>
-            </div>
-            <div class="card-body">
-                @can('channels.configure')
-                    @if ($properties->isNotEmpty())
-                        <div class="list-group list-group-flush bg-white rounded">
-                            @foreach ($properties as $property)
-                                <div class="list-group-item d-flex justify-content-between align-items-center gap-3">
-                                    <div>
-                                        <div class="fw-semibold">{{ $property->name }}</div>
-                                        <div class="small text-muted">
-                                            {{ $property->city ?? 'No city' }}
-                                            · {{ $property->rooms_count }} room{{ $property->rooms_count === 1 ? '' : 's' }}
-                                        </div>
-                                    </div>
-                                    <form method="POST" action="{{ route('admin.channels.properties.publish', $property) }}">
-                                        @csrf
-                                        <button class="btn btn-sm btn-ch-primary" type="submit">Publish property</button>
-                                    </form>
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="text-muted small">No properties available to publish.</div>
-                    @endif
-                @endcan
-            </div>
-        </div>
-    </div>
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <span>Pricing publishing</span>
-                <span class="small text-muted">Send existing local pricing changes to Beds24</span>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-lg-6">
-                        <div class="border rounded-3 p-3 h-100 bg-light">
-                            <div class="fw-semibold mb-1">Pricing rules</div>
-                            <p class="text-muted small mb-3">Choose a rule and publish its date range, adjustment and stay limits to Beds24.</p>
-                            @can('channels.configure')
-                                @if ($pricingRules->isNotEmpty())
-                                    <div class="list-group list-group-flush bg-white rounded">
-                                        @foreach ($pricingRules as $pricingRule)
-                                            <div class="list-group-item d-flex justify-content-between align-items-center gap-3">
-                                                <div>
-                                                    <div class="fw-semibold">{{ $pricingRule->name }}</div>
-                                                    <div class="small text-muted">
-                                                        {{ $pricingRule->rule_type }} · priority {{ $pricingRule->priority }}
-                                                        @if ($pricingRule->start_date)
-                                                            · {{ $pricingRule->start_date->format('d M Y') }} to {{ $pricingRule->end_date?->format('d M Y') ?? 'open' }}
-                                                        @endif
-                                                    </div>
-                                                </div>
-                                                <form method="POST" action="{{ route('admin.channels.pricing.rules.publish', $pricingRule) }}">
-                                                    @csrf
-                                                    <button class="btn btn-sm btn-ch-primary" type="submit">Publish</button>
-                                                </form>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @else
-                                    <div class="text-muted small">No pricing rules yet.</div>
-                                @endif
-                            @endcan
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="border rounded-3 p-3 h-100 bg-light">
-                            <div class="fw-semibold mb-1">Rate overrides</div>
-                            <p class="text-muted small mb-3">Choose a manual override and push the nightly rate and stay limit to Beds24.</p>
-                            @can('channels.configure')
-                                @if ($pricingOverrides->isNotEmpty())
-                                    <div class="list-group list-group-flush bg-white rounded">
-                                        @foreach ($pricingOverrides as $pricingOverride)
-                                            <div class="list-group-item d-flex justify-content-between align-items-center gap-3">
-                                                <div>
-                                                    <div class="fw-semibold">{{ $pricingOverride->room?->name ?? 'Room' }}</div>
-                                                    <div class="small text-muted">
-                                                        £{{ number_format((float) $pricingOverride->rate, 2) }}
-                                                        · {{ $pricingOverride->start_date->format('d M Y') }} to {{ $pricingOverride->end_date->format('d M Y') }}
-                                                    </div>
-                                                </div>
-                                                <form method="POST" action="{{ route('admin.channels.pricing.overrides.publish', $pricingOverride) }}">
-                                                    @csrf
-                                                    <button class="btn btn-sm btn-ch-primary" type="submit">Publish</button>
-                                                </form>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @else
-                                    <div class="text-muted small">No rate overrides yet.</div>
-                                @endif
-                            @endcan
-                        </div>
+                    <div>
+                        <div class="small text-muted">Active Accounts</div>
+                        <div class="fs-4 fw-bold">{{ $stats['active_accounts'] }}</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-12" id="beds24-test-window">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <span>API test window</span>
-                <a class="small" href="{{ $swaggerUrl }}" target="_blank" rel="noopener">Open official Swagger</a>
-            </div>
+    <div class="col-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
-                @can('channels.configure')
-                    <form id="beds24TestForm" class="row g-2">
-                        @csrf
-                        <div class="col-md-3">
-                            <select name="account_id" id="beds24Account" class="form-select" required>
-                                @foreach ($accounts as $account)
-                                    <option value="{{ $account->id }}">{{ $account->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <select name="method" id="beds24Method" class="form-select">
-                                <option>GET</option>
-                                <option>POST</option>
-                                <option>PATCH</option>
-                                <option>DELETE</option>
-                            </select>
-                        </div>
-                        <div class="col-md-5">
-                            <select name="endpoint" id="beds24Endpoint" class="form-select">
-                                @foreach ($testEndpoints as $endpoint)
-                                    <option value="{{ $endpoint }}">{{ $endpoint }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <button class="btn btn-ch-primary w-100" type="submit">Run</button>
-                        </div>
-                        <div class="col-12">
-                            <textarea id="beds24Body" class="form-control font-monospace" rows="4" placeholder='JSON body/query. For auth endpoints use {"code":"..."} or {"refreshToken":"..."}'></textarea>
-                        </div>
-                    </form>
-                    <pre id="beds24Result" class="bg-dark text-white p-3 rounded mt-3 small mb-0" style="min-height: 140px;">Response will appear here.</pre>
-                @else
-                    <p class="text-muted mb-0">You need channel configure permission to use the test window.</p>
-                @endcan
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                        <i class="bi bi-link-45deg text-primary fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="small text-muted">Room Mappings</div>
+                        <div class="fs-4 fw-bold">{{ $stats['total_mappings'] }}</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white">Recent sync logs</div>
-            <div class="card-body pb-0">
-                <form method="GET" class="row g-2 mb-3">
-                    <div class="col-md-4">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" name="log_search" class="form-control" placeholder="Search channel, operation, status…" value="{{ request('log_search') }}">
-                        </div>
+    <div class="col-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                        <i class="bi bi-clock-history text-info fs-4"></i>
                     </div>
-                    <div class="col-md-3">
-                        <select name="log_status" class="form-select form-select-sm">
-                            <option value="">All statuses</option>
-                            <option value="success" @selected(request('log_status') === 'success')>Success</option>
-                            <option value="failed" @selected(request('log_status') === 'failed')>Failed</option>
-                            <option value="pending" @selected(request('log_status') === 'pending')>Pending</option>
-                            <option value="partial" @selected(request('log_status') === 'partial')>Partial</option>
-                        </select>
+                    <div>
+                        <div class="small text-muted">Last Sync</div>
+                        <div class="fw-bold">{{ $stats['last_sync_at'] ?? 'Never' }}</div>
                     </div>
-                    <div class="col-md-2">
-                        <button class="btn btn-sm btn-ch-primary w-100" type="submit">Filter</button>
-                    </div>
-                    @if (request('log_search') || request('log_status'))
-                        <div class="col-md-2">
-                            <a href="{{ route('admin.channels.integrations') }}" class="btn btn-sm btn-outline-secondary w-100">Clear</a>
-                        </div>
-                    @endif
-                </form>
+                </div>
             </div>
-            <div class="table-responsive">
-                <table class="table mb-0">
-                    <thead><tr><th>Channel</th><th>Operation</th><th>Status</th><th>When</th><th></th></tr></thead>
-                    <tbody>
-                        @forelse ($logs as $log)
-                            <tr>
-                                <td>{{ $log->channel }}</td>
-                                <td>{{ $log->operation }}</td>
-                                <td>{{ $log->status }}</td>
-                                <td>{{ $log->created_at->diffForHumans() }}</td>
-                                <td class="text-end">
-                                    <button
-                                        type="button"
-                                        class="btn btn-sm btn-outline-primary"
-                                        data-log-details='{{ json_encode([
-                                            "id" => $log->id,
-                                            "channel" => $log->channel,
-                                            "operation" => $log->operation,
-                                            "status" => $log->status,
-                                            "external_id" => $log->external_id,
-                                            "error_message" => $log->error_message,
-                                            "created_at" => $log->created_at?->toIso8601String(),
-                                            "started_at" => $log->started_at?->toIso8601String(),
-                                            "completed_at" => $log->completed_at?->toIso8601String(),
-                                            "request" => $log->request,
-                                            "response" => $log->response,
-                                        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}'
-                                    >
-                                        View details
-                                    </button>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="5" class="text-muted">No sync activity yet.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                        <i class="bi bi-exclamation-triangle text-warning fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="small text-muted">Failed Today</div>
+                        <div class="fs-4 fw-bold {{ $stats['failed_syncs_today'] > 0 ? 'text-danger' : '' }}">{{ $stats['failed_syncs_today'] }}</div>
+                    </div>
+                </div>
             </div>
-            @if ($logs->hasPages())
-                <div class="card-footer bg-white">{{ $logs->links() }}</div>
-            @endif
         </div>
     </div>
 </div>
 
+{{-- Tabbed Content --}}
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <ul class="nav nav-tabs mb-4" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-overview" type="button" role="tab">
+                    <i class="bi bi-grid me-1"></i>Overview
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-publishing" type="button" role="tab">
+                    <i class="bi bi-send me-1"></i>Publishing
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-sync" type="button" role="tab">
+                    <i class="bi bi-arrow-repeat me-1"></i>Sync &amp; Logs
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-test" type="button" role="tab">
+                    <i class="bi bi-terminal me-1"></i>API Test
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            {{-- Overview Tab --}}
+            <div class="tab-pane fade show active" id="tab-overview" role="tabpanel">
+                <div class="row g-4">
+                    {{-- Accounts --}}
+                    <div class="col-lg-6">
+                        <h6 class="fw-semibold mb-3">Accounts</h6>
+                        @can('channels.configure')
+                            <form method="POST" action="{{ route('admin.channels.store') }}" class="row g-2 mb-4">
+                                @csrf
+                                <div class="col-md-4"><input name="name" class="form-control" placeholder="Name" required></div>
+                                <div class="col-md-4">
+                                    <select name="provider" class="form-select"><option value="beds24">Beds24</option></select>
+                                </div>
+                                <div class="col-md-4">
+                                    <select name="status" class="form-select"><option value="inactive">Inactive</option><option value="active">Active</option></select>
+                                </div>
+                                <div class="col-12"><input name="refresh_token" class="form-control" placeholder="Refresh token (optional if using invite code)"></div>
+                                <div class="col-12"><button class="btn btn-ch-primary btn-sm">Save account</button></div>
+                            </form>
+                        @endcan
+                        @foreach ($accounts as $account)
+                            <div class="border-bottom py-3">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>{{ $account->name }}</strong>
+                                        <div class="small text-muted">{{ $account->provider }} · {{ $account->status }} · {{ $account->mappings_count }} mappings</div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="small">{{ $account->last_synced_at?->diffForHumans() ?? 'Never synced' }}</span>
+                                        @can('channels.configure')
+                                            <a href="{{ route('admin.channels.edit', $account) }}" class="btn btn-sm btn-outline-primary" title="Edit account"><i class="bi bi-pencil"></i></a>
+                                            <form method="POST" action="{{ route('admin.channels.destroy', $account) }}" class="d-inline" onsubmit="return confirm('Delete this account and all its mappings?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete account"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        @endcan
+                                    </div>
+                                </div>
+                                @can('channels.configure')
+                                    @if ($account->provider === 'beds24')
+                                        <form method="POST" action="{{ route('admin.channels.setup', $account) }}" class="row g-2 mt-2">
+                                            @csrf
+                                            <div class="col-8"><input name="invite_code" class="form-control form-control-sm" placeholder="Beds24 invite code" required></div>
+                                            <div class="col-4"><button class="btn btn-sm btn-outline-primary w-100">Exchange code</button></div>
+                                        </form>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary mt-2" data-inspect-token="{{ $account->id }}">Inspect token</button>
+                                        <form method="POST" action="{{ route('admin.channels.properties.sync') }}" class="mt-2">
+                                            @csrf
+                                            <input type="hidden" name="channel_account_id" value="{{ $account->id }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-success">Save properties to system</button>
+                                        </form>
+                                        <form method="POST" action="{{ route('admin.channels.rooms.sync') }}" class="mt-2">
+                                            @csrf
+                                            <input type="hidden" name="channel_account_id" value="{{ $account->id }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-success">Save rooms to system</button>
+                                        </form>
+                                        @if (! empty($account->settings['scopes']))
+                                            <div class="small text-muted mt-1">Scopes: {{ implode(', ', $account->settings['scopes']) }}</div>
+                                        @endif
+                                        <pre class="small bg-light p-2 rounded mt-2 d-none" id="tokenDetails-{{ $account->id }}"></pre>
+                                    @endif
+                                @endcan
+                            </div>
+                        @endforeach
+                    </div>
+
+                    {{-- Room Mappings --}}
+                    <div class="col-lg-6">
+                        <h6 class="fw-semibold mb-3">Room Mappings</h6>
+                        @can('channels.configure')
+                            <form method="POST" action="{{ route('admin.channels.import') }}" class="row g-2 mb-3">
+                                @csrf
+                                <div class="col-md-5">
+                                    <select name="channel_account_id" class="form-select" required>
+                                        @foreach ($accounts as $account)
+                                            <option value="{{ $account->id }}">{{ $account->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <select name="property_id" class="form-select" required>
+                                        @foreach ($properties as $property)
+                                            <option value="{{ $property->id }}">{{ $property->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-2"><button class="btn btn-outline-primary w-100">Import</button></div>
+                            </form>
+                            <form method="POST" action="{{ route('admin.channels.mappings.store') }}" class="row g-2 mb-3">
+                                @csrf
+                                <div class="col-md-6">
+                                    <select name="channel_account_id" class="form-select" required>
+                                        @foreach ($accounts as $account)
+                                            <option value="{{ $account->id }}">{{ $account->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <select name="property_id" class="form-select" required>
+                                        @foreach ($properties as $property)
+                                            <option value="{{ $property->id }}">{{ $property->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <select name="room_id" class="form-select">
+                                        <option value="">Corner House room</option>
+                                        @foreach ($rooms as $room)
+                                            <option value="{{ $room->id }}">{{ $room->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6"><input name="external_room_id" class="form-control" placeholder="Beds24 room ID"></div>
+                                <div class="col-12"><button class="btn btn-ch-primary btn-sm">Save mapping</button></div>
+                            </form>
+                        @endcan
+                        @forelse ($mappings as $mapping)
+                            <div class="small border-bottom py-2">
+                                {{ $mapping->room?->name ?? 'Unmapped' }}
+                                → {{ $mapping->provider }} room {{ $mapping->external_room_id }}
+                                @if ($mapping->metadata['beds24_room_name'] ?? null)
+                                    ({{ $mapping->metadata['beds24_room_name'] }})
+                                @endif
+                            </div>
+                        @empty
+                            <div class="text-muted small">No mappings configured yet.</div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+
+            {{-- Publishing Tab --}}
+            <div class="tab-pane fade" id="tab-publishing" role="tabpanel">
+                <div class="row g-4">
+                    {{-- Bookings Publishing --}}
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <span class="fw-semibold"><i class="bi bi-calendar-check me-2"></i>Bookings publishing</span>
+                                <span class="small text-muted">Send bookings and guest details to Beds24</span>
+                            </div>
+                            <div class="card-body">
+                                @can('channels.configure')
+                                    @if ($reservations->isNotEmpty())
+                                        <div class="list-group list-group-flush bg-white rounded">
+                                            @foreach ($reservations as $reservation)
+                                                <div class="list-group-item d-flex justify-content-between align-items-center gap-3">
+                                                    <div>
+                                                        <div class="fw-semibold">{{ $reservation->reference }}</div>
+                                                        <div class="small text-muted">
+                                                            {{ $reservation->guest?->full_name ?? 'Guest' }}
+                                                            · {{ $reservation->room?->name ?? 'Room' }}
+                                                            · {{ $reservation->check_in?->format('d M Y') }} to {{ $reservation->check_out?->format('d M Y') }}
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex flex-wrap justify-content-end gap-2">
+                                                        <form method="POST" action="{{ route('admin.channels.bookings.publish', $reservation) }}">
+                                                            @csrf
+                                                            <button class="btn btn-sm btn-ch-primary" type="submit">Publish booking</button>
+                                                        </form>
+                                                        <form method="POST" action="{{ route('admin.channels.bookings.guests.publish', $reservation) }}">
+                                                            @csrf
+                                                            <button class="btn btn-sm btn-outline-primary" type="submit">Post guests</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <div class="text-muted small">No bookings available to publish.</div>
+                                    @endif
+                                @endcan
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Property Publishing --}}
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <span class="fw-semibold"><i class="bi bi-building me-2"></i>Property publishing</span>
+                                <span class="small text-muted">Send local properties and rooms to Beds24</span>
+                            </div>
+                            <div class="card-body">
+                                @can('channels.configure')
+                                    @if ($properties->isNotEmpty())
+                                        <div class="list-group list-group-flush bg-white rounded">
+                                            @foreach ($properties as $property)
+                                                <div class="list-group-item d-flex justify-content-between align-items-center gap-3">
+                                                    <div>
+                                                        <div class="fw-semibold">{{ $property->name }}</div>
+                                                        <div class="small text-muted">
+                                                            {{ $property->city ?? 'No city' }}
+                                                            · {{ $property->rooms_count }} room{{ $property->rooms_count === 1 ? '' : 's' }}
+                                                        </div>
+                                                    </div>
+                                                    <form method="POST" action="{{ route('admin.channels.properties.publish', $property) }}">
+                                                        @csrf
+                                                        <button class="btn btn-sm btn-ch-primary" type="submit">Publish property</button>
+                                                    </form>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <div class="text-muted small">No properties available to publish.</div>
+                                    @endif
+                                @endcan
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Pricing Publishing --}}
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <span class="fw-semibold"><i class="bi bi-currency-pound me-2"></i>Pricing publishing</span>
+                                <span class="small text-muted">Send existing local pricing changes to Beds24</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-lg-6">
+                                        <div class="border rounded-3 p-3 h-100 bg-light">
+                                            <div class="fw-semibold mb-1">Pricing rules</div>
+                                            <p class="text-muted small mb-3">Choose a rule and publish its date range, adjustment and stay limits to Beds24.</p>
+                                            @can('channels.configure')
+                                                @if ($pricingRules->isNotEmpty())
+                                                    <div class="list-group list-group-flush bg-white rounded">
+                                                        @foreach ($pricingRules as $pricingRule)
+                                                            <div class="list-group-item d-flex justify-content-between align-items-center gap-3">
+                                                                <div>
+                                                                    <div class="fw-semibold">{{ $pricingRule->name }}</div>
+                                                                    <div class="small text-muted">
+                                                                        {{ $pricingRule->rule_type }} · priority {{ $pricingRule->priority }}
+                                                                        @if ($pricingRule->start_date)
+                                                                            · {{ $pricingRule->start_date->format('d M Y') }} to {{ $pricingRule->end_date?->format('d M Y') ?? 'open' }}
+                                                                        @endif
+                                                                    </div>
+                                                                </div>
+                                                                <form method="POST" action="{{ route('admin.channels.pricing.rules.publish', $pricingRule) }}">
+                                                                    @csrf
+                                                                    <button class="btn btn-sm btn-ch-primary" type="submit">Publish</button>
+                                                                </form>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                @else
+                                                    <div class="text-muted small">No pricing rules yet.</div>
+                                                @endif
+                                            @endcan
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="border rounded-3 p-3 h-100 bg-light">
+                                            <div class="fw-semibold mb-1">Rate overrides</div>
+                                            <p class="text-muted small mb-3">Choose a manual override and push the nightly rate and stay limit to Beds24.</p>
+                                            @can('channels.configure')
+                                                @if ($pricingOverrides->isNotEmpty())
+                                                    <div class="list-group list-group-flush bg-white rounded">
+                                                        @foreach ($pricingOverrides as $pricingOverride)
+                                                            <div class="list-group-item d-flex justify-content-between align-items-center gap-3">
+                                                                <div>
+                                                                    <div class="fw-semibold">{{ $pricingOverride->room?->name ?? 'Room' }}</div>
+                                                                    <div class="small text-muted">
+                                                                        £{{ number_format((float) $pricingOverride->rate, 2) }}
+                                                                        · {{ $pricingOverride->start_date->format('d M Y') }} to {{ $pricingOverride->end_date->format('d M Y') }}
+                                                                    </div>
+                                                                </div>
+                                                                <form method="POST" action="{{ route('admin.channels.pricing.overrides.publish', $pricingOverride) }}">
+                                                                    @csrf
+                                                                    <button class="btn btn-sm btn-ch-primary" type="submit">Publish</button>
+                                                                </form>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                @else
+                                                    <div class="text-muted small">No rate overrides yet.</div>
+                                                @endif
+                                            @endcan
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Sync & Logs Tab --}}
+            <div class="tab-pane fade" id="tab-sync" role="tabpanel">
+                <div class="row g-4">
+                    {{-- Price Import --}}
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <span class="fw-semibold"><i class="bi bi-cloud-download me-2"></i>Price import</span>
+                                <span class="small text-muted">Fetch Beds24 calendar prices and store them locally</span>
+                            </div>
+                            <div class="card-body">
+                                @can('channels.configure')
+                                    <form method="POST" action="{{ route('admin.channels.prices.import') }}" class="row g-2 align-items-end">
+                                        @csrf
+                                        <div class="col-md-4">
+                                            <label class="form-label">Beds24 account</label>
+                                            <select name="account_id" class="form-select" required>
+                                                @foreach ($accounts as $account)
+                                                    <option value="{{ $account->id }}">{{ $account->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <p class="text-muted small mb-0">This pulls Beds24 calendar prices into local pricing overrides and calendar blocks.</p>
+                                        </div>
+                                        <div class="col-md-4 text-md-end">
+                                            <button class="btn btn-ch-primary" type="submit">Import prices from Beds24</button>
+                                        </div>
+                                    </form>
+                                @endcan
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Sync Logs --}}
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <span class="fw-semibold"><i class="bi bi-journal-text me-2"></i>Recent sync logs</span>
+                                <span class="badge bg-light text-dark">{{ $stats['sync_logs_today'] }} today</span>
+                            </div>
+                            <div class="card-body pb-0">
+                                <form method="GET" class="row g-2 mb-3">
+                                    <div class="col-md-4">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                            <input type="text" name="log_search" class="form-control" placeholder="Search channel, operation, status…" value="{{ request('log_search') }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <select name="log_status" class="form-select form-select-sm">
+                                            <option value="">All statuses</option>
+                                            <option value="success" @selected(request('log_status') === 'success')>Success</option>
+                                            <option value="failed" @selected(request('log_status') === 'failed')>Failed</option>
+                                            <option value="pending" @selected(request('log_status') === 'pending')>Pending</option>
+                                            <option value="partial" @selected(request('log_status') === 'partial')>Partial</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button class="btn btn-sm btn-ch-primary w-100" type="submit">Filter</button>
+                                    </div>
+                                    @if (request('log_search') || request('log_status'))
+                                        <div class="col-md-2">
+                                            <a href="{{ route('admin.channels.integrations') }}" class="btn btn-sm btn-outline-secondary w-100">Clear</a>
+                                        </div>
+                                    @endif
+                                </form>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table mb-0">
+                                    <thead><tr><th>Channel</th><th>Operation</th><th>Status</th><th>When</th><th></th></tr></thead>
+                                    <tbody>
+                                        @forelse ($logs as $log)
+                                            <tr>
+                                                <td>{{ $log->channel }}</td>
+                                                <td>{{ $log->operation }}</td>
+                                                <td>
+                                                    @if ($log->status === 'success')
+                                                        <span class="badge bg-success">success</span>
+                                                    @elseif ($log->status === 'failed')
+                                                        <span class="badge bg-danger">failed</span>
+                                                    @elseif ($log->status === 'pending')
+                                                        <span class="badge bg-warning">pending</span>
+                                                    @else
+                                                        <span class="badge bg-secondary">{{ $log->status }}</span>
+                                                    @endif
+                                                </td>
+                                                <td>{{ $log->created_at->diffForHumans() }}</td>
+                                                <td class="text-end">
+                                                    <button
+                                                        type="button"
+                                                        class="btn btn-sm btn-outline-primary"
+                                                        data-log-details='{{ json_encode([
+                                                            "id" => $log->id,
+                                                            "channel" => $log->channel,
+                                                            "operation" => $log->operation,
+                                                            "status" => $log->status,
+                                                            "external_id" => $log->external_id,
+                                                            "error_message" => $log->error_message,
+                                                            "created_at" => $log->created_at?->toIso8601String(),
+                                                            "started_at" => $log->started_at?->toIso8601String(),
+                                                            "completed_at" => $log->completed_at?->toIso8601String(),
+                                                            "request" => $log->request,
+                                                            "response" => $log->response,
+                                                        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}'
+                                                    >
+                                                        View details
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr><td colspan="5" class="text-muted">No sync activity yet.</td></tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                            @if ($logs->hasPages())
+                                <div class="card-footer bg-white">{{ $logs->links() }}</div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- API Test Tab --}}
+            <div class="tab-pane fade" id="tab-test" role="tabpanel">
+                <div class="card" id="beds24-test-window">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold"><i class="bi bi-terminal me-2"></i>API test window</span>
+                        <a class="small" href="{{ $swaggerUrl }}" target="_blank" rel="noopener">Open official Swagger</a>
+                    </div>
+                    <div class="card-body">
+                        @can('channels.configure')
+                            <form id="beds24TestForm" class="row g-2">
+                                @csrf
+                                <div class="col-md-3">
+                                    <select name="account_id" id="beds24Account" class="form-select" required>
+                                        @foreach ($accounts as $account)
+                                            <option value="{{ $account->id }}">{{ $account->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <select name="method" id="beds24Method" class="form-select">
+                                        <option>GET</option>
+                                        <option>POST</option>
+                                        <option>PATCH</option>
+                                        <option>DELETE</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <select name="endpoint" id="beds24Endpoint" class="form-select">
+                                        @foreach ($testEndpoints as $endpoint)
+                                            <option value="{{ $endpoint }}">{{ $endpoint }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-ch-primary w-100" type="submit">Run</button>
+                                </div>
+                                <div class="col-12">
+                                    <textarea id="beds24Body" class="form-control font-monospace" rows="4" placeholder='JSON body/query. For auth endpoints use {"code":"..."} or {"refreshToken":"..."}'></textarea>
+                                </div>
+                            </form>
+                            <pre id="beds24Result" class="bg-dark text-white p-3 rounded mt-3 small mb-0" style="min-height: 140px;">Response will appear here.</pre>
+                        @else
+                            <p class="text-muted mb-0">You need channel configure permission to use the test window.</p>
+                        @endcan
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Log Details Modal --}}
 <div class="modal fade" id="beds24LogModal" tabindex="-1" aria-labelledby="beds24LogModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">

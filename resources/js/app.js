@@ -10,11 +10,13 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
 import { initChatWidget } from './chat-widget';
+import Swal from 'sweetalert2';
 
 window.$ = window.jQuery = $;
 window.bootstrap = bootstrap;
 window.Chart = Chart;
 window.FullCalendar = { Calendar, dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin };
+window.Swal = Swal;
 
 document.addEventListener('DOMContentLoaded', function () {
     initChatWidget();
