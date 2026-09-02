@@ -169,6 +169,30 @@
         max-height: 400px;
     }
 
+    .calendar-side [id="dayDetail"] {
+        min-width: 0;
+    }
+
+    .calendar-side [id="dayDetailList"] {
+        min-width: 0;
+    }
+
+    .ch-day-detail-card {
+        max-width: 100%;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .ch-day-detail-card .flex-grow-1 {
+        min-width: 0;
+    }
+
+    .ch-day-detail-card .fw-semibold,
+    .ch-day-detail-card .small.text-muted {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
     .calendar-empty {
         min-height: 240px;
         display: flex;
@@ -584,7 +608,7 @@
                     <div class="small text-muted">Selected date</div>
                     <div class="fw-semibold">${formatDayLabel(date)}</div>
                 </div>
-                <div class="d-flex flex-column gap-2">
+                <div class="d-flex flex-column gap-2" id="dayDetailList">
                     ${dayEvents.map((event) => {
                         const openUrl = event.extendedProps?.url || null;
                         const colorClass = eventBadgeClass(event);
@@ -595,13 +619,13 @@
                             : formatEventDate(parseLocalDate(event.start));
                         const body = `
                             <div class="small text-muted">${dateRange}</div>
-                            <div class="fw-semibold text-truncate">${label}</div>
-                            ${roomName ? `<div class="small text-muted"><i class="bi bi-door-open me-1"></i>${roomName}</div>` : ''}
+                            <div class="fw-semibold text-truncate" title="${label}">${label}</div>
+                            ${roomName ? `<div class="small text-muted text-truncate" title="${roomName}"><i class="bi bi-door-open me-1"></i>${roomName}</div>` : ''}
                         `;
 
                         if (openUrl) {
                             return `
-                                <a href="${openUrl}" class="text-decoration-none text-reset border rounded-3 p-3 d-block">
+                                <a href="${openUrl}" class="ch-day-detail-card text-decoration-none text-reset border rounded-3 p-3 d-block">
                                     <div class="d-flex align-items-start gap-2">
                                         <span class="legend-swatch ${colorClass} mt-1"></span>
                                         <div class="flex-grow-1">${body}</div>
@@ -611,7 +635,7 @@
                         }
 
                         return `
-                            <div class="border rounded-3 p-3">
+                            <div class="ch-day-detail-card border rounded-3 p-3">
                                 <div class="d-flex align-items-start gap-2">
                                     <span class="legend-swatch ${colorClass} mt-1"></span>
                                     <div class="flex-grow-1">${body}</div>
