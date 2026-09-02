@@ -483,6 +483,13 @@ body.ch-collapsed .ch-sidebar hr {
     padding: 0.85rem;
 }
 
+/* ============ Pagination ============ */
+.page-item.active .page-link {
+    background-color: var(--bs-success);
+    border-color: var(--bs-success);
+    color: #fff;
+}
+
 /* ============ Forms ============ */
 .form-control,
 .form-select {

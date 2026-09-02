@@ -38,9 +38,15 @@
                     @endforeach
                 </select>
             </div>
+            <div class="col-6 col-md-2">
+                <input type="date" name="check_in_from" value="{{ request('check_in_from') }}" class="form-control" placeholder="Check-in from">
+            </div>
+            <div class="col-6 col-md-2">
+                <input type="date" name="check_in_to" value="{{ request('check_in_to') }}" class="form-control" placeholder="Check-in to">
+            </div>
             <div class="col-12 col-md-4 d-flex gap-2">
                 <button class="btn btn-ch-primary"><i class="bi bi-funnel me-1"></i>Apply filters</button>
-                @if (request('status') || request('source') || request('search'))
+                @if (request('status') || request('source') || request('search') || request('check_in_from') || request('check_in_to'))
                     <a href="{{ route('admin.reservations.index') }}" class="btn btn-light">Clear</a>
                 @endif
             </div>
@@ -94,7 +100,7 @@
                                 @include('layouts.admin._empty', [
                                     'icon' => 'bi-journal-bookmark',
                                     'message' => 'No bookings found',
-                                    'hint' => request('status') || request('source') || request('search') ? 'Try clearing or adjusting your filters.' : 'Bookings will appear here once guests reserve a room.',
+                                    'hint' => request('status') || request('source') || request('search') || request('check_in_from') || request('check_in_to') ? 'Try clearing or adjusting your filters.' : 'Bookings will appear here once guests reserve a room.',
                                     'colspan' => 9,
                                     'actionUrl' => auth()->user()->can('reservations.create') ? route('admin.reservations.create') : null,
                                     'actionLabel' => 'New booking',

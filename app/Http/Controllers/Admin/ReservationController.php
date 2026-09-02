@@ -36,6 +36,12 @@ class ReservationController extends Controller
                     ->orWhereHas('guest', fn ($g) => $g->where('last_name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"));
             });
         }
+        if ($checkInFrom = $request->query('check_in_from')) {
+            $query->where('check_in', '>=', $checkInFrom);
+        }
+        if ($checkInTo = $request->query('check_in_to')) {
+            $query->where('check_in', '<=', $checkInTo);
+        }
 
         $reservations = $query->paginate(20)->withQueryString();
 
