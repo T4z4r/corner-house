@@ -73,6 +73,44 @@ class ReservationController extends Controller
         ]);
     }
 
+    public function edit(Reservation $reservation): View
+    {
+        return view('admin.reservations.edit', [
+            'reservation' => $reservation->load(['guest']),
+            'rooms' => Room::query()->where('status', 'active')->with('property')->get(),
+        ]);
+    }
+
+    public function update(Request $request, Reservation $reservation): RedirectResponse
+    {
+        try {
+            $data = $this->validated($request);
+            $data['source'] = $reservation->source;
+
+            $this->bookingService->update($reservation, $data);
+            $this->systemNotifications->reservationUpdated($reservation->refresh(), $request->user()?->id);
+            $this->auditLogger->log('reservations.updated', 'reservations', 'reservation', (string) $reservation->id);
+
+            return redirect()->route('admin.reservations.show', $reservation)
+                ->with('status', 'Reservation '.$reservation->reference.' updated.');
+        } catch (\DomainException $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function destroy(Request $request, Reservation $reservation): RedirectResponse
+    {
+        try {
+            $reference = $reservation->reference;
+            $this->bookingService->delete($reservation);
+            $this->auditLogger->log('reservations.deleted', 'reservations', 'reservation', (string) $reservation->id);
+
+            return redirect()->route('admin.reservations.index')->with('status', 'Booking '.$reference.' deleted.');
+        } catch (\DomainException $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
+    }
+
     public function cancel(Request $request, Reservation $reservation): RedirectResponse
     {
         try {

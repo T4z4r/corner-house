@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\RoomController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WebsiteManagementController;
+use App\Http\Controllers\Auth\AccountController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Website\BookingController;
@@ -56,6 +57,12 @@ Route::post('/login', [LoginController::class, 'login']);
 Route::get('/register', [RegisterController::class, 'showRegisterForm'])->name('register');
 Route::post('/register', [RegisterController::class, 'register']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
+
+Route::middleware(['auth'])->name('account.')->group(function (): void {
+    Route::get('/account', [AccountController::class, 'show'])->name('show');
+    Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('profile.update');
+    Route::put('/account/password', [AccountController::class, 'changePassword'])->name('password.update');
+});
 
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');

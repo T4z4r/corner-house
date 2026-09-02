@@ -192,6 +192,8 @@
             <span class="small profile-name">{{ auth()->user()->name }}</span>
         </a>
         <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
+            <li><a class="dropdown-item" href="{{ route('account.show') }}"><i class="bi bi-person me-2"></i>My account</a></li>
+            <li><hr class="dropdown-divider"></li>
             <li>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
@@ -290,6 +292,7 @@
         @endcan
     </ul>
         <div class="mt-auto">
+            <a href="{{ route('account.show') }}" class="btn btn-outline-light w-100 mb-2"><i class="bi bi-person me-2"></i>My account</a>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="btn btn-outline-light w-100"><i class="bi bi-box-arrow-right me-2"></i>Sign out</button>

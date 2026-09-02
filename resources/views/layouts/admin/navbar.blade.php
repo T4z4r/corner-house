@@ -105,6 +105,8 @@
                 <span class="d-none d-md-inline">{{ auth()->user()->name }}</span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="{{ route('account.show') }}"><i class="bi bi-person me-2"></i>My account</a></li>
+                <li><hr class="dropdown-divider"></li>
                 @can('settings.view')
                     <li><a class="dropdown-item" href="{{ route('admin.settings') }}"><i class="bi bi-gear me-2"></i>Settings</a></li>
                     <li><hr class="dropdown-divider"></li>

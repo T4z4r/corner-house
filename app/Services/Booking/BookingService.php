@@ -192,6 +192,112 @@ class BookingService
         });
     }
 
+    /**
+     * Update a reservation with the same double-booking protection as create().
+     *
+     * The room is locked, availability is re-checked (ignoring this
+     * reservation's own id so re-saving does not conflict with itself), and
+     * the price is recomputed server-side.
+     *
+     * @param  array<string, mixed>  $data  same validation contract as create()
+     */
+    public function update(Reservation $reservation, array $data): Reservation
+    {
+        $checkIn = Carbon::parse($data['check_in']);
+        $checkOut = Carbon::parse($data['check_out']);
+        $room = Room::findOrFail($data['room_id']);
+
+        if ($checkOut->lte($checkIn)) {
+            throw new \DomainException('Check-out must be after check-in.');
+        }
+
+        $minimumStay = $this->pricing->minimumStayForRange($room, $checkIn, $checkOut);
+        if ($checkIn->diffInDays($checkOut) < $minimumStay) {
+            throw new \DomainException('Minimum stay not met.');
+        }
+
+        $maximumStay = $this->pricing->maximumStayForRange($room, $checkIn, $checkOut);
+        if ($maximumStay !== null && $checkIn->diffInDays($checkOut) > $maximumStay) {
+            throw new \DomainException('Maximum stay exceeded.');
+        }
+
+        return DB::transaction(function () use ($reservation, $data, $room, $checkIn, $checkOut) {
+            $lockedRoom = Room::query()
+                ->whereKey($room->getKey())
+                ->lockForUpdate()
+                ->first();
+
+            if (! $lockedRoom) {
+                throw new \DomainException('Room not found.');
+            }
+
+            // Ignore this reservation's own id so its current booking does not
+            // block the update, but any other booking in the range still does.
+            $this->availability->assertAvailable(
+                $lockedRoom,
+                $checkIn,
+                $checkOut,
+                ignoredReservationIds: [$reservation->id],
+            );
+
+            $isDirectBooking = ($data['source'] ?? $reservation->source) === 'direct';
+            $price = $this->pricing->calculateForRange(
+                $lockedRoom,
+                $checkIn,
+                $checkOut,
+                $data['guests_count'] ?? $reservation->guests_count ?? 1,
+                null,
+                $isDirectBooking,
+            );
+
+            $guest = $this->firstOrCreateGuest($data);
+
+            $addonsTotal = (float) ($data['addons_total'] ?? 0);
+            $damageDeposit = (float) ($data['damage_deposit'] ?? 0);
+            $finalTotal = round($price['total'] + $addonsTotal + $damageDeposit, 2);
+
+            $reservation->update([
+                'room_id' => $lockedRoom->id,
+                'guest_id' => $guest?->id ?? $reservation->guest_id,
+                'check_in' => $checkIn,
+                'check_out' => $checkOut,
+                'guests_count' => $data['guests_count'] ?? $reservation->guests_count ?? 1,
+                'base_amount' => $price['base_amount'],
+                'discount_amount' => $price['discount_amount'],
+                'tax_amount' => $price['tax_amount'],
+                'fees_amount' => round($price['fees_amount'] + $addonsTotal + $damageDeposit, 2),
+                'total_amount' => $finalTotal,
+                'notes' => $data['notes'] ?? $reservation->notes,
+            ]);
+
+            if ($reservation->status === 'confirmed' && $reservation->wasChanged(['check_in', 'check_out', 'room_id'])) {
+                PushChannelAvailabilityJob::dispatch($reservation->id);
+                PushBeds24BookingJob::dispatch($reservation->id);
+            }
+
+            return $reservation;
+        });
+    }
+
+    /**
+     * Permanently delete a reservation.
+     *
+     * Deleting is refused when the guest has already paid, so money is never
+     * silently removed; an admin should refund via the payments page first.
+     * Related records (payments, add-ons, guest links) are removed by the
+     * database's cascade rules.
+     */
+    public function delete(Reservation $reservation): void
+    {
+        if (in_array($reservation->payment_status, ['paid', 'partial'], true) || $reservation->paid_amount > 0) {
+            throw new \DomainException('This booking has payments. Refund the payments before deleting the booking.');
+        }
+
+        // The database cascade removes related rows and frees the room's
+        // dates immediately (the reservation no longer overlaps the range).
+        DB::transaction(fn () => $reservation->delete());
+    }
+
     private function afterConfirm(Reservation $reservation): void
     {
         SendBookingConfirmationJob::dispatch($reservation->id);
