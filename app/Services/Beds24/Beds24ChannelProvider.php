@@ -8,36 +8,6 @@ use App\Services\Channel\ChannelProviderInterface;
 
 class Beds24ChannelProvider implements ChannelProviderInterface
 {
-    /**
-     * @var list<string>
-     */
-    private const CALENDAR_FIELDS = [
-        'from',
-        'to',
-        'numAvail',
-        'minStay',
-        'maxStay',
-        'multiplier',
-        'override',
-        'price1',
-        'price2',
-        'price3',
-        'price4',
-        'price5',
-        'price6',
-        'price7',
-        'price8',
-        'price9',
-        'price10',
-        'price11',
-        'price12',
-        'price13',
-        'price14',
-        'price15',
-        'price16',
-        'channels',
-    ];
-
     public function __construct(private readonly Beds24Client $client) {}
 
     public function provider(): string
@@ -84,11 +54,15 @@ class Beds24ChannelProvider implements ChannelProviderInterface
     {
         return $this->client->get($account, 'inventory/rooms/calendar', [
             'roomId' => $roomId,
-            'from' => $from,
-            'to' => $to,
             'startDate' => $from,
             'endDate' => $to,
-            'fields' => self::CALENDAR_FIELDS,
+            'includeNumAvail' => 'true',
+            'includeMinStay' => 'true',
+            'includeMaxStay' => 'true',
+            'includeMultiplier' => 'true',
+            'includeOverride' => 'true',
+            'includePrices' => 'true',
+            'includeChannels' => 'true',
         ]);
     }
 

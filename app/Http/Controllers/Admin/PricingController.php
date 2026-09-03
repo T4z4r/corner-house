@@ -56,12 +56,14 @@ class PricingController extends Controller
             'occupancy_threshold' => ['nullable', 'numeric', 'between:0,100'],
             'days_before_checkin' => ['nullable', 'integer', 'min:0'],
             'apply_weekends_only' => ['nullable', 'boolean'],
+            'recurring' => ['nullable', 'boolean'],
             'is_enabled' => ['nullable', 'boolean'],
         ]);
 
         $rule = PricingRule::create([
             ...$validated,
             'apply_weekends_only' => $request->boolean('apply_weekends_only'),
+            'recurring' => $request->boolean('recurring'),
             'is_enabled' => $request->boolean('is_enabled', true),
         ]);
 
@@ -84,12 +86,14 @@ class PricingController extends Controller
             'occupancy_threshold' => ['nullable', 'numeric', 'between:0,100'],
             'days_before_checkin' => ['nullable', 'integer', 'min:0'],
             'apply_weekends_only' => ['nullable', 'boolean'],
+            'recurring' => ['nullable', 'boolean'],
             'is_enabled' => ['nullable', 'boolean'],
         ]);
 
         $rule->update([
             ...$validated,
             'apply_weekends_only' => $request->boolean('apply_weekends_only'),
+            'recurring' => $request->boolean('recurring'),
             'is_enabled' => $request->boolean('is_enabled', true),
         ]);
 

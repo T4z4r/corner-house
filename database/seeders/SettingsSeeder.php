@@ -189,7 +189,7 @@ class SettingsSeeder extends Seeder
                 'title' => 'Pricing and payment',
                 'items' => [
                     'The whole house is let to one party at a time, for a minimum of 2 nights.',
-                    'The nightly rate is &pound;950 low season, &pound;1,100 shoulder and &pound;1,350 high season, plus a &pound;250 cleaning fee and a refundable security deposit.',
+                    'The nightly rate is &pound;550 Monday to Thursday and &pound;625 Friday to Sunday, rising to &pound;645 Friday to Sunday from April 2027, plus a &pound;50 cleaning fee and a refundable security deposit.',
                     'A non-refundable deposit of 25% secures the dates, with the balance due 8 weeks before arrival.',
                 ],
             ],

@@ -11,6 +11,7 @@ use App\Models\Room;
 use App\Models\Setting;
 use App\Services\Pricing\PricingEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class PricingEngineTest extends TestCase
@@ -329,5 +330,110 @@ class PricingEngineTest extends TestCase
 
         // Average competitor rate for the date: (120 + 140) / 2 = 130
         $this->assertSame(130.0, $this->engine->calculateRateForDate($room, $date));
+    }
+
+    public function test_recurring_rule_applies_same_window_every_year(): void
+    {
+        $room = $this->makeRoom(100);
+
+        PricingRule::create([
+            'room_id' => $room->id,
+            'name' => 'Grand Prix',
+            'rule_type' => 'event',
+            'start_date' => '2026-07-02',
+            'end_date' => '2026-07-04',
+            'adjustment_type' => 'amount',
+            'adjustment_value' => 50,
+            'recurring' => true,
+            'priority' => 1,
+        ]);
+
+        // Inside the window in 2026, 2027 and 2028 (even with a prior year's date).
+        $this->assertSame(150.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-07-03')));
+        $this->assertSame(150.0, $this->engine->calculateRateForDate($room, Carbon::parse('2027-07-02')));
+        $this->assertSame(150.0, $this->engine->calculateRateForDate($room, Carbon::parse('2028-07-04')));
+
+        // Outside the window the base rate applies.
+        $this->assertSame(100.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-07-05')));
+        $this->assertSame(100.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-01-15')));
+    }
+
+    public function test_non_recurring_rule_only_applies_in_its_year(): void
+    {
+        $room = $this->makeRoom(100);
+
+        PricingRule::create([
+            'room_id' => $room->id,
+            'name' => 'One-off event',
+            'rule_type' => 'event',
+            'start_date' => '2026-07-02',
+            'end_date' => '2026-07-04',
+            'adjustment_type' => 'amount',
+            'adjustment_value' => 50,
+            'recurring' => false,
+            'priority' => 1,
+        ]);
+
+        $this->assertSame(150.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-07-03')));
+        $this->assertSame(100.0, $this->engine->calculateRateForDate($room, Carbon::parse('2027-07-03')));
+    }
+
+    public function test_event_rule_overrides_weekend_seasonal_rate(): void
+    {
+        $room = $this->makeRoom(550);
+
+        PricingRule::create([
+            'room_id' => $room->id,
+            'name' => 'Weekend +75',
+            'rule_type' => 'seasonal',
+            'start_date' => now()->subDay()->toDateString(),
+            'end_date' => now()->addYear()->toDateString(),
+            'adjustment_type' => 'amount',
+            'adjustment_value' => 75,
+            'apply_weekends_only' => true,
+            'recurring' => false,
+            'priority' => 5,
+        ]);
+
+        PricingRule::create([
+            'room_id' => $room->id,
+            'name' => 'Christmas',
+            'rule_type' => 'event',
+            'start_date' => '2026-12-24',
+            'end_date' => '2026-12-26',
+            'adjustment_type' => 'amount',
+            'adjustment_value' => 200,
+            'recurring' => true,
+            'priority' => 1,
+        ]);
+
+        // Christmas day 2026 (a Friday) is a weekend but the higher-priority
+        // event rule wins, so the rate is 550 + 200 = 750, not 625.
+        $this->assertSame(750.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-12-25')));
+
+        // A non-holiday weekend stays at 550 + 75 = 625.
+        $this->assertSame(625.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-11-07')));
+    }
+
+    public function test_recurring_rule_raises_minimum_stay(): void
+    {
+        $room = $this->makeRoom(100);
+        $checkIn = Carbon::parse('2027-07-03');
+        $checkOut = $checkIn->copy()->addDays(2);
+
+        PricingRule::create([
+            'room_id' => $room->id,
+            'name' => 'Grand Prix min stay',
+            'rule_type' => 'event',
+            'start_date' => '2026-07-02',
+            'end_date' => '2026-07-04',
+            'adjustment_type' => 'amount',
+            'adjustment_value' => 0,
+            'minimum_stay' => 3,
+            'recurring' => true,
+            'priority' => 1,
+        ]);
+
+        $this->assertSame(3, $this->engine->minimumStayForRange($room, $checkIn, $checkOut));
     }
 }

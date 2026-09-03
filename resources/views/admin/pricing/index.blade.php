@@ -76,7 +76,10 @@
                                             @endif
                                         </td>
                                         <td class="small">
-                                            @if ($rule->start_date)
+                                            @if ($rule->recurring)
+                                                Annually: {{ $rule->start_date->format('d M') }} -> {{ $rule->end_date?->format('d M') ?? 'open' }}
+                                                <span class="badge text-bg-info ms-1">Recurring</span>
+                                            @elseif ($rule->start_date)
                                                 {{ $rule->start_date->format('d M Y') }} -> {{ $rule->end_date?->format('d M Y') ?? 'open' }}
                                             @else
                                                 <span class="text-muted">Always</span>
@@ -187,6 +190,13 @@
                                     <div class="form-check form-switch">
                                         <input class="form-check-input" type="checkbox" name="apply_weekends_only" value="1" @checked($rule->apply_weekends_only)>
                                         <label class="form-check-label">Weekends only</label>
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-check-label form-label d-block">&nbsp;</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="recurring" value="1" @checked($rule->recurring)>
+                                        <label class="form-check-label">Recurring annually</label>
                                     </div>
                                 </div>
                                 <div class="col-6 mb-3">
@@ -332,6 +342,13 @@
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" name="apply_weekends_only" value="1">
                                     <label class="form-check-label">Weekends only</label>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-check-label form-label d-block">&nbsp;</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="recurring" value="1">
+                                    <label class="form-check-label">Recurring annually</label>
                                 </div>
                             </div>
                         </div>

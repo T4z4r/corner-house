@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
         $this->call(SettingsSeeder::class);
         $this->call(PropertySeeder::class);
         $this->call(RoomSeeder::class);
+        $this->call(PricingSeeder::class);
         $this->call(AmenitySeeder::class);
         $this->call(FoodAndDrinkSeeder::class);
         $this->call(PlacesOfInterestSeeder::class);

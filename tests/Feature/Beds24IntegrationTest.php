@@ -1032,10 +1032,10 @@ class Beds24IntegrationTest extends TestCase
         ]);
 
         Http::assertSent(fn ($request) => str_contains($request->url(), 'inventory/rooms/calendar')
-            && str_contains($request->url(), 'numAvail')
-            && str_contains($request->url(), 'minStay')
-            && str_contains($request->url(), 'maxStay')
-            && str_contains($request->url(), 'price1'));
+            && str_contains($request->url(), 'startDate')
+            && str_contains($request->url(), 'endDate')
+            && str_contains($request->url(), 'includeNumAvail')
+            && str_contains($request->url(), 'includePrices'));
     }
 
     public function test_full_sync_replaces_overlapping_channel_blocks(): void

@@ -465,4 +465,19 @@ class PricingEngine
 
         return $target >= $start || $target <= $end;
     }
+
+    /**
+     * Whether a stay range overlaps a recurring rule's annual window. The
+     * window repeats every year, so any checked-in night touching it counts.
+     */
+    private function rangeTouchesRecurring(PricingRule $rule, Carbon $checkIn, Carbon $checkOut): bool
+    {
+        for ($date = $checkIn->copy(); $date->lt($checkOut); $date->addDay()) {
+            if ($this->recurringCovers($rule, $date)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
