@@ -115,11 +115,6 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('admin.channels.vrbo') }}" class="nav-link {{ request()->routeIs('admin.channels.vrbo') ? 'active' : '' }}">
-                    <i class="bi bi-house-door me-2"></i><span class="nav-text">VRBO via Beds24</span>
-                </a>
-            </li>
-            <li class="nav-item">
                 <a href="{{ route('admin.channels.setup.page') }}" class="nav-link {{ request()->routeIs('admin.channels.setup.page') ? 'active' : '' }}">
                     <i class="bi bi-key me-2"></i><span class="nav-text">Beds24 setup</span>
                 </a>
@@ -221,11 +216,6 @@
                 <li class="nav-item">
                     <a href="{{ route('admin.channels.booking') }}" class="nav-link {{ request()->routeIs('admin.channels.booking') ? 'active' : '' }}">
                         <i class="bi bi-building me-2"></i><span class="nav-text">Booking.com via Beds24</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ route('admin.channels.vrbo') }}" class="nav-link {{ request()->routeIs('admin.channels.vrbo') ? 'active' : '' }}">
-                        <i class="bi bi-house-door me-2"></i><span class="nav-text">VRBO via Beds24</span>
                     </a>
                 </li>
                 <li class="nav-item">
