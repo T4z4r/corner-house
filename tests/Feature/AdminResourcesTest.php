@@ -121,6 +121,23 @@ class AdminResourcesTest extends TestCase
             ->assertSee('Manual');
     }
 
+    public function test_calendar_property_filter_exposes_rooms_for_all_properties(): void
+    {
+        $first = Property::factory()->create(['status' => 'active']);
+        $second = Property::factory()->create(['status' => 'active']);
+        Room::factory()->create(['property_id' => $first->id, 'name' => 'Oak Suite', 'status' => 'active']);
+        Room::factory()->create(['property_id' => $second->id, 'name' => 'Garden Room', 'status' => 'active']);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.calendar', ['property_id' => $first->id]))
+            ->assertOk()
+            ->assertSee('id="propertyFilter"', false)
+            ->assertSee($first->name)
+            ->assertSee($second->name)
+            ->assertSee('Oak Suite')
+            ->assertSee('Garden Room');
+    }
+
     public function test_super_admin_can_view_house_rules_without_a_property_record(): void
     {
         $this->actingAs($this->actingAsSuperAdmin())

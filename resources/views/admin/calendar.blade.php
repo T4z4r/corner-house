@@ -416,7 +416,7 @@
         const blockUpdateTemplate = @json(route('admin.calendar.blocks.update', ['block' => '__ID__']));
         const blockToggleTemplate = @json(route('admin.calendar.blocks.toggle', ['block' => '__ID__']));
         const blockDestroyTemplate = @json(route('admin.calendar.blocks.destroy', ['block' => '__ID__']));
-        const roomsData = @json($rooms->map(fn($r) => ['id' => $r->id, 'name' => $r->name]));
+        const roomsData = @json($allRooms->map(fn($r) => ['id' => $r->id, 'name' => $r->name, 'property_id' => $r->property_id]));
         const today = startOfDay(new Date());
         let visibleMonth = startOfMonth(parseMonthKey(initialMonth));
         let selectedDate = isSameMonth(today, visibleMonth) ? today : new Date(visibleMonth);
@@ -766,6 +766,16 @@
             loadEvents().then(renderMonth);
         }
 
+        function populateRoomOptions(selectEl, propertyId) {
+            const pid = propertyId ? String(propertyId) : '';
+            const matchingRooms = roomsData.filter((room) => pid === '' || String(room.property_id) === pid);
+
+            selectEl.innerHTML = '<option value="">All rooms</option>';
+            matchingRooms.forEach((room) => {
+                selectEl.innerHTML += `<option value="${room.id}">${room.name}</option>`;
+            });
+        }
+
         document.getElementById('prevMonth').addEventListener('click', () => updateMonth(-1));
         document.getElementById('nextMonth').addEventListener('click', () => updateMonth(1));
         document.getElementById('todayButton').addEventListener('click', () => {
@@ -778,11 +788,16 @@
         const propertyFilter = document.getElementById('propertyFilter');
         if (propertyFilter) {
             propertyFilter.addEventListener('change', () => {
-                const url = new URL(window.location.href);
-                url.searchParams.set('property_id', propertyFilter.value);
-                url.searchParams.set('month', monthKey(visibleMonth));
-                url.searchParams.delete('room_id');
-                window.location = url.toString();
+                activePropertyId = propertyFilter.value;
+                activeRoomId = '';
+                syncUrl();
+                populateRoomOptions(document.getElementById('roomFilter'), activePropertyId);
+                const blockPropertyInput = document.getElementById('block_property');
+                if (blockPropertyInput) {
+                    blockPropertyInput.value = activePropertyId;
+                }
+                populateRoomOptions(document.getElementById('blockRoom'), activePropertyId);
+                loadEvents().then(renderMonth);
             });
         }
 
@@ -800,11 +815,7 @@
         if (blockPropertyInput) {
             blockPropertyInput.addEventListener('change', () => {
                 const pid = blockPropertyInput.value;
-                const matchingRooms = roomsData.filter((r) => true);
-                blockRoom.innerHTML = '<option value="">All rooms</option>';
-                matchingRooms.forEach((room) => {
-                    blockRoom.innerHTML += `<option value="${room.id}">${room.name}</option>`;
-                });
+                populateRoomOptions(blockRoom, pid);
             });
         }
 

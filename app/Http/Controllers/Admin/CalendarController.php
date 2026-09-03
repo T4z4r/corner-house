@@ -63,6 +63,11 @@ class CalendarController extends Controller
             'properties' => $properties,
             'selectedProperty' => $selectedProperty,
             'rooms' => $rooms,
+            'allRooms' => Room::query()
+                ->whereHas('property', fn ($q) => $q->where('status', 'active'))
+                ->orderBy('property_id')
+                ->orderBy('name')
+                ->get(['id', 'name', 'property_id']),
             'selectedRoomId' => $selectedRoomId,
             'blockTypes' => $this->blockTypes(),
             'initialMonth' => $request->query('month', now()->format('Y-m')),
