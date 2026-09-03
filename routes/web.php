@@ -60,8 +60,8 @@ Route::get('/book/confirmation', [BookingController::class, 'confirmation'])->na
 Route::post('/booking/enquiry', [WebsiteController::class, 'enquiry'])->name('booking.enquiry');
 Route::get('/booking/availability', [WebsiteController::class, 'availability'])->name('booking.availability');
 
-Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [LoginController::class, 'login']);
+Route::get('/control-hub-q91x', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('/control-hub-q91x', [LoginController::class, 'login']);
 Route::get('/register', [RegisterController::class, 'showRegisterForm'])->name('register');
 Route::post('/register', [RegisterController::class, 'register']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');

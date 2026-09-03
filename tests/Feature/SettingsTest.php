@@ -229,4 +229,40 @@ class SettingsTest extends TestCase
         });
         $this->assertDatabaseCount('communications', 1);
     }
+
+    public function test_website_settings_page_shows_image_upload_sections(): void
+    {
+        $this->seed(SettingsSeeder::class);
+
+        $this->get(route('admin.settings.website'))
+            ->assertOk()
+            ->assertSee('Website settings')
+            ->assertSee('dz-website_logo', false)
+            ->assertSee('dz-website_footer_logo', false)
+            ->assertSee('dz-website_favicon', false)
+            ->assertSee('dz-website_hero_image', false)
+            ->assertSee('dz-website_hero_gallery_main', false)
+            ->assertSee('dz-website_hero_gallery_small', false)
+            ->assertSee('dz-website_about_image', false)
+            ->assertSee('dz-website_og_image', false)
+            ->assertSee('dz-website_spirits_logo', false);
+    }
+
+    public function test_hero_gallery_image_setting_persists_and_renders_on_homepage(): void
+    {
+        $this->seed(SettingsSeeder::class);
+
+        $this->put(route('admin.settings.update'), [
+            'website_hero_gallery_main' => 'website/house-exterior.png',
+            'website_hero_gallery_small' => 'website/gardens.png',
+        ])->assertRedirect()->assertSessionHas('status');
+
+        $this->assertSame('website/house-exterior.png', Setting::getValue('website_hero_gallery_main'));
+        $this->assertSame('website/gardens.png', Setting::getValue('website_hero_gallery_small'));
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('storage/website/house-exterior.png', false)
+            ->assertSee('storage/website/gardens.png', false);
+    }
 }

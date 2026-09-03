@@ -184,6 +184,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="{{ route('admin.settings.website') }}" class="nav-link ps-4 {{ request()->routeIs('admin.settings.website') ? 'active' : '' }}">
+                        <i class="bi bi-globe me-2"></i><span class="nav-text">Website settings</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="{{ route('admin.settings.notifications') }}" class="nav-link ps-4 {{ request()->routeIs('admin.settings.notifications') ? 'active' : '' }}">
                         <i class="bi bi-bell me-2"></i><span class="nav-text">Email notifications</span>
                     </a>
@@ -292,6 +297,11 @@
             <li class="nav-item">
                 <a href="{{ route('admin.settings.mail') }}" class="nav-link ps-4 {{ request()->routeIs('admin.settings.mail') ? 'active' : '' }}">
                     <i class="bi bi-envelope me-2"></i><span class="nav-text">Email settings</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.settings.website') }}" class="nav-link ps-4 {{ request()->routeIs('admin.settings.website') ? 'active' : '' }}">
+                    <i class="bi bi-globe me-2"></i><span class="nav-text">Website settings</span>
                 </a>
             </li>
             <li class="nav-item">
