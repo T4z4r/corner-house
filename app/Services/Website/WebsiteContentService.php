@@ -54,8 +54,8 @@ class WebsiteContentService
             'platforms' => $this->platforms(),
             'spirits_website' => Setting::getValue('spirits_website', 'https://www.serengetispirits.com'),
             'video_url' => Setting::getValue('website_video_url'),
-            'bookingRules' => Setting::getValue('website_booking_rules', $this->defaultBookingRules()),
-            'houseRules' => Setting::getValue('website_house_rules', $this->defaultHouseRules()),
+            'bookingRules' => $this->rules(Setting::getValue('website_booking_rules'), $this->defaultBookingRules()),
+            'houseRules' => $this->rules(Setting::getValue('website_house_rules'), $this->defaultHouseRules()),
             'config' => $this->config(),
         ];
     }
@@ -250,6 +250,27 @@ class WebsiteContentService
     /**
      * @return array<int, array{title: string, items: array<int, string>}>
      */
+    /**
+     * Coerce a stored rules blob into the array shape the templates expect.
+     *
+     * A setting whose JSON was accidentally double-encoded (or otherwise stored
+     * as a plain string) json_decodes to a string here; returning a rule list
+     * built from a string or a malformed array would break the @foreach in the
+     * booking partial, so fall back to the defaults for that section.
+     *
+     * @param  mixed  $value
+     * @param  array<int, mixed>  $defaults
+     * @return array<int, mixed>
+     */
+    private function rules(mixed $value, array $defaults): array
+    {
+        if (! is_array($value) || $value === []) {
+            return $defaults;
+        }
+
+        return $value;
+    }
+
     private function defaultBookingRules(): array
     {
         return [

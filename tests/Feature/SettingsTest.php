@@ -81,6 +81,46 @@ class SettingsTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'settings.updated']);
     }
 
+    public function test_json_setting_saved_from_generic_settings_page_is_not_double_encoded(): void
+    {
+        $rules = json_encode([
+            ['title' => 'Pricing and payment', 'items' => ['The whole house is let to one party at a time.']],
+        ]);
+
+        $setting = Setting::create([
+            'group' => 'website',
+            'key' => 'website_booking_rules',
+            'value' => $rules,
+            'cast' => 'json',
+        ]);
+
+        // The generic settings form submits the stored JSON string as-is.
+        $this->put(route('admin.settings.update'), [
+            $setting->key => $rules,
+        ])->assertRedirect()->assertSessionHas('status');
+
+        $fresh = Setting::find($setting->id);
+        $this->assertSame($rules, $fresh->value, 'Stored value must not be double-encoded.');
+        $this->assertIsArray($fresh->castValue());
+        $this->assertIsArray(Setting::getValue('website_booking_rules'));
+    }
+
+    public function test_booking_rules_fall_back_to_defaults_when_setting_is_not_an_array(): void
+    {
+        // Simulates a previously corrupted (string) booking-rules value.
+        Setting::create([
+            'group' => 'website',
+            'key' => 'website_booking_rules',
+            'value' => '"not an array"',
+            'cast' => 'json',
+        ]);
+
+        $site = app(\App\Services\Website\WebsiteContentService::class)->data();
+
+        $this->assertIsArray($site['bookingRules']);
+        $this->assertSame('Pricing and payment', $site['bookingRules'][0]['title'] ?? null);
+    }
+
     public function test_setting_value_is_cast_correctly(): void
     {
         $setting = Setting::create([

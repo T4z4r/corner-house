@@ -96,7 +96,16 @@ class SettingsController extends Controller
             } else {
                 $value = $request->input($setting->key);
                 if ($setting->cast === 'json') {
-                    $value = json_encode($value);
+                    // The generic settings form submits the stored JSON string
+                    // (or a plain array when a JSON-cast setting is posted as a
+                    // variable-length field). json_encode()-ing an already-valid
+                    // JSON string would double-encode it and break json_decode()
+                    // downstream, so only encode when it is not yet valid JSON.
+                    if (is_string($value) && json_validate($value)) {
+                        // already valid JSON — store verbatim
+                    } else {
+                        $value = json_encode($value);
+                    }
                 }
             }
 
