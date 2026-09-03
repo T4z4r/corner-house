@@ -369,6 +369,8 @@
                         $categoryRatings = $review['category_ratings'] ?? [];
                         $submittedAt = $review['first_completed_at'] ?? $review['submitted_at'] ?? null;
                         $hostResponse = $review['reviewee_response'] ?? '';
+                        $ratingCategories = collect($categoryRatings)->filter(fn ($category) => (int) ($category['rating'] ?? 0) !== 0);
+                        $commentCategories = collect($categoryRatings)->filter(fn ($category) => ($category['comment'] ?? '') !== '');
                     @endphp
                     <div class="border-bottom py-3">
                         <div class="d-flex justify-content-between gap-3">
@@ -385,18 +387,16 @@
                                 @endif
                             </div>
                         </div>
-                        @if ($categoryRatings)
+                        @if ($ratingCategories->isNotEmpty())
                             <div class="d-flex flex-wrap gap-2 mt-2">
-                                @foreach (collect($categoryRatings)->where('rating', '!=', 0) as $category)
+                                @foreach ($ratingCategories as $category)
                                     <span class="small badge text-bg-light border">{{ $category['category'] ?? 'Category' }}: {{ $category['rating'] }}</span>
                                 @endforeach
                             </div>
-                            @foreach (collect($categoryRatings)->where('comment', '!=', '') as $category)
-                                @if (! empty($category['comment']))
-                                    <div class="small mt-2"><strong>{{ $category['category'] ?? 'Comment' }}:</strong> {{ $category['comment'] }}</div>
-                                @endif
-                            @endforeach
                         @endif
+                        @foreach ($commentCategories as $category)
+                            <div class="small mt-2"><strong>{{ $category['category'] ?? 'Comment' }}:</strong> {{ $category['comment'] }}</div>
+                        @endforeach
                         @if ($hostResponse !== '')
                             <div class="small mt-2 text-success"><strong>Your response:</strong> {{ $hostResponse }}</div>
                         @endif
