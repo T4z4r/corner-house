@@ -739,6 +739,7 @@
                         {{ $logs->links() }}
                     </div>
                 @endif
+                @endif
             </div>
         </div>
     </div>
