@@ -14,7 +14,9 @@
                 <a href="tel:{{ preg_replace('/[^+\d]/', '', $guest->phone) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-telephone me-1"></i>Call</a>
             @endif
             @if ($guest->email)
-                <a href="mailto:{{ $guest->email }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-envelope me-1"></i>Send mail</a>
+                @can('communications.send')
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#emailModal"><i class="bi bi-envelope me-1"></i>Send mail</button>
+                @endcan
             @endif
             @can('guests.update')
                 <a href="{{ route('admin.guests.edit', $guest) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil me-1"></i>Edit</a>
@@ -46,7 +48,9 @@
                         <li class="mb-2 d-flex align-items-center justify-content-between">
                             <span><i class="bi bi-envelope me-2"></i>{{ $guest->email ?? '-' }}</span>
                             @if ($guest->email)
-                                <a href="mailto:{{ $guest->email }}" class="text-decoration-none" title="Send mail"><i class="bi bi-send"></i></a>
+                                @can('communications.send')
+                                    <button type="button" class="btn btn-link p-0 border-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#emailModal" title="Send mail"><i class="bi bi-send"></i></button>
+                                @endcan
                             @endif
                         </li>
                         <li class="mb-2 d-flex align-items-center justify-content-between">
@@ -118,4 +122,38 @@
             </div>
         </div>
     </div>
+
+    @if ($guest->email)
+        @can('communications.send')
+            <div class="modal fade" id="emailModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                    <form method="POST" action="{{ route('admin.guests.email', $guest) }}" class="modal-content">
+                        @csrf
+                        <div class="modal-header">
+                            <h6 class="modal-title"><i class="bi bi-envelope me-2"></i>Send email to {{ $guest->full_name }}</h6>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label small text-muted">To</label>
+                                <input type="email" class="form-control" value="{{ $guest->email }}" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email-subject" class="form-label small text-muted">Subject</label>
+                                <input id="email-subject" type="text" name="subject" class="form-control" required maxlength="255" placeholder="Email subject">
+                            </div>
+                            <div>
+                                <label for="email-body" class="form-label small text-muted">Message</label>
+                                <textarea id="email-body" name="body" class="form-control" rows="6" required placeholder="Write your message..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-ch-primary btn-sm"><i class="bi bi-send me-1"></i>Send email</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endcan
+    @endif
 @endsection

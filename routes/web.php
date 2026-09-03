@@ -205,6 +205,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::post('/guests', [GuestController::class, 'store'])->name('guests.store')->middleware('can:guests.create');
         Route::get('/guests/{guest}', [GuestController::class, 'show'])->name('guests.show');
         Route::get('/guests/{guest}/edit', [GuestController::class, 'edit'])->name('guests.edit')->middleware('can:guests.update');
+        Route::post('/guests/{guest}/email', [GuestController::class, 'sendEmail'])->name('guests.email')->middleware('can:communications.send');
         Route::put('/guests/{guest}', [GuestController::class, 'update'])->name('guests.update')->middleware('can:guests.update');
         Route::delete('/guests/{guest}', [GuestController::class, 'destroy'])->name('guests.destroy')->middleware('can:guests.delete');
     });

@@ -5,13 +5,17 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Guest;
 use App\Services\Audit\AuditLogger;
+use App\Services\Notification\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class GuestController extends Controller
 {
-    public function __construct(private readonly AuditLogger $auditLogger) {}
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+        private readonly NotificationService $notifications,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -50,6 +54,31 @@ class GuestController extends Controller
         return view('admin.guests.show', [
             'guest' => $guest->load(['reservations.room', 'communications']),
         ]);
+    }
+
+    public function sendEmail(Request $request, Guest $guest): RedirectResponse
+    {
+        $data = $request->validate([
+            'subject' => ['required', 'string', 'max:255'],
+            'body' => ['required', 'string'],
+        ]);
+
+        if (! $guest->email) {
+            return back()->withErrors(['email' => 'This guest has no email address on file.']);
+        }
+
+        $this->notifications->sendManual([
+            'guest_id' => $guest->id,
+            'channel' => 'email',
+            'recipient' => $guest->email,
+            'sender_name' => null,
+            'subject' => $data['subject'],
+            'body' => $data['body'],
+        ]);
+
+        $this->auditLogger->log('guests.email_sent', 'guests', 'guest', (string) $guest->id, newValues: ['recipient' => $guest->email]);
+
+        return back()->with('status', 'Email queued and sent to '.$guest->email.'.');
     }
 
     public function edit(Guest $guest): View

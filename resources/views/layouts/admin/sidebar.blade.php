@@ -63,13 +63,6 @@
         @endcan
 
         <li class="sidebar-heading">Revenue</li>
-        @can('pricing.view')
-            <li class="nav-item">
-                <a href="{{ route('admin.pricing.index') }}" class="nav-link {{ request()->routeIs('admin.pricing.*') ? 'active' : '' }}">
-                    <i class="bi bi-tags me-2"></i><span class="nav-text">Pricing</span>
-                </a>
-            </li>
-        @endcan
         @can('payments.view')
             <li class="nav-item">
                 <a href="{{ route('admin.payments.index') }}" class="nav-link {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}">
@@ -151,28 +144,6 @@
                     <i class="bi bi-gear me-2"></i><span class="nav-text">Settings</span>
                 </a>
             </li>
-            @can('settings.view')
-                <li class="nav-item">
-                    <a href="{{ route('admin.settings.mail') }}" class="nav-link ps-4 {{ request()->routeIs('admin.settings.mail') ? 'active' : '' }}">
-                        <i class="bi bi-envelope me-2"></i><span class="nav-text">Email settings</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ route('admin.settings.website') }}" class="nav-link ps-4 {{ request()->routeIs('admin.settings.website') ? 'active' : '' }}">
-                        <i class="bi bi-globe me-2"></i><span class="nav-text">Website settings</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ route('admin.settings.notifications') }}" class="nav-link ps-4 {{ request()->routeIs('admin.settings.notifications') ? 'active' : '' }}">
-                        <i class="bi bi-bell me-2"></i><span class="nav-text">Email notifications</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ route('admin.schedule-settings') }}" class="nav-link ps-4 {{ request()->routeIs('admin.schedule-settings') ? 'active' : '' }}">
-                        <i class="bi bi-clock-history me-2"></i><span class="nav-text">Schedule settings</span>
-                    </a>
-                </li>
-            @endcan
     </ul>
     <hr class="text-secondary">
     <div class="dropdown mb-2">
@@ -258,28 +229,6 @@
                 <i class="bi bi-gear me-2"></i><span class="nav-text">Settings</span>
             </a>
         </li>
-        @can('settings.view')
-            <li class="nav-item">
-                <a href="{{ route('admin.settings.mail') }}" class="nav-link ps-4 {{ request()->routeIs('admin.settings.mail') ? 'active' : '' }}">
-                    <i class="bi bi-envelope me-2"></i><span class="nav-text">Email settings</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('admin.settings.website') }}" class="nav-link ps-4 {{ request()->routeIs('admin.settings.website') ? 'active' : '' }}">
-                    <i class="bi bi-globe me-2"></i><span class="nav-text">Website settings</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('admin.settings.notifications') }}" class="nav-link ps-4 {{ request()->routeIs('admin.settings.notifications') ? 'active' : '' }}">
-                    <i class="bi bi-bell me-2"></i><span class="nav-text">Email notifications</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('admin.schedule-settings') }}" class="nav-link ps-4 {{ request()->routeIs('admin.schedule-settings') ? 'active' : '' }}">
-                    <i class="bi bi-clock-history me-2"></i><span class="nav-text">Schedule settings</span>
-                </a>
-            </li>
-        @endcan
     </ul>
         <div class="mt-auto">
             <a href="{{ route('account.show') }}" class="btn btn-outline-light w-100 mb-2"><i class="bi bi-person me-2"></i>My account</a>
