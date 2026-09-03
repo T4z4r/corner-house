@@ -77,6 +77,24 @@ class SettingsSeeder extends Seeder
             ['group' => 'website', 'key' => 'platform_airbnb_url', 'value' => '', 'label' => 'Airbnb listing URL', 'cast' => 'string'],
             ['group' => 'website', 'key' => 'platform_booking_url', 'value' => '', 'label' => 'Booking.com listing URL', 'cast' => 'string'],
             ['group' => 'website', 'key' => 'platform_vrbo_url', 'value' => '', 'label' => 'VRBO listing URL', 'cast' => 'string'],
+            ['group' => 'website', 'key' => 'nightly_rate', 'value' => '950', 'label' => 'Whole-house rate (£/night)', 'cast' => 'decimal:2'],
+            ['group' => 'website', 'key' => 'website_months_ahead', 'value' => '18', 'label' => 'Availability calendar — months ahead', 'cast' => 'integer'],
+            ['group' => 'website', 'key' => 'hero_square_feet', 'value' => '4,000', 'label' => 'Hero — Square feet value', 'cast' => 'string'],
+            ['group' => 'website', 'key' => 'hero_kitchen', 'value' => '25 ft', 'label' => 'Hero — Kitchen value', 'cast' => 'string'],
+            ['group' => 'website', 'key' => 'hero_built', 'value' => '1850', 'label' => 'Hero — Year built value', 'cast' => 'string'],
+            ['group' => 'website', 'key' => 'review_score', 'value' => '4.95', 'label' => 'Average review score', 'cast' => 'string'],
+            ['group' => 'website', 'key' => 'review_count', 'value' => '40', 'label' => 'Number of Airbnb reviews', 'cast' => 'integer'],
+            ['group' => 'website', 'key' => 'website_footer_logo', 'value' => '', 'label' => 'Footer logo', 'cast' => 'string'],
+            ['group' => 'website', 'key' => 'website_footer_capacity', 'value' => 'Sleeps 12 adults and 2 children in five ensuite bedrooms.', 'label' => 'Footer — capacity line', 'cast' => 'string'],
+            ['group' => 'website', 'key' => 'spirits_website', 'value' => 'https://www.serengetispirits.com', 'label' => 'Serengeti Spirits website', 'cast' => 'string'],
+            ['group' => 'website', 'key' => 'website_video_url', 'value' => '', 'label' => 'Video tour URL (YouTube/Vimeo embed or MP4)', 'cast' => 'string'],
+            ['group' => 'website', 'key' => 'website_blocked_dates', 'value' => '[]', 'label' => 'Blocked dates (ISO YYYY-MM-DD)', 'cast' => 'json'],
+            ['group' => 'website', 'key' => 'website_spaces_inside', 'value' => json_encode(SettingsSeeder::defaultInsideSpaces()), 'label' => 'Rooms — inside spaces', 'cast' => 'json'],
+            ['group' => 'website', 'key' => 'website_spaces_outside', 'value' => json_encode(SettingsSeeder::defaultOutsideSpaces()), 'label' => 'Rooms — outside spaces', 'cast' => 'json'],
+            ['group' => 'website', 'key' => 'website_walking_routes', 'value' => json_encode(SettingsSeeder::defaultWalks()), 'label' => 'Places — walking routes', 'cast' => 'json'],
+            ['group' => 'website', 'key' => 'website_booking_rules', 'value' => json_encode(SettingsSeeder::defaultBookingRules()), 'label' => 'Booking — booking rules', 'cast' => 'json'],
+            ['group' => 'website', 'key' => 'website_house_rules', 'value' => json_encode(SettingsSeeder::defaultHouseRules()), 'label' => 'Booking — house rules', 'cast' => 'json'],
+            ['group' => 'website', 'key' => 'website_reviews', 'value' => json_encode(SettingsSeeder::defaultReviews()), 'label' => 'Home — guest reviews', 'cast' => 'json'],
             ['group' => 'stripe', 'key' => 'stripe_key', 'value' => '', 'label' => 'Stripe publishable key', 'cast' => 'secret'],
             ['group' => 'stripe', 'key' => 'stripe_secret', 'value' => '', 'label' => 'Stripe secret key', 'cast' => 'secret'],
             ['group' => 'stripe', 'key' => 'stripe_webhook_secret', 'value' => '', 'label' => 'Stripe webhook signing secret', 'cast' => 'secret'],
@@ -86,5 +104,163 @@ class SettingsSeeder extends Seeder
         foreach ($defaults as $setting) {
             Setting::firstOrCreate(['key' => $setting['key']], $setting);
         }
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    public static function defaultInsideSpaces(): array
+    {
+        return [
+            ['name' => 'The kitchen', 'where' => 'Ground floor', 'description' => 'The 25-foot centrepiece of the house, and the reason it works so well for a full party. Everyone ends up here, so there is room for everyone to be here.', 'label' => 'The kitchen photo', 'feature' => '1'],
+            ['name' => 'Garden dining room', 'where' => 'Ground floor, the old orangery', 'description' => 'The orangery, converted into a dining room that seats ten at a handmade farmhouse table and chairs, with the garden on three sides.', 'label' => 'Garden dining room photo'],
+            ['name' => 'Lounge', 'where' => 'Ground floor', 'description' => 'The lounge is a calm space on the ground floor with seating, a fireplace and a television, flowing into the kitchen and the garden dining room.', 'label' => 'Lounge photo'],
+            ['name' => 'Games room', 'where' => 'Ground floor', 'description' => 'A dedicated room for the games, with a pool table, darts, board games and a console.', 'label' => 'Games room photo'],
+            ['name' => 'Cinema room', 'where' => 'The converted cellar', 'description' => 'The cellar has been converted into a cinema room with a projector screen and comfortable seating for the whole party.', 'label' => 'Cinema room photo'],
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    public static function defaultOutsideSpaces(): array
+    {
+        return [
+            ['name' => 'Entertaining patio and garden bar', 'where' => 'The garden', 'description' => 'The patio is where the house spills out on a warm evening: the garden bar, the Kadai fire-pit barbecue and the hot tub, with the landscaped garden beyond.', 'label' => 'Entertaining patio and garden bar photo', 'feature' => '1'],
+            ['name' => 'Hot tub', 'where' => 'On the patio', 'description' => 'Sits on the patio, a few steps from the garden bar, and is available between 8:00am and 11:00pm.', 'label' => 'Hot tub photo'],
+            ['name' => 'Garden room', 'where' => 'The garden', 'description' => 'A quiet spot in the garden to sit out of the weather, whatever the season.', 'label' => 'Garden room photo'],
+            ['name' => 'Balcony', 'where' => 'First floor, off the Lion suite', 'description' => 'A large balcony over the garden and the entertaining patio, reached through the double doors in the Lion suite. Good for a first coffee of the day.', 'label' => 'Balcony photo'],
+            ['name' => 'Gym', 'where' => 'The grounds', 'description' => 'Fully equipped in its own building in the grounds, with cardio, weights and racks. Over-16s only.', 'label' => 'Gym photo'],
+            ['name' => 'Office', 'where' => 'The grounds', 'description' => 'A purpose-built, hard-wired office in the grounds, with a desk and fast broadband for remote working.', 'label' => 'Office photo'],
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    public static function defaultWalks(): array
+    {
+        return [
+            [
+                'name' => 'The Braunston lock flight and tunnel',
+                'description' => 'From the marina follow the Grand Union towpath east past the six locks to the mouth of Braunston Tunnel. The Admiral Nelson at Lock 3 is the natural half-way stop. Return the same way, or cross at the tunnel and come back over the fields.',
+                'distance' => 'About 4 miles',
+                'time' => '1½–2 hours',
+                'terrain' => 'Flat towpath, can be muddy',
+                'stop' => 'Admiral Nelson',
+            ],
+            [
+                'name' => 'Willoughby circular',
+                'description' => 'Out along the Oxford Canal towpath towards Willoughby, then back across the fields and the old Roman road through the village. Quiet lanes and open country.',
+                'distance' => 'About 5 miles',
+                'time' => '2–2½ hours',
+                'terrain' => 'Towpath and field paths',
+                'stop' => 'Willoughby village',
+            ],
+            [
+                'name' => 'Ashby St Ledgers and the Gunpowder Plot',
+                'description' => 'Across the fields to Ashby St Ledgers, where the conspirators met in the manor gatehouse in 1605. The village has a thatched street and the Manor House.',
+                'distance' => 'About 6 miles',
+                'time' => '2½–3 hours',
+                'terrain' => 'Field paths, some stiles',
+                'stop' => 'Ashby St Ledgers',
+            ],
+        ];
+    }
+
+    /**
+     * @return array<int, array{title: string, items: array<int, string>}>
+     */
+    public static function defaultBookingRules(): array
+    {
+        return [
+            [
+                'title' => 'Pricing and payment',
+                'items' => [
+                    'The whole house is let to one party at a time, for a minimum of 2 nights.',
+                    'The nightly rate is &pound;950 low season, &pound;1,100 shoulder and &pound;1,350 high season, plus a &pound;250 cleaning fee and a refundable security deposit.',
+                    'A non-refundable deposit of 25% secures the dates, with the balance due 8 weeks before arrival.',
+                ],
+            ],
+            [
+                'title' => 'Dates and changes',
+                'items' => [
+                    'Check-in from 5:00pm, check-out by 10:00am on the day of departure.',
+                    'Changes to a confirmed booking are subject to availability and may carry a fee.',
+                    'We hold dates for 7 days while an enquiry or deposit is outstanding.',
+                ],
+            ],
+            [
+                'title' => 'Security deposit',
+                'items' => [
+                    'A refundable security deposit is collected with the balance and returned within 7 days of departure, less any deductions for damage or breakages.',
+                    'The hot tub, gym and garden bar are included in the rate; extra charges apply for event furniture hire and some add-ons.',
+                ],
+            ],
+            [
+                'title' => 'Cancellation',
+                'items' => [
+                    'See our <a href="#refunds">refund policy</a> for the amounts payable if you cancel.',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<int, array{title: string, items: array<int, string>, flag?: bool}>
+     */
+    public static function defaultHouseRules(): array
+    {
+        return [
+            [
+                'title' => 'To keep you and the house safe',
+                'items' => [
+                    'No unaccompanied children. The hot tub, gym, canal and Marina are not supervised, and the garden pond is deep.',
+                    'The hot tub is used at your own risk. No alcohol or glass on the poolside. Over-12s only for the hot tub; over-16s only for the gym.',
+                ],
+            ],
+            [
+                'title' => 'To keep neighbours happy',
+                'items' => [
+                    'Be courteous to our neighbours, especially during garden social evenings and late arrivals. Noise carries in the village.',
+                ],
+            ],
+            [
+                'title' => 'To keep the house in good order',
+                'items' => [
+                    'No smoking or vaping anywhere in the house, outbuilding or on the grounds. A &pound;200 cleaning charge applies for smoking indoors or the use of a vape.',
+                    'Up to 12 adults plus 2 children, in five bedrooms. Different occupancy requires prior written agreement.',
+                    'Only use a barbecue in the designated Kadai and garden bar, well clear of the house and outbuildings. Never leave a hot barbecue unattended.',
+                    'The cinema room and games room are in the cellar; take care on the cellar stairs.',
+                ],
+            ],
+            [
+                'title' => 'And finally',
+                'flag' => true,
+                'items' => [
+                    'If we think you are breaking the house rules, we will talk to you, of course. But persistent or serious breaches of the rules are not tolerated and may result in the termination of your booking without refund.',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<int, array{stars: int, quote: string, cite: string}>
+     */
+    public static function defaultReviews(): array
+    {
+        return [
+            ['stars' => 5, 'quote' => 'Corner House was the perfect base for our family gathering. The kitchen really is the heart of it — we all ended up around that table, and the cinema room was a huge hit with the kids.', 'cite' => 'The Hamiltons, July 2026'],
+            ['stars' => 5, 'quote' => 'Beautiful house, beautifully kept. The hot tub after a long walk to Ashby St Ledgers was exactly what we needed.', 'cite' => 'Sophie and Tom, June 2026'],
+            ['stars' => 5, 'quote' => 'The garden and entertaining patio are even better than the photos. We cooked on the fire-pit both nights and barely wanted to leave.', 'cite' => 'Mark, May 2026'],
+            ['stars' => 4, 'quote' => 'Great location for the Marina and a proper kitchen for cooking for twelve. The office in the grounds was a lifesaver for a mid-week call.', 'cite' => 'Priya, April 2026'],
+            ['stars' => 5, 'quote' => 'We organised a birthday weekend here and the whole party was looked after brilliantly. The rooms are huge and each one having its own bathroom is a treat.', 'cite' => 'James, March 2026'],
+            ['stars' => 5, 'quote' => 'Faultless. The gym is better equipped than most hotels, and the welcome on arrival was warm and easy. We will be back.', 'cite' => 'Rachel, February 2026'],
+            ['stars' => 5, 'quote' => 'A proper country house for a full house. Everyone who stayed wants to come again — the balcony off the Lion suite at sunrise is magic.', 'cite' => 'The O\'Briens, January 2026'],
+            ['stars' => 4, 'quote' => 'Lovely stay at the Heart of the Waterways. The Gongoozlers Rest for breakfast and a walk along the towpath were highlights.', 'cite' => 'Daniel, December 2025'],
+            ['stars' => 5, 'quote' => 'We stayed over New Year and the games room, cinema room and garden bar kept a big mixed group entertained for days.', 'cite' => 'Anna, January 2026'],
+            ['stars' => 5, 'quote' => 'Booked the Serengeti Spirits tasting on site and it made the weekend. Great house, great hosts, great gin.', 'cite' => 'Ben, November 2025'],
+            ['stars' => 5, 'quote' => 'Everything was exactly as described and the beds were wonderfully comfortable. A perfect retreat from the city.', 'cite' => 'Charlotte, October 2025'],
+        ];
     }
 }

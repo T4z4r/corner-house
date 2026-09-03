@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\KnowledgeBaseArticle;
 use App\Models\Property;
 use App\Models\Room;
+use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -20,9 +21,11 @@ class PublicWebsiteTest extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertSee('Corner House')
-            ->assertSee('Book now')
-            ->assertSee('data-chat-widget', false)
-            ->assertSee('data-source="website"', false);
+            ->assertSee('Check availability')
+            ->assertSee('Built for a full house')
+            ->assertSee('Serengeti Spirits')
+            ->assertSee('#rooms', false)
+            ->assertSee('data-page="rooms"', false);
     }
 
     public function test_property_and_booking_pages_render(): void
@@ -123,5 +126,42 @@ class PublicWebsiteTest extends TestCase
             'email' => 'sam@example.com',
             'message' => 'Can we arrive early?',
         ])->assertRedirect();
+    }
+
+    public function test_booking_enquiry_accepts_the_widget_payload(): void
+    {
+        $this->postJson(route('booking.enquiry'), [
+            'checkIn' => '2026-10-02',
+            'checkOut' => '2026-10-04',
+            'nights' => 2,
+            'name' => 'Sam Guest',
+            'email' => 'sam@example.com',
+            'phone' => '07700 900123',
+            'guests' => '12',
+            'message' => 'A birthday weekend.',
+            'drinksPackage' => true,
+            'acceptedTerms' => true,
+        ])->assertOk()->assertJson(['status' => 'ok']);
+    }
+
+    public function test_booking_availability_returns_blocked_ranges(): void
+    {
+        Setting::query()->create([
+            'group' => 'website',
+            'key' => 'website_blocked_dates',
+            'value' => json_encode(['2026-10-02', '2026-10-15']),
+            'type' => 'text',
+            'label' => 'Blocked dates',
+            'cast' => 'json',
+        ]);
+
+        cache()->forget('settings.all');
+
+        $this->getJson(route('booking.availability'))
+            ->assertOk()
+            ->assertJson([
+                ['start' => '2026-10-02', 'end' => '2026-10-03'],
+                ['start' => '2026-10-15', 'end' => '2026-10-16'],
+            ]);
     }
 }

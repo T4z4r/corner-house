@@ -23,7 +23,7 @@ class WebsiteContentService
         $property = Property::query()->where('status', 'active')->first();
 
         $rooms = $property
-            ? Room::query()->where('property_id', $property->id)->where('status', 'active')->orderBy('name')->get()
+            ? Room::query()->where('property_id', $property->id)->where('status', 'active')->orderBy('sort_order')->orderBy('name')->get()
             : collect();
 
         $rooms->each(function (Room $room): void {
