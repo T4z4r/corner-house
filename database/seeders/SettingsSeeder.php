@@ -13,14 +13,18 @@ class SettingsSeeder extends Seeder
             ['group' => 'general', 'key' => 'property_name', 'value' => 'Corner House', 'label' => 'Property / Business Name', 'cast' => 'string'],
             ['group' => 'general', 'key' => 'currency', 'value' => 'GBP', 'label' => 'Currency', 'cast' => 'string'],
             ['group' => 'mail', 'key' => 'mail_mailer', 'value' => 'smtp', 'label' => 'Default mailer', 'cast' => 'string'],
-            ['group' => 'mail', 'key' => 'mail_host', 'value' => '127.0.0.1', 'label' => 'SMTP host', 'cast' => 'string'],
-            ['group' => 'mail', 'key' => 'mail_port', 'value' => '2525', 'label' => 'SMTP port', 'cast' => 'integer'],
-            ['group' => 'mail', 'key' => 'mail_username', 'value' => '', 'label' => 'SMTP username', 'cast' => 'string'],
-            ['group' => 'mail', 'key' => 'mail_password', 'value' => '', 'label' => 'SMTP password', 'cast' => 'secret'],
-            ['group' => 'mail', 'key' => 'mail_encryption', 'value' => '', 'label' => 'SMTP encryption', 'cast' => 'string'],
+            ['group' => 'mail', 'key' => 'mail_host', 'value' => 'mail.flex.co.tz', 'label' => 'SMTP host', 'cast' => 'string'],
+            ['group' => 'mail', 'key' => 'mail_port', 'value' => '465', 'label' => 'SMTP port', 'cast' => 'integer'],
+            ['group' => 'mail', 'key' => 'mail_username', 'value' => 'info@erp.flex.co.tz', 'label' => 'SMTP username', 'cast' => 'string'],
+            ['group' => 'mail', 'key' => 'mail_password', 'value' => 'pjZ!k]Lp#N.j', 'label' => 'SMTP password', 'cast' => 'secret'],
+            ['group' => 'mail', 'key' => 'mail_encryption', 'value' => 'ssl', 'label' => 'SMTP encryption', 'cast' => 'string'],
             ['group' => 'mail', 'key' => 'mail_log_channel', 'value' => 'stack', 'label' => 'Log mail channel', 'cast' => 'string'],
-            ['group' => 'mail', 'key' => 'mail_from_address', 'value' => 'hello@example.com', 'label' => 'From address', 'cast' => 'string'],
-            ['group' => 'mail', 'key' => 'mail_from_name', 'value' => 'Corner House', 'label' => 'From name', 'cast' => 'string'],
+            ['group' => 'mail', 'key' => 'mail_from_address', 'value' => 'info@nextchapter.co.tz', 'label' => 'From address', 'cast' => 'string'],
+            ['group' => 'mail', 'key' => 'mail_from_name', 'value' => config('app.name', 'Corner House'), 'label' => 'From name', 'cast' => 'string'],
+            ['group' => 'mail', 'key' => 'mail_ssl_cafile', 'value' => 'storage/certs/balancepoint-mail-ca.pem', 'label' => 'SMTP CA certificate file', 'cast' => 'string'],
+            ['group' => 'mail', 'key' => 'mail_ssl_verify_peer', 'value' => '1', 'label' => 'Verify SMTP peer certificate', 'cast' => 'boolean'],
+            ['group' => 'mail', 'key' => 'mail_ssl_verify_peer_name', 'value' => '1', 'label' => 'Verify SMTP peer name', 'cast' => 'boolean'],
+            ['group' => 'mail', 'key' => 'mail_ssl_allow_self_signed', 'value' => '0', 'label' => 'Allow self-signed SMTP certificates', 'cast' => 'boolean'],
             ['group' => 'communication', 'key' => 'guest_checkin_time', 'value' => '15:00', 'label' => 'Standard check-in time', 'cast' => 'string'],
             ['group' => 'communication', 'key' => 'guest_checkout_time', 'value' => '12:00', 'label' => 'Standard check-out time', 'cast' => 'string'],
             ['group' => 'booking', 'key' => 'booking_hold_minutes', 'value' => '15', 'label' => 'Booking hold duration (minutes)', 'cast' => 'integer'],
@@ -103,6 +107,12 @@ class SettingsSeeder extends Seeder
         ];
 
         foreach ($defaults as $setting) {
+            if ($setting['group'] === 'mail') {
+                Setting::query()->updateOrCreate(['key' => $setting['key']], $setting);
+
+                continue;
+            }
+
             Setting::firstOrCreate(['key' => $setting['key']], $setting);
         }
     }

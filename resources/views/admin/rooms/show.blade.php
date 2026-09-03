@@ -94,6 +94,25 @@
     .room-cal-legend { display: flex; flex-wrap: wrap; gap: 0.75rem; font-size: 0.82rem; }
     .room-cal-legend-item { display: flex; align-items: center; gap: 0.4rem; }
     .room-cal-legend-dot { width: 0.75rem; height: 0.75rem; border-radius: 999px; }
+    .rc-day-detail-empty {
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: #6c757d;
+        padding: 1rem;
+    }
+    .rc-day-swatch { width: 0.75rem; height: 0.75rem; border-radius: 999px; flex-shrink: 0; }
+    .rc-sw-confirmed { background: #1f6f43; }
+    .rc-sw-pending { background: #c9a227; }
+    .rc-sw-hold { background: #6c757d; }
+    .rc-sw-checked-in { background: #0d6efd; }
+    .rc-sw-block { background: #20c997; }
+    .rc-sw-block-rates { background: #c9a227; }
+    .rc-sw-block-restrictions { background: #fd7e14; }
+    .rc-sw-block-manual { background: #6c757d; }
     @media (max-width: 768px) {
         .room-cal-grid { gap: 0.35rem; padding: 0.75rem; }
         .room-cal-day { min-height: 100px; padding: 0.5rem; }
@@ -245,6 +264,14 @@
 
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <div class="fw-semibold">Selected day</div>
+                    <div class="small text-muted">Tap a day to inspect bookings and blocks.</div>
+                </div>
+                <div class="card-body" id="dayDetail"></div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-transparent border-bottom">
                     <h6 class="mb-0">Quick Actions</h6>
                 </div>
@@ -357,6 +384,7 @@
     const weekdaysEl = document.getElementById('rcWeekdays');
     const gridEl = document.getElementById('rcGrid');
     const labelEl = document.getElementById('rcPeriodLabel');
+    const dayDetailEl = document.getElementById('dayDetail');
 
     weekdaysEl.innerHTML = weekdayLabels.map(l => '<div class="room-cal-weekday">' + l + '</div>').join('');
 
@@ -458,6 +486,59 @@
                 if (ev?.extendedProps?.url) window.location = ev.extendedProps.url;
             });
         });
+
+        renderDayDetail();
+    }
+
+    function formatDay(d) { return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(d); }
+    function endDate(ev) { return ev.end ? addDays(parseLocal(ev.end), -1) : parseLocal(ev.start); }
+
+    function renderDayDetail() {
+        if (!dayDetailEl) return;
+        const k = dateKey(selectedDate);
+        const map = buildMap();
+        const dayEvs = (map.get(k) || []).slice().sort((a, b) => parseLocal(a.start) - parseLocal(b.start));
+
+        if (!dayEvs.length) {
+            dayDetailEl.innerHTML = `
+                <div class="rc-day-detail-empty">
+                    <div class="display-6 mb-2 text-muted"><i class="bi bi-calendar2-week"></i></div>
+                    <p class="mb-1">No bookings or blocks on ${formatDay(selectedDate)}.</p>
+                    <p class="small mb-0">Tap another day to inspect it.</p>
+                </div>
+            `;
+            return;
+        }
+
+        dayDetailEl.innerHTML = `
+            <div class="mb-3">
+                <div class="small text-muted">Selected date</div>
+                <div class="fw-semibold">${formatDay(selectedDate)}</div>
+            </div>
+            <div class="d-flex flex-column gap-2">
+                ${dayEvs.map((ev) => {
+                    const evUrl = ev.extendedProps?.url || null;
+                    const swatch = 'rc-sw-' + evClass(ev).replace('rc-ev-', '');
+                    const endD = endDate(ev);
+                    const dateRange = sameDay(endD, parseLocal(ev.start))
+                        ? formatDay(parseLocal(ev.start))
+                        : `${formatDay(parseLocal(ev.start))} to ${formatDay(endD)}`;
+                    const body = `
+                        <div class="small text-muted">${dateRange}</div>
+                        <div class="fw-semibold text-truncate" title="${ev.title}">${ev.title}</div>
+                    `;
+                    const inner = `
+                        <div class="d-flex align-items-start gap-2">
+                            <span class="rc-day-swatch ${swatch} mt-1"></span>
+                            <div class="flex-grow-1">${body}</div>
+                        </div>
+                    `;
+                    return evUrl
+                        ? `<a href="${evUrl}" class="text-decoration-none text-reset border rounded-3 p-3 d-block">${inner}</a>`
+                        : `<div class="border rounded-3 p-3">${inner}</div>`;
+                }).join('')}
+            </div>
+        `;
     }
 
     function loadEvents() {

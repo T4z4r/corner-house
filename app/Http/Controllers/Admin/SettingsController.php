@@ -42,11 +42,16 @@ class SettingsController extends Controller
 
     public function website(): View
     {
-        return view('admin.settings', $this->groupViewData(
-            title: 'Website settings',
-            subtitle: 'Configure the public website appearance and contact details',
-            group: 'website',
-        ));
+        $settings = Setting::query()
+            ->where('group', 'website')
+            ->get()
+            ->keyBy('key');
+
+        return view('admin.settings.website', [
+            'settings' => $settings,
+            'pageTitle' => 'Website settings',
+            'pageSubtitle' => 'What visitors see on your public website — change it here in plain English',
+        ]);
     }
 
     public function stripe(): View
