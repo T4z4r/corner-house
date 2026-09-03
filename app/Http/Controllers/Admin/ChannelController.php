@@ -122,16 +122,25 @@ class ChannelController extends Controller
             }
         }
 
-        $logs = [];
+        $logs = collect();
+        $logSearch = trim((string) $request->query('log_search'));
         if ($selectedAccount instanceof ChannelAccount) {
-            $logs = ChannelSyncLog::query()
+            $logsQuery = ChannelSyncLog::query()
                 ->where('channel_account_id', $selectedAccount->id)
-                ->orderByDesc('created_at')
-                ->limit(50)
-                ->get();
+                ->orderByDesc('created_at');
+
+            if ($logSearch !== '') {
+                $logsQuery->where(function ($q) use ($logSearch): void {
+                    $q->where('operation', 'like', "%{$logSearch}%")
+                        ->orWhere('status', 'like', "%{$logSearch}%")
+                        ->orWhere('error_message', 'like', "%{$logSearch}%");
+                });
+            }
+
+            $logs = $logsQuery->paginate(15)->withQueryString();
         }
 
-        $stats = $this->buildAirbnbStats($selectedAccount, $users, $listings, $reviews, $selectedListing, $logs->count());
+        $stats = $this->buildAirbnbStats($selectedAccount, $users, $listings, $reviews, $selectedListing, $logs->total());
 
         return view('admin.channels.airbnb', [
             'accounts' => $accounts,
@@ -141,6 +150,7 @@ class ChannelController extends Controller
             'selectedListing' => $selectedListing,
             'reviews' => $reviews,
             'logs' => $logs,
+            'logSearch' => $logSearch,
             'usersError' => $usersError,
             'listingsError' => $listingsError,
             'reviewsError' => $reviewsError,

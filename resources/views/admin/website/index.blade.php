@@ -95,5 +95,53 @@
                 </div>
             </a>
         </div>
+
+        @can('food-drink.view')
+            <div class="col-md-6 col-lg-4">
+                <a href="{{ route('admin.food-drink.index') }}" class="card border-0 shadow-sm text-decoration-none h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                                <i class="bi bi-cup-hot fs-5 text-success"></i>
+                            </div>
+                            <h6 class="mb-0">Food & Drink</h6>
+                        </div>
+                        <p class="text-muted small mb-0">The food and drink offers shown on the website.</p>
+                    </div>
+                </a>
+            </div>
+        @endcan
+
+        @can('places.view')
+            <div class="col-md-6 col-lg-4">
+                <a href="{{ route('admin.places.index') }}" class="card border-0 shadow-sm text-decoration-none h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                                <i class="bi bi-geo-alt fs-5 text-success"></i>
+                            </div>
+                            <h6 class="mb-0">Places of Interest</h6>
+                        </div>
+                        <p class="text-muted small mb-0">Local places and attractions shown to guests.</p>
+                    </div>
+                </a>
+            </div>
+        @endcan
+
+        @can('addons.view')
+            <div class="col-md-6 col-lg-4">
+                <a href="{{ route('admin.addons.index') }}" class="card border-0 shadow-sm text-decoration-none h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                                <i class="bi bi-gift fs-5 text-success"></i>
+                            </div>
+                            <h6 class="mb-0">Add-Ons</h6>
+                        </div>
+                        <p class="text-muted small mb-0">Extra services and add-ons guests can book.</p>
+                    </div>
+                </a>
+            </div>
+        @endcan
     </div>
 @endsection

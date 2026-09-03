@@ -258,7 +258,6 @@ class WebsiteContentService
      * built from a string or a malformed array would break the @foreach in the
      * booking partial, so fall back to the defaults for that section.
      *
-     * @param  mixed  $value
      * @param  array<int, mixed>  $defaults
      * @return array<int, mixed>
      */

@@ -132,6 +132,17 @@ class AdminResourcesTest extends TestCase
             ->assertSee('Save house rules');
     }
 
+    public function test_website_management_page_lists_moved_content_cards(): void
+    {
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.website.index'))
+            ->assertOk()
+            ->assertSee('Website Management')
+            ->assertSee('Food & Drink')
+            ->assertSee('Places of Interest')
+            ->assertSee('Add-Ons');
+    }
+
     public function test_calendar_events_endpoint_returns_json(): void
     {
         $property = Property::factory()->create();

@@ -363,24 +363,42 @@
                 @endif
                 @forelse ($reviews as $review)
                     @php
-                        $content = $review['content'] ?? [];
-                        $reviewer = $review['reviewer'] ?? [];
-                        $scoring = $review['scoring'] ?? [];
+                        $reviewText = $review['public_review'] ?? '';
+                        $reviewId = $review['id'] ?? null;
+                        $overall = $review['overall_rating'] ?? null;
+                        $categoryRatings = $review['category_ratings'] ?? [];
+                        $submittedAt = $review['first_completed_at'] ?? $review['submitted_at'] ?? null;
+                        $hostResponse = $review['reviewee_response'] ?? '';
                     @endphp
                     <div class="border-bottom py-3">
                         <div class="d-flex justify-content-between gap-3">
                             <div>
-                                <strong>{{ $content['headline'] ?? 'Airbnb review' }}</strong>
-                                <div class="small text-muted">Review ID: {{ $review['review_id'] ?? 'N/A' }}</div>
-                                <div class="small text-muted">Reviewer: {{ $reviewer['name'] ?? 'Anonymous' }}</div>
+                                <strong>{{ $reviewText !== '' ? $reviewText : 'Airbnb review' }}</strong>
+                                @if ($reviewId)
+                                    <div class="small text-muted">Review ID: {{ $reviewId }}</div>
+                                @endif
+                                @if ($overall)
+                                    <div class="small text-muted">Overall rating: <span class="badge text-bg-secondary ms-1">{{ $overall }}</span></div>
+                                @endif
+                                @if ($submittedAt)
+                                    <div class="small text-muted">{{ \Illuminate\Support\Carbon::parse($submittedAt)->format('d M Y') }}</div>
+                                @endif
                             </div>
-                            <span class="badge text-bg-secondary">{{ $scoring['review_score'] ?? 'N/A' }}</span>
                         </div>
-                        @if (! empty($content['positive']))
-                            <div class="small mt-2"><strong>Positive:</strong> {{ $content['positive'] }}</div>
+                        @if ($categoryRatings)
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                @foreach (collect($categoryRatings)->where('rating', '!=', 0) as $category)
+                                    <span class="small badge text-bg-light border">{{ $category['category'] ?? 'Category' }}: {{ $category['rating'] }}</span>
+                                @endforeach
+                            </div>
+                            @foreach (collect($categoryRatings)->where('comment', '!=', '') as $category)
+                                @if (! empty($category['comment']))
+                                    <div class="small mt-2"><strong>{{ $category['category'] ?? 'Comment' }}:</strong> {{ $category['comment'] }}</div>
+                                @endif
+                            @endforeach
                         @endif
-                        @if (! empty($content['negative']))
-                            <div class="small mt-1"><strong>Negative:</strong> {{ $content['negative'] }}</div>
+                        @if ($hostResponse !== '')
+                            <div class="small mt-2 text-success"><strong>Your response:</strong> {{ $hostResponse }}</div>
                         @endif
                     </div>
                 @empty
@@ -568,7 +586,7 @@
                     <div class="small text-muted">Recent Beds24 API calls and responses for this account.</div>
                 </div>
                 @if ($selectedAccount)
-                    <span class="badge text-bg-light">{{ $logs->count() }} of 50 shown</span>
+                    <span class="badge text-bg-light">{{ $logs->total() }} total</span>
                 @endif
             </div>
             <div class="card-body">
@@ -578,13 +596,49 @@
                         <p class="mb-1">No account selected.</p>
                         <p class="small text-muted mb-0">Select a Beds24 account to view API logs.</p>
                     </div>
-                @elseif ($logs->isEmpty())
-                    <div class="text-center py-5">
-                        <div class="display-6 text-muted mb-2"><i class="bi bi-journal-code"></i></div>
-                        <p class="mb-1">No API logs yet.</p>
-                        <p class="small text-muted mb-0">API calls to Beds24 will appear here once synced.</p>
-                    </div>
                 @else
+                    <form method="GET" action="{{ route('admin.channels.airbnb') }}" class="row g-2 align-items-center mb-3">
+                        <input type="hidden" name="account_id" value="{{ $selectedAccount->id }}">
+                        @if ($selectedUserId)
+                            <input type="hidden" name="airbnb_user_id" value="{{ $selectedUserId }}">
+                        @endif
+                        @if ($selectedListingId)
+                            <input type="hidden" name="airbnb_listing_id" value="{{ $selectedListingId }}">
+                        @endif
+                        @if ($selectedRoomId)
+                            <input type="hidden" name="room_id" value="{{ $selectedRoomId }}">
+                        @endif
+                        <div class="col-md-4 col-lg-5">
+                            <input
+                                type="search"
+                                name="log_search"
+                                value="{{ $logSearch }}"
+                                class="form-control form-control-sm"
+                                placeholder="Search operation, status, or error..."
+                            >
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-sm btn-ch-primary" type="submit">Search</button>
+                        </div>
+                        @if ($logSearch)
+                            <div class="col-auto">
+                                <a href="{{ route('admin.channels.airbnb', array_filter([
+                                    'account_id' => $selectedAccount->id,
+                                    'airbnb_user_id' => $selectedUserId,
+                                    'airbnb_listing_id' => $selectedListingId,
+                                    'room_id' => $selectedRoomId,
+                                ], static fn ($value) => $value !== null && $value !== '')) }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                            </div>
+                        @endif
+                    </form>
+
+                    @if ($logs->isEmpty())
+                        <div class="text-center py-5">
+                            <div class="display-6 text-muted mb-2"><i class="bi bi-journal-code"></i></div>
+                            <p class="mb-1">{{ $logSearch ? 'No logs match your search.' : 'No API logs yet.' }}</p>
+                            <p class="small text-muted mb-0">API calls to Beds24 will appear here once synced.</p>
+                        </div>
+                    @else
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
@@ -680,6 +734,9 @@
                                 @endforeach
                             </tbody>
                         </table>
+                    </div>
+                    <div class="mt-3">
+                        {{ $logs->links() }}
                     </div>
                 @endif
             </div>

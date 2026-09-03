@@ -289,20 +289,25 @@ class Beds24IntegrationTest extends TestCase
                 return Http::response([
                     'success' => true,
                     'type' => 'airbnbReview',
+                    'pages' => [
+                        'nextPage' => null,
+                        'previousPage' => null,
+                        'pageCount' => 1,
+                        'currentPage' => 1,
+                        'pageSize' => 100,
+                    ],
                     'data' => [[
-                        'review_id' => 'review-1',
-                        'content' => [
-                            'language_code' => 'en',
-                            'headline' => 'Lovely view',
-                            'positive' => 'Great stay.',
-                            'negative' => '',
+                        'id' => 'review-1',
+                        'public_review' => 'Lovely view and a great stay.',
+                        'overall_rating' => 9,
+                        'category_ratings' => [
+                            ['category' => 'Cleanliness', 'comment' => 'Spotless', 'rating' => 9],
+                            ['category' => 'Communication', 'comment' => '', 'rating' => 10],
                         ],
-                        'reviewer' => [
-                            'name' => 'Jordan',
-                        ],
-                        'scoring' => [
-                            'review_score' => 9.5,
-                        ],
+                        'first_completed_at' => '2026-07-01 10:00:00',
+                        'reviewee_response' => 'Thanks for staying!',
+                        'reviewer_id' => 'guest-1',
+                        'submitted' => true,
                     ]],
                 ], 200);
             }

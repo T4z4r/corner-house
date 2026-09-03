@@ -9,6 +9,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\Notification\NotificationService;
 use App\Services\System\MailConfigurationService;
+use App\Services\Website\WebsiteContentService;
 use Database\Seeders\CommunicationTemplateSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Database\Seeders\SettingsSeeder;
@@ -115,7 +116,7 @@ class SettingsTest extends TestCase
             'cast' => 'json',
         ]);
 
-        $site = app(\App\Services\Website\WebsiteContentService::class)->data();
+        $site = app(WebsiteContentService::class)->data();
 
         $this->assertIsArray($site['bookingRules']);
         $this->assertSame('Pricing and payment', $site['bookingRules'][0]['title'] ?? null);
