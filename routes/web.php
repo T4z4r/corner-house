@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\PropertyController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReservationController;
 use App\Http\Controllers\Admin\RevenueController;
+use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\RoomController;
 use App\Http\Controllers\Admin\ScheduleSettingsController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -146,6 +147,17 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::put('/addons/{addon}', [AddOnController::class, 'update'])->name('addons.update')->middleware('can:addons.update');
         Route::delete('/addons/{addon}', [AddOnController::class, 'destroy'])->name('addons.destroy')->middleware('can:addons.delete');
         Route::post('/addons/{addon}/toggle', [AddOnController::class, 'toggle'])->name('addons.toggle')->middleware('can:addons.update');
+    });
+
+    Route::middleware('can:reviews.view')->group(function (): void {
+        Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
+        Route::get('/reviews/create', [ReviewController::class, 'create'])->name('reviews.create')->middleware('can:reviews.create');
+        Route::post('/reviews', [ReviewController::class, 'store'])->name('reviews.store')->middleware('can:reviews.create');
+        Route::get('/reviews/{review}/edit', [ReviewController::class, 'edit'])->name('reviews.edit')->middleware('can:reviews.update');
+        Route::put('/reviews/{review}', [ReviewController::class, 'update'])->name('reviews.update')->middleware('can:reviews.update');
+        Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy')->middleware('can:reviews.delete');
+        Route::post('/reviews/{review}/toggle', [ReviewController::class, 'toggle'])->name('reviews.toggle')->middleware('can:reviews.update');
+        Route::post('/reviews/import', [ReviewController::class, 'importFromAirbnb'])->name('reviews.import')->middleware('can:reviews.create');
     });
 
     Route::middleware('can:users.view')->group(function (): void {

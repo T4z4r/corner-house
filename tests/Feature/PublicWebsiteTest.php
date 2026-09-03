@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\KnowledgeBaseArticle;
 use App\Models\Property;
+use App\Models\Review;
 use App\Models\Room;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,6 +30,37 @@ class PublicWebsiteTest extends TestCase
             ->assertSee('images/logo.png', false)
             ->assertSee('data-chat-widget', false)
             ->assertSee('Ask Corner House');
+    }
+
+    public function test_home_page_shows_only_approved_reviews(): void
+    {
+        Property::factory()->create(['name' => 'Corner House']);
+        Review::factory()->approved()->create([
+            'stars' => 5,
+            'quote' => 'The hot tub after a long walk was perfect.',
+            'cite' => 'Sophie, June 2026',
+        ]);
+        Review::factory()->hidden()->create([
+            'quote' => 'A review we have not approved yet.',
+        ]);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('The hot tub after a long walk was perfect.')
+            ->assertSee('Sophie, June 2026')
+            ->assertDontSee('A review we have not approved yet.');
+    }
+
+    public function test_home_page_review_stats_reflect_approved_reviews(): void
+    {
+        Property::factory()->create(['name' => 'Corner House']);
+        Review::factory()->approved()->create(['stars' => 5]);
+        Review::factory()->approved()->create(['stars' => 4]);
+        Review::factory()->hidden()->create(['stars' => 1]);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('average from 2 Airbnb reviews', false);
     }
 
     public function test_uploaded_logo_overrides_bundled_default(): void

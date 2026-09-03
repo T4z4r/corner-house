@@ -5,6 +5,7 @@ namespace App\Services\Website;
 use App\Models\Amenity;
 use App\Models\PlacesOfInterest;
 use App\Models\Property;
+use App\Models\Review;
 use App\Models\Room;
 use App\Models\Setting;
 use Illuminate\Database\Eloquent\Collection;
@@ -110,7 +111,7 @@ class WebsiteContentService
      */
     private function heroFacts(?Property $property, int $roomCount): array
     {
-        $reviewCount = (int) Setting::getValue('review_count', 40);
+        $reviewStats = $this->reviewStats();
 
         return [
             ['value' => (string) Setting::getValue('hero_bedrooms', $roomCount ?: ($property?->bedrooms ?? 5)), 'label' => 'ensuite bedrooms'],
@@ -118,7 +119,7 @@ class WebsiteContentService
             ['value' => (string) Setting::getValue('hero_square_feet', '4,000'), 'label' => 'square feet'],
             ['value' => (string) Setting::getValue('hero_kitchen', '25 ft'), 'label' => 'centrepiece kitchen'],
             ['value' => (string) Setting::getValue('hero_built', '1850'), 'label' => 'the year it was built'],
-            ['value' => (string) Setting::getValue('review_score', '4.95'), 'label' => sprintf('average from %d %s', $reviewCount, $reviewCount === 1 ? 'Airbnb review' : 'Airbnb reviews')],
+            ['value' => (string) number_format($reviewStats['score'], 2), 'label' => sprintf('average from %d %s', $reviewStats['count'], $reviewStats['count'] === 1 ? 'Airbnb review' : 'Airbnb reviews')],
         ];
     }
 
@@ -178,21 +179,40 @@ class WebsiteContentService
     }
 
     /**
-     * Review quotes for the marquee. Each entry: ['stars', 'quote', 'cite'].
+     * Approved reviews for the marquee. Each entry: ['stars', 'quote', 'cite'].
      *
-     * @return array<int, array{stars: int, quote: string, cite: string}>
+     * @return array<int, array{stars: int, quote: string, cite: ?string}>
      */
     private function reviews(): array
     {
-        $raw = Setting::getValue('website_reviews', []);
+        return Review::approved()
+            ->orderBy('sort_order')
+            ->orderByDesc('id')
+            ->limit(20)
+            ->get()
+            ->map(static fn (Review $review): array => [
+                'stars' => $review->stars,
+                'quote' => $review->quote,
+                'cite' => $review->cite,
+            ])
+            ->all();
+    }
 
-        if (is_array($raw) && $raw !== []) {
-            return array_values($raw);
+    /**
+     * @return array{count: int, score: ?float}
+     */
+    private function reviewStats(): array
+    {
+        $reviews = Review::approved()->get(['stars']);
+
+        if ($reviews->isEmpty()) {
+            return ['count' => (int) Setting::getValue('review_count', 0), 'score' => (float) Setting::getValue('review_score', 4.95)];
         }
 
-        return array_map(function (): array {
-            return ['stars' => 5, 'quote' => 'Paste a real guest review here.', 'cite' => 'Guest name, month year'];
-        }, range(1, 11));
+        return [
+            'count' => $reviews->count(),
+            'score' => round($reviews->avg('stars'), 2),
+        ];
     }
 
     /**

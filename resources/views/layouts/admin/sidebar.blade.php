@@ -24,6 +24,13 @@
                 </a>
             </li>
         @endcan
+        @can('reviews.view')
+            <li class="nav-item">
+                <a href="{{ route('admin.reviews.index') }}" class="nav-link {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}">
+                    <i class="bi bi-chat-quote me-2"></i><span class="nav-text">Reviews</span>
+                </a>
+            </li>
+        @endcan
 
         <li class="sidebar-heading">Management</li>
         @can('properties.view')
@@ -190,6 +197,13 @@
                 <li class="nav-item">
                     <a href="{{ route('admin.website.index') }}" class="nav-link {{ request()->routeIs('admin.website.*') ? 'active' : '' }}">
                         <i class="bi bi-globe me-2"></i><span class="nav-text">Website</span>
+                    </a>
+                </li>
+            @endcan
+            @can('reviews.view')
+                <li class="nav-item">
+                    <a href="{{ route('admin.reviews.index') }}" class="nav-link {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}">
+                        <i class="bi bi-chat-quote me-2"></i><span class="nav-text">Reviews</span>
                     </a>
                 </li>
             @endcan

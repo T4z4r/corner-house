@@ -99,7 +99,6 @@ class SettingsSeeder extends Seeder
             ['group' => 'website', 'key' => 'website_walking_routes', 'value' => json_encode(SettingsSeeder::defaultWalks()), 'label' => 'Places — walking routes', 'cast' => 'json'],
             ['group' => 'website', 'key' => 'website_booking_rules', 'value' => json_encode(SettingsSeeder::defaultBookingRules()), 'label' => 'Booking — booking rules', 'cast' => 'json'],
             ['group' => 'website', 'key' => 'website_house_rules', 'value' => json_encode(SettingsSeeder::defaultHouseRules()), 'label' => 'Booking — house rules', 'cast' => 'json'],
-            ['group' => 'website', 'key' => 'website_reviews', 'value' => json_encode(SettingsSeeder::defaultReviews()), 'label' => 'Home — guest reviews', 'cast' => 'json'],
             ['group' => 'stripe', 'key' => 'stripe_key', 'value' => '', 'label' => 'Stripe publishable key', 'cast' => 'secret'],
             ['group' => 'stripe', 'key' => 'stripe_secret', 'value' => '', 'label' => 'Stripe secret key', 'cast' => 'secret'],
             ['group' => 'stripe', 'key' => 'stripe_webhook_secret', 'value' => '', 'label' => 'Stripe webhook signing secret', 'cast' => 'secret'],
@@ -252,26 +251,6 @@ class SettingsSeeder extends Seeder
                     'If we think you are breaking the house rules, we will talk to you, of course. But persistent or serious breaches of the rules are not tolerated and may result in the termination of your booking without refund.',
                 ],
             ],
-        ];
-    }
-
-    /**
-     * @return array<int, array{stars: int, quote: string, cite: string}>
-     */
-    public static function defaultReviews(): array
-    {
-        return [
-            ['stars' => 5, 'quote' => 'Corner House was the perfect base for our family gathering. The kitchen really is the heart of it — we all ended up around that table, and the cinema room was a huge hit with the kids.', 'cite' => 'The Hamiltons, July 2026'],
-            ['stars' => 5, 'quote' => 'Beautiful house, beautifully kept. The hot tub after a long walk to Ashby St Ledgers was exactly what we needed.', 'cite' => 'Sophie and Tom, June 2026'],
-            ['stars' => 5, 'quote' => 'The garden and entertaining patio are even better than the photos. We cooked on the fire-pit both nights and barely wanted to leave.', 'cite' => 'Mark, May 2026'],
-            ['stars' => 4, 'quote' => 'Great location for the Marina and a proper kitchen for cooking for twelve. The office in the grounds was a lifesaver for a mid-week call.', 'cite' => 'Priya, April 2026'],
-            ['stars' => 5, 'quote' => 'We organised a birthday weekend here and the whole party was looked after brilliantly. The rooms are huge and each one having its own bathroom is a treat.', 'cite' => 'James, March 2026'],
-            ['stars' => 5, 'quote' => 'Faultless. The gym is better equipped than most hotels, and the welcome on arrival was warm and easy. We will be back.', 'cite' => 'Rachel, February 2026'],
-            ['stars' => 5, 'quote' => 'A proper country house for a full house. Everyone who stayed wants to come again — the balcony off the Lion suite at sunrise is magic.', 'cite' => 'The O\'Briens, January 2026'],
-            ['stars' => 4, 'quote' => 'Lovely stay at the Heart of the Waterways. The Gongoozlers Rest for breakfast and a walk along the towpath were highlights.', 'cite' => 'Daniel, December 2025'],
-            ['stars' => 5, 'quote' => 'We stayed over New Year and the games room, cinema room and garden bar kept a big mixed group entertained for days.', 'cite' => 'Anna, January 2026'],
-            ['stars' => 5, 'quote' => 'Booked the Serengeti Spirits tasting on site and it made the weekend. Great house, great hosts, great gin.', 'cite' => 'Ben, November 2025'],
-            ['stars' => 5, 'quote' => 'Everything was exactly as described and the beds were wonderfully comfortable. A perfect retreat from the city.', 'cite' => 'Charlotte, October 2025'],
         ];
     }
 }

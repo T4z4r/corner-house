@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
         $this->call(FoodAndDrinkSeeder::class);
         $this->call(PlacesOfInterestSeeder::class);
         $this->call(AddOnSeeder::class);
+        $this->call(ReviewSeeder::class);
         $this->call(CommunicationTemplateSeeder::class);
         $this->call(KnowledgeBaseSeeder::class);
     }
