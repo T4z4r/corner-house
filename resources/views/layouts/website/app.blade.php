@@ -82,6 +82,7 @@
 <script>
     window.__SITE__ = @json($site['config']);
 </script>
+<x-website-chat-widget />
 @stack('scripts')
 </body>
 </html>

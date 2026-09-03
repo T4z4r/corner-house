@@ -190,3 +190,89 @@ document.getElementById("enquiry").addEventListener("submit", async e=>{
 
 loadAvailability().then(renderMonths);
 renderMonths();
+
+/* ---------- Floating chat widget ---------- */
+(function initChat(){
+  const root = document.querySelector("[data-chat-widget]");
+  if(!root || root.dataset.bound === "1") return;
+  root.dataset.bound = "1";
+
+  const toggle = root.querySelectorAll("[data-chat-toggle]");
+  const panel = root.querySelector("[data-chat-panel]");
+  const modeBtns = [...root.querySelectorAll("[data-chat-mode]")];
+  const form = root.querySelector("[data-chat-form]");
+  const messageForm = root.querySelector("[data-message-form]");
+  const input = root.querySelector("[data-chat-input]");
+  const body = root.querySelector("[data-chat-body]");
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.content || "";
+  const storageKey = "cornerhouse.chatSession.website";
+  let sessionId = null;
+  try{ sessionId = localStorage.getItem(storageKey); }catch(e){ sessionId = null; }
+  if(!sessionId){
+    sessionId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
+    try{ localStorage.setItem(storageKey, sessionId); }catch(e){/* storage unavailable */}
+  }
+
+  const esc = v => String(v).replace(/</g, "&lt;");
+  const addMsg = (text, cls) => { body.insertAdjacentHTML("beforeend", `<div class="chat-msg ${cls}">${esc(text)}</div>`); body.scrollTop = body.scrollHeight; };
+
+  const setOpen = open => {
+    if(!panel) return;
+    panel.hidden = !open;
+    root.classList.toggle("is-open", open);
+    toggle.forEach(b => b.setAttribute("aria-expanded", open ? "true" : "false"));
+    if(open) input?.focus();
+  };
+  toggle.forEach(b => b.addEventListener("click", () => setOpen(panel.hidden)));
+
+  const setMode = mode => {
+    const isAsk = mode === "ask";
+    [form, messageForm].forEach(f => { if(f) f.hidden = !(f.dataset.modePanel === mode); });
+    modeBtns.forEach(btn => btn.setAttribute("aria-selected", btn.dataset.chatMode === mode ? "true" : "false"));
+  };
+  modeBtns.forEach(btn => btn.addEventListener("click", () => setMode(btn.dataset.chatMode)));
+
+  form?.addEventListener("submit", async e => {
+    e.preventDefault();
+    const message = input?.value.trim();
+    if(!message) return;
+    addMsg(message, "guest");
+    input.value = "";
+    addMsg("Thinking…", "ai pending");
+    try{
+      const r = await fetch("/api/v1/chat", {
+        method:"POST",
+        headers:{"Content-Type":"application/json",Accept:"application/json","X-CSRF-TOKEN":csrf},
+        body: JSON.stringify({message, session_id: sessionId, source:"website"})
+      });
+      const data = await r.json();
+      root.querySelector(".chat-msg.pending")?.remove();
+      addMsg(data.reply || "Sorry, I could not answer that.", "ai");
+    }catch(err){
+      root.querySelector(".chat-msg.pending")?.remove();
+      addMsg("The assistant is unavailable right now.", "ai");
+    }
+  });
+
+  messageForm?.addEventListener("submit", async e => {
+    e.preventDefault();
+    const payload = {
+      name: root.querySelector("[data-msg-name]")?.value.trim(),
+      email: root.querySelector("[data-msg-email]")?.value.trim(),
+      message: root.querySelector("[data-msg-body]")?.value.trim(),
+      session_id: sessionId
+    };
+    addMsg(payload.message, "guest");
+    try{
+      const r = await fetch("/api/v1/messages", {
+        method:"POST",
+        headers:{"Content-Type":"application/json",Accept:"application/json","X-CSRF-TOKEN":csrf},
+        body: JSON.stringify(payload)
+      });
+      const data = await r.json();
+      addMsg(data.reply || "Thanks — we have received your message and will reply by email.", "ai");
+      const bodyField = root.querySelector("[data-msg-body]");
+      if(bodyField) bodyField.value = "";
+    }catch(err){ addMsg("We could not send that message just now.", "ai"); }
+  });
+})();

@@ -26,7 +26,9 @@ class PublicWebsiteTest extends TestCase
             ->assertSee('Serengeti Spirits')
             ->assertSee('#rooms', false)
             ->assertSee('data-page="rooms"', false)
-            ->assertSee('images/logo.png', false);
+            ->assertSee('images/logo.png', false)
+            ->assertSee('data-chat-widget', false)
+            ->assertSee('Ask Corner House');
     }
 
     public function test_uploaded_logo_overrides_bundled_default(): void
