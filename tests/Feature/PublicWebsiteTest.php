@@ -25,7 +25,29 @@ class PublicWebsiteTest extends TestCase
             ->assertSee('Built for a full house')
             ->assertSee('Serengeti Spirits')
             ->assertSee('#rooms', false)
-            ->assertSee('data-page="rooms"', false);
+            ->assertSee('data-page="rooms"', false)
+            ->assertSee('images/logo.png', false);
+    }
+
+    public function test_uploaded_logo_overrides_bundled_default(): void
+    {
+        Property::factory()->create(['name' => 'Corner House']);
+
+        Setting::query()->create([
+            'group' => 'website',
+            'key' => 'website_logo',
+            'value' => 'website/custom.png',
+            'type' => 'image',
+            'label' => 'Logo',
+            'cast' => 'string',
+        ]);
+
+        cache()->forget('settings.all');
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('storage/website/custom.png', false)
+            ->assertDontSee('images/logo.png', false);
     }
 
     public function test_property_and_booking_pages_render(): void

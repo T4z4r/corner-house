@@ -17,11 +17,7 @@
 <header class="site-header">
     <div class="wrap">
         <a class="brand" href="#home" aria-label="Corner House, Braunston - home">
-            @if ($site['logo'])
-                <img src="{{ asset('storage/'.$site['logo']) }}" alt="{{ $propertyName }}">
-            @else
-                <span>{{ $propertyName }}</span>
-            @endif
+            <img src="{{ $site['logo'] ? asset('storage/'.$site['logo']) : asset('images/logo.png') }}" alt="{{ $propertyName }}">
         </a>
         <button class="nav-toggle" aria-expanded="false" aria-controls="nav">Menu</button>
         <nav class="nav" id="nav" aria-label="Main">
@@ -45,6 +41,8 @@
         <div>
             @if ($site['footer_logo'])
                 <img class="footer-logo" src="{{ asset('storage/'.$site['footer_logo']) }}" alt="{{ $propertyName }}">
+            @else
+                <img class="footer-logo" src="{{ asset('images/logo.png') }}" alt="{{ $propertyName }}">
             @endif
             <h4>{{ $propertyName }}</h4>
             <p>{{ $site['footer_address'] }}<br>{{ $site['footer_capacity_note'] }}</p>
