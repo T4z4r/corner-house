@@ -98,8 +98,10 @@ class PricingEngine
             ->get();
 
         foreach ($rules as $rule) {
-            $overlaps = (! $rule->start_date || $checkOut->gt($rule->start_date))
-                && (! $rule->end_date || $checkIn->lte($rule->end_date));
+            $overlaps = ($rule->recurring)
+                ? $this->rangeTouchesRecurring($rule, $checkIn, $checkOut)
+                : ((! $rule->start_date || $checkOut->gt($rule->start_date))
+                    && (! $rule->end_date || $checkIn->lte($rule->end_date)));
 
             if ($overlaps) {
                 $minimum = max($minimum, (int) $rule->minimum_stay);
@@ -135,8 +137,10 @@ class PricingEngine
             ->get();
 
         foreach ($rules as $rule) {
-            $overlaps = (! $rule->start_date || $checkOut->gt($rule->start_date))
-                && (! $rule->end_date || $checkIn->lte($rule->end_date));
+            $overlaps = ($rule->recurring)
+                ? $this->rangeTouchesRecurring($rule, $checkIn, $checkOut)
+                : ((! $rule->start_date || $checkOut->gt($rule->start_date))
+                    && (! $rule->end_date || $checkIn->lte($rule->end_date)));
 
             if (! $overlaps) {
                 continue;
@@ -239,11 +243,17 @@ class PricingEngine
 
     private function ruleApplies(PricingRule $rule, Carbon $date, ?float $occupancyPct): bool
     {
-        if ($rule->start_date && $date->lt($rule->start_date)) {
-            return false;
-        }
-        if ($rule->end_date && $date->gt($rule->end_date)) {
-            return false;
+        if ($rule->recurring) {
+            if (! $this->recurringCovers($rule, $date)) {
+                return false;
+            }
+        } else {
+            if ($rule->start_date && $date->lt($rule->start_date)) {
+                return false;
+            }
+            if ($rule->end_date && $date->gt($rule->end_date)) {
+                return false;
+            }
         }
         if ($rule->apply_weekends_only && ! in_array($date->dayOfWeek, [Carbon::FRIDAY, Carbon::SATURDAY, Carbon::SUNDAY])) {
             return false;
@@ -431,5 +441,28 @@ class PricingEngine
         }
 
         return $date->startOfDay();
+    }
+
+    /**
+     * Whether a recurring rule's month/day window covers the given date.
+     * Recurring rules use start_date/end_date only for their month and day,
+     * so they apply on the same calendar window every year. A window whose
+     * end is earlier in the year than its start wraps across the year boundary.
+     */
+    private function recurringCovers(PricingRule $rule, Carbon $date): bool
+    {
+        if (! $rule->start_date) {
+            return true;
+        }
+
+        $start = $rule->start_date->format('m-d');
+        $end = $rule->end_date?->format('m-d') ?? $start;
+        $target = $date->format('m-d');
+
+        if ($start <= $end) {
+            return $target >= $start && $target <= $end;
+        }
+
+        return $target >= $start || $target <= $end;
     }
 }
