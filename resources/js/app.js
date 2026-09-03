@@ -1,4 +1,6 @@
 import $ from 'jquery';
+import 'select2';
+import 'select2/dist/css/select2.css';
 import * as bootstrap from 'bootstrap';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import Chart from 'chart.js/auto';
