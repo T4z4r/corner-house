@@ -270,6 +270,9 @@
                     @endforeach
                 </select>
             </div>
+            <button type="button" class="btn btn-ch-primary" id="applyFilterButton">
+                <i class="bi bi-funnel me-1"></i>Filter
+            </button>
             @can('calendar.manage')
                 <button class="btn btn-ch-primary" data-bs-toggle="modal" data-bs-target="#blockModal">
                     <i class="bi bi-calendar-plus me-1"></i>Add Item
@@ -786,28 +789,32 @@
         });
 
         const propertyFilter = document.getElementById('propertyFilter');
-        if (propertyFilter) {
-            propertyFilter.addEventListener('change', () => {
-                activePropertyId = propertyFilter.value;
-                activeRoomId = '';
-                syncUrl();
-                populateRoomOptions(document.getElementById('roomFilter'), activePropertyId);
-                const blockPropertyInput = document.getElementById('block_property');
-                if (blockPropertyInput) {
-                    blockPropertyInput.value = activePropertyId;
+        const roomFilter = document.getElementById('roomFilter');
+        const applyFilterButton = document.getElementById('applyFilterButton');
+
+        function applyFilters() {
+            activePropertyId = propertyFilter ? propertyFilter.value : '';
+            activeRoomId = roomFilter ? roomFilter.value : '';
+            syncUrl();
+
+            if (propertyFilter) {
+                populateRoomOptions(roomFilter, activePropertyId);
+                if (activeRoomId) {
+                    roomFilter.value = activeRoomId;
                 }
-                populateRoomOptions(document.getElementById('blockRoom'), activePropertyId);
-                loadEvents().then(renderMonth);
-            });
+            }
+
+            const blockPropertyInput = document.getElementById('block_property');
+            if (blockPropertyInput) {
+                blockPropertyInput.value = activePropertyId;
+            }
+            populateRoomOptions(document.getElementById('blockRoom'), activePropertyId);
+
+            loadEvents().then(renderMonth);
         }
 
-        const roomFilter = document.getElementById('roomFilter');
-        if (roomFilter) {
-            roomFilter.addEventListener('change', () => {
-                activeRoomId = roomFilter.value;
-                syncUrl();
-                loadEvents().then(renderMonth);
-            });
+        if (applyFilterButton) {
+            applyFilterButton.addEventListener('click', applyFilters);
         }
 
         const blockRoom = document.getElementById('blockRoom');

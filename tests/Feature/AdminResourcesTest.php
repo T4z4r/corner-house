@@ -132,6 +132,7 @@ class AdminResourcesTest extends TestCase
             ->get(route('admin.calendar', ['property_id' => $first->id]))
             ->assertOk()
             ->assertSee('id="propertyFilter"', false)
+            ->assertSee('id="applyFilterButton"', false)
             ->assertSee($first->name)
             ->assertSee($second->name)
             ->assertSee('Oak Suite')
