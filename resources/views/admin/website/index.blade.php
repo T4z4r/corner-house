@@ -54,6 +54,22 @@
             </a>
         </div>
 
+        @can('amenities.view')
+            <div class="col-md-6 col-lg-4">
+                <a href="{{ route('admin.amenities.index') }}" class="card border-0 shadow-sm text-decoration-none h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                                <i class="bi bi-grid-3x3-gap fs-5 text-success"></i>
+                            </div>
+                            <h6 class="mb-0">Manage Amenities</h6>
+                        </div>
+                        <p class="text-muted small mb-0">Add, edit, activate, or deactivate amenity records.</p>
+                    </div>
+                </a>
+            </div>
+        @endcan
+
         <div class="col-md-6 col-lg-4">
             <a href="{{ route('admin.gallery.index') }}" class="card border-0 shadow-sm text-decoration-none h-100">
                 <div class="card-body">

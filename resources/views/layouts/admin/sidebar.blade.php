@@ -40,13 +40,6 @@
                 </a>
             </li>
         @endcan
-        @can('amenities.view')
-            <li class="nav-item">
-                <a href="{{ route('admin.amenities.index') }}" class="nav-link {{ request()->routeIs('admin.amenities.*') ? 'active' : '' }}">
-                    <i class="bi bi-plus-circle me-2"></i><span class="nav-text">Amenities</span>
-                </a>
-            </li>
-        @endcan
         @can('guests.view')
             <li class="nav-item">
                 <a href="{{ route('admin.guests.index') }}" class="nav-link {{ request()->routeIs('admin.guests.*') ? 'active' : '' }}">
@@ -58,6 +51,13 @@
             <li class="nav-item">
                 <a href="{{ route('admin.reservations.index') }}" class="nav-link {{ request()->routeIs('admin.reservations.*') ? 'active' : '' }}">
                     <i class="bi bi-journal-bookmark me-2"></i><span class="nav-text">Bookings</span>
+                </a>
+            </li>
+        @endcan
+        @can('communications.view')
+            <li class="nav-item">
+                <a href="{{ route('admin.messages.index') }}" class="nav-link {{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
+                    <i class="bi bi-chat-dots me-2"></i><span class="nav-text">Messages</span>
                 </a>
             </li>
         @endcan
@@ -122,11 +122,6 @@
             <li class="nav-item">
                 <a href="{{ route('admin.communications.index') }}" class="nav-link {{ request()->routeIs('admin.communications.*') ? 'active' : '' }}">
                     <i class="bi bi-earbuds me-2"></i><span class="nav-text">Communications</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('admin.messages.index') }}" class="nav-link {{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
-                    <i class="bi bi-chat-dots me-2"></i><span class="nav-text">Messages</span>
                 </a>
             </li>
         @endcan
