@@ -318,6 +318,7 @@ form.enquiry .check input{width:auto;margin-top:.25rem}
 .chat.is-open .chat-toggle-icon{display:none}
 .chat.is-open .chat-toggle-close{display:block}
 .chat-panel{display:flex;flex-direction:column;width:min(360px,calc(100vw - 2.5rem));max-height:min(70vh,560px);margin-bottom:.8rem;background:var(--stone-light);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 18px 50px rgba(31,56,38,.28);overflow:hidden}
+.chat [hidden]{display:none !important}
 .chat-header{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.9rem 1rem;background:var(--ivy-deep);color:var(--stone)}
 .chat-header strong{font-family:var(--display);font-weight:400;font-size:1.05rem;display:block;line-height:1.2}
 .chat-subtitle{font-size:.78rem;color:var(--sage)}
