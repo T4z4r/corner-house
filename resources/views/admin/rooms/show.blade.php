@@ -105,6 +105,8 @@
         padding: 1rem;
     }
     .rc-day-swatch { width: 0.75rem; height: 0.75rem; border-radius: 999px; flex-shrink: 0; }
+    #dayDetail { max-height: 480px; overflow-y: auto; overflow-x: hidden; }
+    #dayDetail .min-w-0 { min-width: 0; }
     .rc-sw-confirmed { background: #1f6f43; }
     .rc-sw-pending { background: #c9a227; }
     .rc-sw-hold { background: #6c757d; }
@@ -528,9 +530,9 @@
                         <div class="fw-semibold text-truncate" title="${ev.title}">${ev.title}</div>
                     `;
                     const inner = `
-                        <div class="d-flex align-items-start gap-2">
+                        <div class="d-flex align-items-start gap-2 min-w-0 w-100">
                             <span class="rc-day-swatch ${swatch} mt-1"></span>
-                            <div class="flex-grow-1">${body}</div>
+                            <div class="flex-grow-1 min-w-0">${body}</div>
                         </div>
                     `;
                     return evUrl

@@ -95,7 +95,7 @@ class CalendarController extends Controller
             $guestName = $reservation->guest?->full_name ?? 'Guest';
             $events->push([
                 'id' => 'res-'.$reservation->id,
-                'title' => $reservation->reference.' · '.$roomName.' · '.$guestName,
+                'title' => $guestName.' · '.$reservation->reference,
                 'start' => $reservation->check_in->toDateString(),
                 'end' => $reservation->check_out->copy()->addDay()->toDateString(),
                 'className' => $this->reservationCalendarClass($reservation),
@@ -105,6 +105,8 @@ class CalendarController extends Controller
                     'amount' => $reservation->total_amount,
                     'room_id' => $reservation->room_id,
                     'room_name' => $roomName,
+                    'guest_name' => $guestName,
+                    'reference' => $reservation->reference,
                     'url' => route('admin.reservations.show', $reservation),
                 ],
             ]);

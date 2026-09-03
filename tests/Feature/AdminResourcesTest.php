@@ -153,6 +153,29 @@ class AdminResourcesTest extends TestCase
             ->assertJson([]);
     }
 
+    public function test_calendar_events_endpoint_titles_show_guest_name_and_reference(): void
+    {
+        $property = Property::factory()->create();
+        $room = Room::factory()->create(['property_id' => $property->id, 'name' => 'Garden Suite']);
+        $guest = Guest::factory()->create(['first_name' => 'Jane', 'last_name' => 'Doe']);
+        $reservation = Reservation::factory()->create([
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'guest_id' => $guest->id,
+            'reference' => 'CH-ABC123',
+            'status' => 'confirmed',
+            'check_in' => '2026-01-05',
+            'check_out' => '2026-01-08',
+        ]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->getJson(route('admin.calendar.events', ['property_id' => $property->id]))
+            ->assertOk()
+            ->assertJsonPath('0.title', 'Jane Doe · CH-ABC123')
+            ->assertJsonPath('0.extendedProps.guest_name', 'Jane Doe')
+            ->assertJsonPath('0.extendedProps.reference', 'CH-ABC123');
+    }
+
     public function test_page_loader_skeleton_renders_in_content_section(): void
     {
         $this->actingAs($this->actingAsSuperAdmin())

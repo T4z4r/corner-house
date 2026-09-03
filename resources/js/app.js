@@ -367,12 +367,20 @@ document.addEventListener('DOMContentLoaded', function () {
         const switcher = document.getElementById('deviceSwitcher');
         if (!switcher) return;
 
-        const buttons = switcher.querySelectorAll('[data-device]');
         const indicator = document.createElement('div');
         indicator.className = 'ch-device-indicator';
         document.body.appendChild(indicator);
 
+        function refreshButtons(device) {
+            document.querySelectorAll('#deviceSwitcher [data-device]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.device === device);
+            });
+        }
+
         function applyDevice(device) {
+            if (!device) {
+                return;
+            }
             document.body.classList.remove('ch-device-tablet', 'ch-device-mobile');
             if (device === 'tablet') {
                 document.body.classList.add('ch-device-tablet');
@@ -384,27 +392,31 @@ document.addEventListener('DOMContentLoaded', function () {
                 indicator.textContent = '';
             }
 
-            buttons.forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.device === device);
-            });
+            refreshButtons(device);
 
             try {
                 localStorage.setItem(STORAGE_KEY, device);
-            } catch (e) { /* storage unavailable */ }
+            } catch (error) {
+                /* storage unavailable */
+            }
         }
 
         function getStoredDevice() {
             try {
                 return localStorage.getItem(STORAGE_KEY) || 'desktop';
-            } catch (e) {
+            } catch (error) {
                 return 'desktop';
             }
         }
 
         applyDevice(getStoredDevice());
 
-        buttons.forEach(btn => {
-            btn.addEventListener('click', () => applyDevice(btn.dataset.device));
+        document.addEventListener('click', (event) => {
+            const trigger = event.target.closest('#deviceSwitcher [data-device]');
+            if (!trigger) {
+                return;
+            }
+            applyDevice(trigger.dataset.device);
         });
     }
 });
