@@ -99,21 +99,40 @@
                 <div class="card-header bg-white"><h6 class="mb-0">Communication history</h6></div>
                 <div class="card-body p-0">
                     <table class="table mb-0">
-                        <thead class="table-light"><tr><th>Subject</th><th>Channel</th><th>Status</th><th>Sent</th></tr></thead>
+                        <thead class="table-light"><tr><th>Subject</th><th>Channel</th><th>Status</th><th>Sent</th><th></th></tr></thead>
                         <tbody>
                             @forelse ($guest->communications as $communication)
                                 <tr>
                                     <td>{{ $communication->subject }}</td>
                                     <td>{{ $communication->channel }}</td>
-                                    <td>{{ $communication->status }}</td>
+                                    <td>
+                                        @if ($communication->status === 'failed' && $communication->error_message)
+                                            <span class="ch-badge ch-badge-danger"><span class="dot"></span>Failed</span>
+                                        @else
+                                            {{ $communication->status }}
+                                        @endif
+                                    </td>
                                     <td>{{ $communication->sent_at?->diffForHumans() ?? '-' }}</td>
+                                    <td class="text-end">
+                                        @if ($communication->status === 'failed' && $communication->error_message)
+                                            <button
+                                                type="button"
+                                                class="btn btn-sm btn-outline-danger"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#commErrorModal{{ $communication->id }}"
+                                                title="View error"
+                                            >
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                            </button>
+                                        @endif
+                                    </td>
                                 </tr>
                             @empty
                                 @include('layouts.admin._empty', [
                                     'icon' => 'bi-chat',
                                     'message' => 'No messages yet',
                                     'hint' => 'Emails and other guest messages will appear here.',
-                                    'colspan' => 4,
+                                    'colspan' => 5,
                                 ])
                             @endforelse
                         </tbody>
@@ -122,6 +141,36 @@
             </div>
         </div>
     </div>
+
+    @foreach ($guest->communications->filter(fn ($c) => $c->status === 'failed' && $c->error_message) as $failed)
+        <div class="modal fade" id="commErrorModal{{ $failed->id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h6 class="modal-title"><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Delivery failed</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <div class="small text-muted">Recipient</div>
+                            <div class="fw-semibold">{{ $failed->recipient ?? 'N/A' }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="small text-muted">Subject</div>
+                            <div class="fw-semibold">{{ $failed->subject ?? 'N/A' }}</div>
+                        </div>
+                        <div>
+                            <div class="small text-muted mb-1">Error</div>
+                            <pre class="bg-light p-3 rounded small mb-0" style="white-space: pre-wrap; word-break: break-word;">{{ $failed->error_message }}</pre>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endforeach
 
     @if ($guest->email)
         @can('communications.send')
