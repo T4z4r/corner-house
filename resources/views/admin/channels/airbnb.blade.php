@@ -554,4 +554,29 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    (function () {
+        const detailLoaded = @json(! empty($selectedListing['airbnb_listing_id']));
+        const listingSelected = @json(! empty($selectedListingId));
+
+        if (! listingSelected && ! detailLoaded) {
+            return;
+        }
+
+        const tabId = document.getElementById(detailLoaded ? 'tab-details' : 'tab-listings');
+        if (! tabId) {
+            return;
+        }
+
+        const tab = bootstrap.Tab.getOrCreateInstance(tabId);
+        if (tab) {
+            tab.show();
+        } else {
+            tabId.click();
+        }
+    })();
+</script>
+@endpush
 @endsection

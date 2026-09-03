@@ -330,7 +330,9 @@ class Beds24IntegrationTest extends TestCase
             ->assertSee('https://example.com/listing-1.jpg')
             ->assertSee('https://example.com/listing-2.jpg')
             ->assertSee('href="'.route('admin.channels.airbnb').'" class="nav-link active"', false)
-            ->assertDontSee('href="'.route('admin.channels.integrations').'" class="nav-link active"', false);
+            ->assertDontSee('href="'.route('admin.channels.integrations').'" class="nav-link active"', false)
+            ->assertSee('const detailLoaded = true;', false)
+            ->assertSee('const listingSelected = true;', false);
 
         Http::assertSent(fn ($request) => str_contains($request->url(), 'channels/airbnb/users')
             && $request->hasHeader('token', 'access-airbnb'));

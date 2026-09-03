@@ -934,6 +934,7 @@ class ChannelController extends Controller
 
         return [
             'room_id' => data_get($row, 'roomId') !== null ? (string) data_get($row, 'roomId') : null,
+            'airbnb_listing_id' => $airbnbListing['id'] ?? null,
             'name' => (string) data_get($row, 'name', 'Unnamed listing'),
             'enabled' => data_get($row, 'enabled'),
             'airbnb_listing' => $airbnbListing,
