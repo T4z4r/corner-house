@@ -339,7 +339,7 @@
                         <input type="hidden" name="block_id" id="blockId">
                         <div class="mb-3">
                             <label class="form-label">Room <span class="text-muted">(optional)</span></label>
-                            <select name="room_id" id="blockRoom" class="form-select">
+                            <select name="room_id" id="blockRoom" class="form-select no-select2">
                                 <option value="">All rooms</option>
                                 @foreach ($rooms as $room)
                                     <option value="{{ $room->id }}">{{ $room->name }}</option>
@@ -348,7 +348,7 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Type</label>
-                            <select name="type" class="form-select" id="blockType">
+                            <select name="type" class="form-select no-select2" id="blockType">
                                 @foreach ($blockTypes as $value => $label)
                                     <option value="{{ $value }}">{{ $label }}</option>
                                 @endforeach
@@ -372,7 +372,7 @@
 
                         <div class="mb-3" id="fieldActive" style="display:none">
                             <label class="form-label">Status</label>
-                            <select name="is_active" class="form-select" id="blockActive">
+                            <select name="is_active" class="form-select no-select2" id="blockActive">
                                 <option value="1">Open (available for booking)</option>
                                 <option value="0">Closed (not available)</option>
                             </select>
