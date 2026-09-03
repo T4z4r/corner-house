@@ -559,6 +559,132 @@
             </div>
         </div>
     </div>
+
+    <div class="tab-pane fade" id="pane-logs" role="tabpanel" aria-labelledby="tab-logs">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white d-flex flex-wrap justify-content-between gap-2 align-items-center">
+                <div>
+                    <div class="fw-semibold">API Logs</div>
+                    <div class="small text-muted">Recent Beds24 API calls and responses for this account.</div>
+                </div>
+                @if ($selectedAccount)
+                    <span class="badge text-bg-light">{{ $logs->count() }} of 50 shown</span>
+                @endif
+            </div>
+            <div class="card-body">
+                @if (! $selectedAccount)
+                    <div class="text-center py-5">
+                        <div class="display-6 text-muted mb-2"><i class="bi bi-journal-code"></i></div>
+                        <p class="mb-1">No account selected.</p>
+                        <p class="small text-muted mb-0">Select a Beds24 account to view API logs.</p>
+                    </div>
+                @elseif ($logs->isEmpty())
+                    <div class="text-center py-5">
+                        <div class="display-6 text-muted mb-2"><i class="bi bi-journal-code"></i></div>
+                        <p class="mb-1">No API logs yet.</p>
+                        <p class="small text-muted mb-0">API calls to Beds24 will appear here once synced.</p>
+                    </div>
+                @else
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 160px;">Time</th>
+                                    <th style="width: 120px;">Operation</th>
+                                    <th style="width: 80px;">Status</th>
+                                    <th>Request</th>
+                                    <th>Response</th>
+                                    <th style="width: 60px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($logs as $log)
+                                    <tr>
+                                        <td>
+                                            <div class="small">{{ $log->started_at?->format('d M H:i') ?? $log->created_at->format('d M H:i') }}</div>
+                                            <div class="text-muted" style="font-size: 0.72rem;">{{ $log->started_at?->diffForHumans() ?? '' }}</div>
+                                        </td>
+                                        <td>
+                                            <span class="badge text-bg-light">{{ $log->operation ?? 'N/A' }}</span>
+                                        </td>
+                                        <td>
+                                            @if ($log->status === 'success')
+                                                <span class="badge text-bg-success">OK</span>
+                                            @elseif ($log->status === 'failed')
+                                                <span class="badge text-bg-danger">Fail</span>
+                                            @else
+                                                <span class="badge text-bg-secondary">{{ $log->status }}</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <div class="small text-muted font-monospace" style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                {{ json_encode($log->request) }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @if ($log->error_message)
+                                                <div class="small text-danger">{{ Str::limit($log->error_message, 80) }}</div>
+                                            @else
+                                                <div class="small text-muted font-monospace" style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                    {{ json_encode($log->response) }}
+                                                </div>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-secondary" type="button"
+                                                    data-bs-toggle="modal" data-bs-target="#logModal{{ $log->id }}">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+
+                                    <div class="modal fade" id="logModal{{ $log->id }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h6 class="modal-title">
+                                                        <span class="badge text-bg-light me-2">{{ $log->operation }}</span>
+                                                        {{ $log->started_at?->format('d M Y H:i:s') }}
+                                                    </h6>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <div class="fw-semibold small text-muted mb-1">Status</div>
+                                                        @if ($log->status === 'success')
+                                                            <span class="badge text-bg-success">Success</span>
+                                                        @elseif ($log->status === 'failed')
+                                                            <span class="badge text-bg-danger">Failed</span>
+                                                        @else
+                                                            <span class="badge text-bg-secondary">{{ $log->status }}</span>
+                                                        @endif
+                                                        @if ($log->error_message)
+                                                            <div class="mt-2 small text-danger">{{ $log->error_message }}</div>
+                                                        @endif
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <div class="fw-semibold small text-muted mb-1">Request</div>
+                                                        <pre class="bg-light p-3 rounded small mb-0" style="max-height: 300px; overflow: auto;">{{ json_encode($log->request, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-semibold small text-muted mb-1">Response</div>
+                                                        <pre class="bg-light p-3 rounded small mb-0" style="max-height: 400px; overflow: auto;">{{ json_encode($log->response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
 </div>
 
 @push('scripts')
