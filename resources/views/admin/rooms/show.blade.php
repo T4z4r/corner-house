@@ -319,7 +319,7 @@
                         <input type="hidden" name="room_id" value="{{ $room->id }}">
                         <div class="mb-3">
                             <label class="form-label">Type</label>
-                            <select name="type" class="form-select" id="blockType">
+                            <select name="type" class="form-select no-select2" id="blockType">
                                 @foreach (\App\Http\Controllers\Admin\CalendarController::blockTypesPublic() as $value => $label)
                                     <option value="{{ $value }}">{{ $label }}</option>
                                 @endforeach
@@ -343,7 +343,7 @@
 
                         <div class="mb-3" id="fieldActive" style="display:none">
                             <label class="form-label">Status</label>
-                            <select name="is_active" class="form-select" id="blockActive">
+                            <select name="is_active" class="form-select no-select2" id="blockActive">
                                 <option value="1">Open (available for booking)</option>
                                 <option value="0">Closed (not available)</option>
                             </select>
