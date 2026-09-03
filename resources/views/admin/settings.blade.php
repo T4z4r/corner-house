@@ -136,7 +136,7 @@
                                                    name="{{ $setting->key }}"
                                                    value="{{ $setting->value }}"
                                                    placeholder="+44 ...">
-                                        @elseif (in_array($setting->key, ['website_logo', 'website_favicon', 'website_hero_image', 'website_about_image', 'website_og_image']))
+                                        @elseif (in_array($setting->key, ['website_logo', 'website_footer_logo', 'website_favicon', 'website_hero_image', 'website_hero_gallery_main', 'website_hero_gallery_small', 'website_about_image', 'website_og_image', 'website_spirits_logo']))
                                             <div class="dz-upload-area" id="dz-{{ $setting->key }}" data-key="{{ $setting->key }}">
                                                 @if ($setting->value)
                                                     <div class="dz-preview-wrapper mb-2">

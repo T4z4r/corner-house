@@ -6,7 +6,6 @@ use App\Models\Amenity;
 use App\Models\PlacesOfInterest;
 use App\Models\Property;
 use App\Models\Room;
-use App\Models\RoomImage;
 use App\Models\Setting;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +46,8 @@ class WebsiteContentService
             'reviews' => $this->reviews(),
             'logo' => Setting::getValue('website_logo'),
             'footer_logo' => Setting::getValue('website_footer_logo') ?: Setting::getValue('website_logo'),
+            'favicon' => Setting::getValue('website_favicon'),
+            'og_image' => Setting::getValue('website_og_image'),
             'footer_address' => Setting::getValue('website_address', 'Braunston, Northamptonshire'),
             'footer_capacity_note' => Setting::getValue('website_footer_capacity', 'Sleeps 12 adults and 2 children in five ensuite bedrooms.'),
             'contact_email' => Setting::getValue('website_contact_email', 'bookings@example.com'),

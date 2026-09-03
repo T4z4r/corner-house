@@ -242,7 +242,6 @@ form.enquiry .check input{width:auto;margin-top:.25rem}
 .platform p{margin:0;font-size:.96rem;flex:1}
 .platform .btn{align-self:flex-start;margin-top:.4rem}
 .platform a[data-placeholder]{opacity:.55;pointer-events:none}
-.platform a[data-placeholder]::after{content:" (link to add)";font-weight:400;font-size:.85em}
 
 .rules-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.8rem 2.4rem;margin-top:2rem}
 .rule h3{font-size:1.35rem;margin-bottom:.5rem;padding-bottom:.5rem;border-bottom:2px solid var(--sage)}

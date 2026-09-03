@@ -6,6 +6,15 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', $propertyName) | Corner House, Braunston</title>
     <meta name="description" content="Corner House is a 175-year-old ivy-clad country house in Braunston, the Heart of the Waterways. Five ensuite bedrooms, a 25-foot kitchen, hot tub, cinema room and gym. Sleeps 12 adults and 2 children.">
+    @if ($site['favicon'])
+        <link rel="icon" href="{{ asset('storage/'.$site['favicon']) }}">
+    @endif
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="{{ $propertyName }}">
+    <meta property="og:title" content="{{ $propertyName }}, Braunston">
+    @if ($site['og_image'])
+        <meta property="og:image" content="{{ asset('storage/'.$site['og_image']) }}">
+    @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400&family=Karla:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">

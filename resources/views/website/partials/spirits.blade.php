@@ -2,7 +2,8 @@
     <div class="section">
         <div class="wrap">
             <div class="spirits-head">
-                <div class="photo logo">Serengeti Spirits logo</div>
+                @php $spiritsLogo = \App\Models\Setting::getValue('website_spirits_logo'); @endphp
+                <div class="photo logo">@if($spiritsLogo)<img src="{{ asset('storage/'.$spiritsLogo) }}" alt="Serengeti Spirits logo">@else<span>Serengeti Spirits logo</span>@endif</div>
                 <div>
                     <h1 style="font-size:clamp(2.4rem,5vw,4rem)">Serengeti Spirits</h1>
                     <p class="lede">Distilled on site at Corner House, sourced from the shores of Lake Victoria, and named for the Big Five.</p>

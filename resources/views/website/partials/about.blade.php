@@ -10,7 +10,8 @@
                     <p>At the end of the day, unwind in the hot tub on the patio, in the garden room, or on the balcony above, all set in a tranquil landscaped garden.</p>
                     <a class="btn btn-outline" href="#rooms">Room by room</a>
                 </div>
-                <div class="photo tall">House exterior, ivy in full leaf</div>
+                @php $aboutImage = \App\Models\Setting::getValue('website_about_image'); @endphp
+                <div class="photo tall">@if($aboutImage)<img src="{{ asset('storage/'.$aboutImage) }}" alt="House exterior, ivy in full leaf">@else<span>House exterior, ivy in full leaf</span>@endif</div>
             </div>
         </div>
     </div>
