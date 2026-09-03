@@ -63,6 +63,13 @@
         @endcan
 
         <li class="sidebar-heading">Revenue</li>
+        @can('pricing.view')
+            <li class="nav-item">
+                <a href="{{ route('admin.pricing.index') }}" class="nav-link {{ request()->routeIs('admin.pricing.*') ? 'active' : '' }}">
+                    <i class="bi bi-tags me-2"></i><span class="nav-text">Pricing</span>
+                </a>
+            </li>
+        @endcan
         @can('payments.view')
             <li class="nav-item">
                 <a href="{{ route('admin.payments.index') }}" class="nav-link {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}">
@@ -215,6 +222,9 @@
             @endcan
             @can('reservations.view')
                 <li class="nav-item"><a href="{{ route('admin.reservations.index') }}" class="nav-link">Bookings</a></li>
+            @endcan
+            @can('pricing.view')
+                <li class="nav-item"><a href="{{ route('admin.pricing.index') }}" class="nav-link">Pricing</a></li>
             @endcan
             @can('reports.view')
                 <li class="nav-item"><a href="{{ route('admin.revenue.index') }}" class="nav-link">Revenue</a></li>
