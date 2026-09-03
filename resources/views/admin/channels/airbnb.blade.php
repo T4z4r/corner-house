@@ -217,6 +217,12 @@
             <i class="bi bi-card-text me-1"></i>Listing details
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-logs" data-bs-toggle="tab" data-bs-target="#pane-logs" type="button" role="tab">
+            <i class="bi bi-journal-code me-1"></i>API Logs
+            <span class="badge text-bg-secondary ms-1">{{ $stats['log_count'] }}</span>
+        </button>
+    </li>
 </ul>
 
 <div class="tab-content">

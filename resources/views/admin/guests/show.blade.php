@@ -9,7 +9,13 @@
             <h4>Guest Profile</h4>
             <p class="ch-subtitle">{{ $guest->email ?? 'No email on file' }}</p>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
+            @if ($guest->phone)
+                <a href="tel:{{ preg_replace('/[^+\d]/', '', $guest->phone) }}" class="btn btn-outline-success btn-sm"><i class="bi bi-telephone me-1"></i>Call</a>
+            @endif
+            @if ($guest->email)
+                <a href="mailto:{{ $guest->email }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-envelope me-1"></i>Send mail</a>
+            @endif
             @can('guests.update')
                 <a href="{{ route('admin.guests.edit', $guest) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil me-1"></i>Edit</a>
             @endcan
@@ -37,8 +43,18 @@
                     </div>
                     <hr>
                     <ul class="list-unstyled mb-0 text-start small">
-                        <li class="mb-2"><i class="bi bi-envelope me-2"></i>{{ $guest->email ?? '-' }}</li>
-                        <li class="mb-2"><i class="bi bi-telephone me-2"></i>{{ $guest->phone ?? '-' }}</li>
+                        <li class="mb-2 d-flex align-items-center justify-content-between">
+                            <span><i class="bi bi-envelope me-2"></i>{{ $guest->email ?? '-' }}</span>
+                            @if ($guest->email)
+                                <a href="mailto:{{ $guest->email }}" class="text-decoration-none" title="Send mail"><i class="bi bi-send"></i></a>
+                            @endif
+                        </li>
+                        <li class="mb-2 d-flex align-items-center justify-content-between">
+                            <span><i class="bi bi-telephone me-2"></i>{{ $guest->phone ?? '-' }}</span>
+                            @if ($guest->phone)
+                                <a href="tel:{{ preg_replace('/[^+\d]/', '', $guest->phone) }}" class="text-decoration-none" title="Call"><i class="bi bi-telephone-outbound"></i></a>
+                            @endif
+                        </li>
                         <li class="mb-2"><i class="bi bi-geo-alt me-2"></i>{{ $guest->country ?? '-' }}</li>
                         <li class="mb-2"><i class="bi bi-globe me-2"></i>{{ strtoupper($guest->language) }}</li>
                         <li><i class="bi bi-box-arrow-in-down me-2"></i>{{ $guest->source ?? 'direct' }}</li>

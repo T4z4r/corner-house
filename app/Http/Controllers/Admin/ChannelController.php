@@ -122,7 +122,16 @@ class ChannelController extends Controller
             }
         }
 
-        $stats = $this->buildAirbnbStats($selectedAccount, $users, $listings, $reviews, $selectedListing);
+        $logs = [];
+        if ($selectedAccount instanceof ChannelAccount) {
+            $logs = ChannelSyncLog::query()
+                ->where('channel_account_id', $selectedAccount->id)
+                ->orderByDesc('created_at')
+                ->limit(50)
+                ->get();
+        }
+
+        $stats = $this->buildAirbnbStats($selectedAccount, $users, $listings, $reviews, $selectedListing, $logs->count());
 
         return view('admin.channels.airbnb', [
             'accounts' => $accounts,
@@ -131,6 +140,7 @@ class ChannelController extends Controller
             'listings' => $listings,
             'selectedListing' => $selectedListing,
             'reviews' => $reviews,
+            'logs' => $logs,
             'usersError' => $usersError,
             'listingsError' => $listingsError,
             'reviewsError' => $reviewsError,
@@ -152,7 +162,7 @@ class ChannelController extends Controller
      * @param  array<string, mixed>|null  $selectedListing
      * @return array<string, mixed>
      */
-    private function buildAirbnbStats(?ChannelAccount $selectedAccount, array $users, array $listings, array $reviews, ?array $selectedListing): array
+    private function buildAirbnbStats(?ChannelAccount $selectedAccount, array $users, array $listings, array $reviews, ?array $selectedListing, int $logCount = 0): array
     {
         $linkedListings = collect($listings)->filter(fn ($listing): bool => ! empty($listing['room_id']))->count();
         $enabledListings = collect($listings)->filter(fn ($listing): bool => (bool) ($listing['enabled'] ?? false))->count();
@@ -172,6 +182,7 @@ class ChannelController extends Controller
             'bedrooms' => $airbnbListing['bedrooms'] ?? null,
             'beds' => $airbnbListing['beds'] ?? null,
             'mappings' => $selectedAccount?->mappings_count ?? 0,
+            'log_count' => $logCount,
         ];
     }
 

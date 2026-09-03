@@ -79,6 +79,24 @@ class AdminResourcesTest extends TestCase
         $this->assertDatabaseHas('guests', ['first_name' => 'John', 'email' => 'john@example.com']);
     }
 
+    public function test_guest_profile_shows_call_and_send_mail_actions(): void
+    {
+        $guest = Guest::factory()->create([
+            'first_name' => 'Emma',
+            'last_name' => 'Jones',
+            'email' => 'emma@example.com',
+            'phone' => '+44 7700 900123',
+        ]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.guests.show', $guest))
+            ->assertOk()
+            ->assertSee('mailto:emma@example.com', false)
+            ->assertSee('tel:+447700900123', false)
+            ->assertSee('Send mail')
+            ->assertSee('Call</a>', false);
+    }
+
     public function test_super_admin_can_view_reservations_index(): void
     {
         $this->actingAs($this->actingAsSuperAdmin())
