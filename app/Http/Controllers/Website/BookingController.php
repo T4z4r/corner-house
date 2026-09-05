@@ -75,8 +75,8 @@ class BookingController extends Controller
         $checkIn = Carbon::parse($data['check_in']);
         $checkOut = Carbon::parse($data['check_out']);
 
-        // 48-hour advance notice
-        $minAdvanceDays = (int) Setting::getValue('min_advance_days', 2);
+        // 24-hour advance notice
+        $minAdvanceDays = (int) Setting::getValue('min_advance_days', 1);
         if ($checkIn->lt(Carbon::today()->addDays($minAdvanceDays))) {
             return back()->withErrors(['check_in' => 'Bookings require at least '.$minAdvanceDays.' days advance notice.']);
         }
@@ -142,8 +142,8 @@ class BookingController extends Controller
         $checkIn = Carbon::parse($data['check_in']);
         $checkOut = Carbon::parse($data['check_out']);
 
-        // 48-hour advance notice
-        $minAdvanceDays = (int) Setting::getValue('min_advance_days', 2);
+        // 24-hour advance notice
+        $minAdvanceDays = (int) Setting::getValue('min_advance_days', 1);
         if ($checkIn->lt(Carbon::today()->addDays($minAdvanceDays))) {
             return back()->withInput()->withErrors(['error' => 'Bookings require at least '.$minAdvanceDays.' days advance notice.']);
         }

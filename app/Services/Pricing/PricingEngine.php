@@ -65,6 +65,12 @@ class PricingEngine
             $discount = round($base * ($discountPct / 100), 2);
         }
 
+        // Length-of-stay discounts (e.g. 10% from 4 nights, 25% from 7 nights).
+        $lengthOfStayPct = $this->lengthOfStayDiscountPercent($room, $checkIn, $checkOut);
+        if ($lengthOfStayPct > 0) {
+            $discount += round($base * ($lengthOfStayPct / 100), 2);
+        }
+
         $tax = round(($base - $discount) * self::TAX_RATE, 2);
         $cleaningFee = (float) Setting::getValue('cleaning_fee', 50);
 
@@ -83,15 +89,16 @@ class PricingEngine
 
     public function minimumStayForRange(Room $room, Carbon $checkIn, Carbon $checkOut): int
     {
-        // Read base minimum from settings
-        $isBankHolidayWeekend = $this->isBankHolidayWeekend($checkIn, $checkOut);
-        $settingMin = $isBankHolidayWeekend
+        $requiresLongMinimum = $this->isBankHolidayWeekend($checkIn, $checkOut)
+            || $this->isFestivePeriod($checkIn, $checkOut);
+        $settingMin = $requiresLongMinimum
             ? (int) Setting::getValue('min_stay_bank_holiday_nights', 3)
             : (int) Setting::getValue('min_stay_nights', 2);
         $minimum = max($settingMin, (int) ($room->min_stay ?: 1));
 
         $rules = PricingRule::query()
             ->where('is_enabled', true)
+            ->where('rule_type', '!=', 'length_of_stay')
             ->whereNotNull('minimum_stay')
             ->where(fn ($q) => $q->whereNull('room_id')->orWhere('room_id', $room->id))
             ->where(fn ($q) => $q->whereNull('property_id')->orWhere('property_id', $room->property_id))
@@ -131,6 +138,7 @@ class PricingEngine
 
         $rules = PricingRule::query()
             ->where('is_enabled', true)
+            ->where('rule_type', '!=', 'length_of_stay')
             ->whereNotNull('max_stay')
             ->where(fn ($q) => $q->whereNull('room_id')->orWhere('room_id', $room->id))
             ->where(fn ($q) => $q->whereNull('property_id')->orWhere('property_id', $room->property_id))
@@ -168,6 +176,59 @@ class PricingEngine
     }
 
     /**
+     * The length-of-stay discount percentage and the night threshold it
+     * applies from, based on the largest qualifying tier for the room.
+     * Returns 0 when no length-of-stay rule applies.
+     *
+     * @return array{pct: float, threshold: int}
+     */
+    public function lengthOfStayDiscountForRoom(Room $room): array
+    {
+        $rule = PricingRule::query()
+            ->where('is_enabled', true)
+            ->where('rule_type', 'length_of_stay')
+            ->whereNotNull('minimum_stay')
+            ->where(fn ($q) => $q->whereNull('room_id')->orWhere('room_id', $room->id))
+            ->where(fn ($q) => $q->whereNull('property_id')->orWhere('property_id', $room->property_id))
+            ->orderByRaw('minimum_stay desc, abs(adjustment_value) desc')
+            ->first();
+
+        if (! $rule || $rule->adjustment_type !== 'percent') {
+            return ['pct' => 0.0, 'threshold' => 0];
+        }
+
+        return [
+            'pct' => abs((float) $rule->adjustment_value),
+            'threshold' => (int) $rule->minimum_stay,
+        ];
+    }
+
+    /**
+     * Largest length-of-stay discount tier whose night threshold is met by
+     * the stay, expressed as a percent. Returns 0 when no tier qualifies.
+     */
+    private function lengthOfStayDiscountPercent(Room $room, Carbon $checkIn, Carbon $checkOut): int
+    {
+        $nights = (int) $checkIn->diffInDays($checkOut);
+
+        $rule = PricingRule::query()
+            ->where('is_enabled', true)
+            ->where('rule_type', 'length_of_stay')
+            ->whereNotNull('minimum_stay')
+            ->where('minimum_stay', '<=', $nights)
+            ->where(fn ($q) => $q->whereNull('room_id')->orWhere('room_id', $room->id))
+            ->where(fn ($q) => $q->whereNull('property_id')->orWhere('property_id', $room->property_id))
+            ->orderByRaw('minimum_stay desc, abs(adjustment_value) desc')
+            ->first();
+
+        if (! $rule || $rule->adjustment_type !== 'percent') {
+            return 0;
+        }
+
+        return (int) round(abs((float) $rule->adjustment_value));
+    }
+
+    /**
      * Calculate the rate for a single night, applying rules by priority.
      */
     public function calculateRateForDate(Room $room, Carbon $date, int $guests = 1, ?float $occupancyPct = null): float
@@ -180,6 +241,7 @@ class PricingEngine
 
         $baseRate = (float) $room->base_rate;
         $rate = $baseRate;
+        $winningTier = null;
 
         // 2. Calendar price blocks set an explicit nightly rate for the date.
         $blockRate = $this->findPriceBlockRate($room, $date);
@@ -195,8 +257,23 @@ class PricingEngine
                 ->first();
 
             if ($applicable) {
+                $winningTier = $applicable['type'];
                 $rate = $this->applyAdjustment($rate, $applicable['adjustment_type'], (float) $applicable['adjustment_value'], $applicable['competitor_avg'] ?? null);
             }
+        }
+
+        // 4. Optional 5% weekend uplift during UK holiday periods. It is skipped
+        // when a manual override, explicit calendar rate, or a fixed event/holiday
+        // rule already set the price for the date.
+        if (
+            $blockRate === null
+            && $winningTier !== 'event'
+            && $winningTier !== 'holiday'
+            && (bool) Setting::getValue('holiday_weekend_uplift_enabled', false)
+            && $this->isUKBankHolidayWeekend($date)
+        ) {
+            $upliftPct = (float) Setting::getValue('holiday_weekend_uplift', 5);
+            $rate *= 1 + ($upliftPct / 100);
         }
 
         // Enforce minimum price floors
@@ -215,6 +292,7 @@ class PricingEngine
     {
         $rules = PricingRule::query()
             ->where('is_enabled', true)
+            ->where('rule_type', '!=', 'length_of_stay')
             ->where(fn ($q) => $q->whereNull('room_id')->orWhere('room_id', $room->id))
             ->where(fn ($q) => $q->whereNull('property_id')->orWhere('property_id', $room->property_id))
             ->get();
@@ -387,27 +465,89 @@ class PricingEngine
      */
     private function bankHolidayForMonth(int $year, int $month): ?Carbon
     {
-        $easter = Carbon::createFromTimestamp(easter_date($year))->startOfDay();
-
-        $holidays = [
-            // New Year's Day (first Monday if 1 Jan is a weekend)
-            $this->nextWeekdayOrSubstitute(Carbon::create($year, 1, 1)),
-            $easter->copy()->subDays(2),            // Good Friday
-            $easter->copy()->addDay(),              // Easter Monday
-            $this->firstMondayOfMonth($year, 5),    // Early May
-            $this->lastMondayOfMonth($year, 5),     // Spring
-            $this->lastMondayOfMonth($year, 8),     // Summer
-            $this->nextWeekdayOrSubstitute(Carbon::create($year, 12, 25)), // Christmas
-            $this->nextWeekdayOrSubstitute(Carbon::create($year, 12, 26)), // Boxing Day
-        ];
-
-        foreach ($holidays as $holiday) {
+        foreach ($this->ukBankHolidaysForYear($year) as $holiday) {
             if ($holiday->month === $month) {
                 return $holiday;
             }
         }
 
         return null;
+    }
+
+    /**
+     * All England & Wales bank holidays for a year, including weekend
+     * substitutes (the next weekday when the date falls on a weekend).
+     *
+     * @return array<int, Carbon>
+     */
+    private function ukBankHolidaysForYear(int $year): array
+    {
+        $easter = Carbon::createFromTimestamp(easter_date($year))->startOfDay();
+
+        return [
+            $this->nextWeekdayOrSubstitute(Carbon::create($year, 1, 1)),  // New Year's Day
+            $easter->copy()->subDays(2),   // Good Friday
+            $easter->copy()->addDay(),     // Easter Monday
+            $this->firstMondayOfMonth($year, 5),  // Early May
+            $this->lastMondayOfMonth($year, 5),   // Spring
+            $this->lastMondayOfMonth($year, 8),   // Summer
+            $this->nextWeekdayOrSubstitute(Carbon::create($year, 12, 25)), // Christmas
+            $this->nextWeekdayOrSubstitute(Carbon::create($year, 12, 26)), // Boxing Day
+        ];
+    }
+
+    private function isBankHolidayDate(Carbon $date): bool
+    {
+        foreach ([$date->year, $date->year + 1] as $year) {
+            foreach ($this->ukBankHolidaysForYear($year) as $holiday) {
+                if ($holiday->eq($date)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether the date is a Friday, Saturday or Sunday that forms part of a
+     * UK holiday period: a bank-holiday weekend (the holiday or the two
+     * nights before it) or the festive weeks around Christmas / New Year.
+     */
+    private function isUKBankHolidayWeekend(Carbon $date): bool
+    {
+        if (! in_array($date->dayOfWeek, [Carbon::FRIDAY, Carbon::SATURDAY, Carbon::SUNDAY])) {
+            return false;
+        }
+
+        $monthDay = $date->format('m-d');
+        if ($monthDay >= '12-20' || $monthDay <= '01-02') {
+            return true;
+        }
+
+        for ($offset = 0; $offset <= 2; $offset++) {
+            if ($this->isBankHolidayDate($date->copy()->addDays($offset))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether any night of the stay falls within the festive period
+     * (24 December to 1 January), which carries a raised minimum stay.
+     */
+    private function isFestivePeriod(Carbon $checkIn, Carbon $checkOut): bool
+    {
+        for ($date = $checkIn->copy(); $date->lt($checkOut); $date->addDay()) {
+            $monthDay = $date->format('m-d');
+            if ($monthDay >= '12-24' || $monthDay <= '01-01') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function firstMondayOfMonth(int $year, int $month): Carbon

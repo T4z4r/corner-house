@@ -35,11 +35,18 @@ class PushBeds24RatesJob implements ShouldQueue
 
                 try {
                     $quote = $pricing->calculateForRange($room, $from, $to);
+                    $longStay = $pricing->lengthOfStayDiscountForRoom($room);
+                    $nightlyRate = (float) ($quote['per_night'][$from->toDateString()] ?? $room->base_rate ?? 0);
+
+                    if ($longStay['pct'] > 0) {
+                        $nightlyRate = round($nightlyRate * (1 - $longStay['pct'] / 100), 2);
+                    }
+
                     $channels->provider($account->provider)->pushRates($account, [[
                         'roomId' => $mapping->external_room_id,
                         'from' => $from->toDateString(),
                         'to' => $to->toDateString(),
-                        'price' => $quote['per_night'][$from->toDateString()] ?? $room->base_rate,
+                        'price' => $nightlyRate,
                         'minimumStay' => $quote['minimum_stay'],
                     ]]);
                 } catch (\Throwable $e) {

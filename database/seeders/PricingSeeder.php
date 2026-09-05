@@ -71,7 +71,40 @@ class PricingSeeder extends Seeder
             'recurring' => true,
         ]);
 
+        // Long-stay discounts applied to the whole stay, largest qualifying tier wins.
+        foreach ([4 => 10, 7 => 25, 14 => 30, 28 => 35] as $minNights => $discountPct) {
+            $this->upsertLongStayRule($property, $minNights, $discountPct);
+        }
+
         $this->alignSettings();
+    }
+
+    private function upsertLongStayRule(Property $property, int $minNights, int $discountPct): void
+    {
+        PricingRule::updateOrCreate(
+            [
+                'property_id' => $property->id,
+                'room_id' => null,
+                'rule_type' => 'length_of_stay',
+                'minimum_stay' => $minNights,
+            ],
+            [
+                'name' => "Long-stay discount: {$discountPct}% off stays of {$minNights}+ nights",
+                'rule_type' => 'length_of_stay',
+                'start_date' => null,
+                'end_date' => null,
+                'priority' => 5,
+                'adjustment_type' => 'percent',
+                'adjustment_value' => -$discountPct,
+                'minimum_stay' => $minNights,
+                'max_stay' => null,
+                'occupancy_threshold' => null,
+                'days_before_checkin' => null,
+                'apply_weekends_only' => false,
+                'recurring' => true,
+                'is_enabled' => true,
+            ],
+        );
     }
 
     private function upsertRule(Property $property, string $name, array $attributes): void

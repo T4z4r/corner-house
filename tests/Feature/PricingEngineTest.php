@@ -436,4 +436,159 @@ class PricingEngineTest extends TestCase
 
         $this->assertSame(3, $this->engine->minimumStayForRange($room, $checkIn, $checkOut));
     }
+
+    public function test_length_of_stay_rule_applies_highest_qualifying_discount_tier(): void
+    {
+        $room = $this->makeRoom(100);
+
+        foreach ([4 => 10, 7 => 25, 14 => 30, 28 => 35] as $minNights => $pct) {
+            PricingRule::create([
+                'property_id' => $room->property_id,
+                'name' => "Long stay {$pct}% from {$minNights} nights",
+                'rule_type' => 'length_of_stay',
+                'adjustment_type' => 'percent',
+                'adjustment_value' => -$pct,
+                'minimum_stay' => $minNights,
+                'recurring' => true,
+                'priority' => 5,
+            ]);
+        }
+
+        $quote = fn (int $nights): array => $this->engine->calculateForRange(
+            $room,
+            Carbon::parse('2026-06-01'),
+            Carbon::parse('2026-06-01')->addDays($nights),
+        );
+
+        $this->assertSame(0.0, $quote(3)['discount_amount']);
+        $this->assertSame(40.0, $quote(4)['discount_amount']);
+        $this->assertSame(175.0, $quote(7)['discount_amount']);
+        $this->assertSame(250.0, $quote(10)['discount_amount']);
+        $this->assertSame(420.0, $quote(14)['discount_amount']);
+        $this->assertSame(980.0, $quote(28)['discount_amount']);
+    }
+
+    public function test_length_of_stay_rule_does_not_alter_nightly_rates(): void
+    {
+        $room = $this->makeRoom(100);
+
+        PricingRule::create([
+            'property_id' => $room->property_id,
+            'name' => 'Long stay 25% from 7 nights',
+            'rule_type' => 'length_of_stay',
+            'adjustment_type' => 'percent',
+            'adjustment_value' => -25,
+            'minimum_stay' => 7,
+            'recurring' => true,
+            'priority' => 5,
+        ]);
+
+        $this->assertSame(100.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-04-15')));
+
+        $this->assertSame(2, $this->engine->minimumStayForRange(
+            $room,
+            Carbon::parse('2026-06-01'),
+            Carbon::parse('2026-06-04'),
+        ));
+    }
+
+    public function test_festive_period_raises_minimum_stay_to_three(): void
+    {
+        $room = $this->makeRoom(100);
+
+        $this->assertSame(3, $this->engine->minimumStayForRange(
+            $room,
+            Carbon::parse('2027-12-29'),
+            Carbon::parse('2027-12-31'),
+        ));
+
+        $this->assertSame(3, $this->engine->minimumStayForRange(
+            $room,
+            Carbon::parse('2027-12-31'),
+            Carbon::parse('2028-01-01'),
+        ));
+
+        $this->assertSame(2, $this->engine->minimumStayForRange(
+            $room,
+            Carbon::parse('2027-12-12'),
+            Carbon::parse('2027-12-14'),
+        ));
+    }
+
+    public function test_holiday_weekend_uplift_applies_on_bank_holiday_weekends(): void
+    {
+        Setting::firstOrCreate(['key' => 'holiday_weekend_uplift_enabled'], ['value' => '1', 'group' => 'pricing', 'label' => 'Uplift enabled', 'cast' => 'boolean']);
+        Setting::firstOrCreate(['key' => 'holiday_weekend_uplift'], ['value' => '5', 'group' => 'pricing', 'label' => 'Uplift', 'cast' => 'integer']);
+
+        $room = $this->makeRoom(100);
+
+        PricingRule::create([
+            'property_id' => $room->property_id,
+            'name' => 'Weekend +75',
+            'rule_type' => 'seasonal',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
+            'adjustment_type' => 'amount',
+            'adjustment_value' => 75,
+            'apply_weekends_only' => true,
+            'priority' => 5,
+        ]);
+
+        // Saturday 23 May 2026 precedes the Spring bank holiday Monday (25 May).
+        $bankHolidaySaturday = $this->engine->calculateRateForDate($room, Carbon::parse('2026-05-23'));
+        $this->assertSame(183.75, $bankHolidaySaturday);
+
+        // A normal Saturday is untouched by the uplift.
+        $this->assertSame(175.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-05-16')));
+    }
+
+    public function test_holiday_weekend_uplift_skips_event_rules_and_explicit_rates(): void
+    {
+        Setting::firstOrCreate(['key' => 'holiday_weekend_uplift_enabled'], ['value' => '1', 'group' => 'pricing', 'label' => 'Uplift enabled', 'cast' => 'boolean']);
+        Setting::firstOrCreate(['key' => 'holiday_weekend_uplift'], ['value' => '5', 'group' => 'pricing', 'label' => 'Uplift', 'cast' => 'integer']);
+
+        $room = $this->makeRoom(550);
+
+        PricingRule::create([
+            'property_id' => $room->property_id,
+            'name' => 'Weekend +75',
+            'rule_type' => 'seasonal',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
+            'adjustment_type' => 'amount',
+            'adjustment_value' => 75,
+            'apply_weekends_only' => true,
+            'priority' => 5,
+        ]);
+
+        PricingRule::create([
+            'property_id' => $room->property_id,
+            'name' => 'Christmas',
+            'rule_type' => 'event',
+            'start_date' => '2026-12-24',
+            'end_date' => '2026-12-26',
+            'adjustment_type' => 'amount',
+            'adjustment_value' => 200,
+            'recurring' => true,
+            'priority' => 1,
+        ]);
+
+        // Christmas Day 2026 (Friday) keeps its fixed event rate of 750.
+        $this->assertSame(750.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-12-25')));
+
+        // A festive-season Sunday outside the event window gets the uplift: 625 * 1.05.
+        $this->assertSame(656.25, $this->engine->calculateRateForDate($room, Carbon::parse('2026-12-27')));
+
+        // An explicit daily price block is never uplifted.
+        CalendarBlock::create([
+            'property_id' => $room->property_id,
+            'room_id' => $room->id,
+            'type' => 'daily_price',
+            'value' => 250,
+            'start_date' => '2026-05-23',
+            'end_date' => '2026-05-23',
+        ]);
+
+        $this->assertSame(250.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-05-23')));
+    }
 }

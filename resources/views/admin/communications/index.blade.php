@@ -120,7 +120,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Body *</label>
-                        <textarea name="body" class="form-control" rows="4" placeholder="Use @{{guest_name}} tokens" required></textarea>
+                        <textarea name="body" class="form-control" rows="12" placeholder="Use @{{guest_name}} tokens" required></textarea>
                     </div>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="create_is_active" name="is_active" value="1" checked>
@@ -206,7 +206,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Body *</label>
-                        <textarea name="body" class="form-control" rows="4" required>{{ old('body', $template->body) }}</textarea>
+                        <textarea name="body" class="form-control" rows="12" required>{{ old('body', $template->body) }}</textarea>
                     </div>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="edit_is_active_{{ $template->id }}" name="is_active" value="1" @checked(old('is_active', $template->is_active))>

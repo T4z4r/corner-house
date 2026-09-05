@@ -129,19 +129,26 @@ class Beds24PricingPublisher
             return [];
         }
 
+        $longStay = $this->pricing->lengthOfStayDiscountForRoom($room);
         $rows = [];
         $cursor = $start->copy()->startOfDay();
         $final = $end->copy()->startOfDay();
 
         while ($cursor->lte($final)) {
             $quote = $this->pricing->calculateForRange($room, $cursor, $cursor->copy()->addDay());
+            $nightlyRate = (float) ($quote['per_night'][$cursor->toDateString()] ?? $room->base_rate ?? 0);
+
+            if (! $source instanceof PricingOverride && $longStay['pct'] > 0) {
+                $nightlyRate = round($nightlyRate * (1 - $longStay['pct'] / 100), 2);
+            }
+
             $rows[] = [
                 'roomId' => $externalRoomId,
                 'from' => $cursor->toDateString(),
                 'to' => $cursor->toDateString(),
                 'price1' => $source instanceof PricingOverride
                     ? (float) $source->rate
-                    : (float) ($quote['per_night'][$cursor->toDateString()] ?? $room->base_rate ?? 0),
+                    : $nightlyRate,
                 'minStay' => $source instanceof PricingOverride
                     ? ($source->minimum_stay ?? $quote['minimum_stay'])
                     : $quote['minimum_stay'],
