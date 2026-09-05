@@ -6,6 +6,8 @@ use App\Models\BookingHold;
 use App\Models\CalendarBlock;
 use App\Models\Reservation;
 use App\Models\Room;
+use App\Models\Setting;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -89,5 +91,113 @@ class AvailabilityService
         if (! $result['available']) {
             throw new \DomainException('Room unavailable: '.implode('; ', $result['conflicts']));
         }
+    }
+
+    /**
+     * Blocked-night ranges for the website availability calendar.
+     *
+     * Each range is end-exclusive ({start, end} covering nights in [start, end))
+     * and merges adjacent blocked nights. Sources are active reservations,
+     * unexpired booking holds, inventory-blocking calendar blocks across every
+     * room on the property (plus property-wide blocks) and the
+     * website_blocked_dates setting. Historic nights are omitted.
+     *
+     * @return array<int, array{start: string, end: string}>
+     */
+    public function websiteBlockedRanges(?int $propertyId): array
+    {
+        $nights = [];
+
+        if ($propertyId) {
+            $roomIds = Room::query()->where('property_id', $propertyId)->pluck('id');
+
+            Reservation::query()
+                ->whereIn('room_id', $roomIds)
+                ->active()
+                ->get(['check_in', 'check_out'])
+                ->each(function (Reservation $reservation) use (&$nights): void {
+                    for ($date = $reservation->check_in; $date->lt($reservation->check_out); $date = $date->addDay()) {
+                        $nights[$date->toDateString()] = true;
+                    }
+                });
+
+            BookingHold::query()
+                ->whereIn('room_id', $roomIds)
+                ->active()
+                ->get(['check_in', 'check_out'])
+                ->each(function (BookingHold $hold) use (&$nights): void {
+                    for ($date = $hold->check_in; $date->lt($hold->check_out); $date = $date->addDay()) {
+                        $nights[$date->toDateString()] = true;
+                    }
+                });
+
+            CalendarBlock::query()
+                ->blockingInventory()
+                ->where(function (Builder $query) use ($propertyId, $roomIds): void {
+                    $query->whereNull('room_id')->where('property_id', $propertyId)
+                        ->orWhereIn('room_id', $roomIds);
+                })
+                ->get()
+                ->each(function (CalendarBlock $block) use (&$nights): void {
+                    for ($date = $block->start_date; $date->lte($block->end_date); $date = $date->addDay()) {
+                        $nights[$date->toDateString()] = true;
+                    }
+                });
+        }
+
+        foreach ((array) Setting::getValue('website_blocked_dates', []) as $date) {
+            if (! $date) {
+                continue;
+            }
+
+            try {
+                $nights[Carbon::parse($date)->toDateString()] = true;
+            } catch (\Throwable) {
+                // Ignore malformed dates in the setting.
+            }
+        }
+
+        ksort($nights);
+
+        $today = Carbon::today()->toDateString();
+        $dates = array_values(array_filter(array_keys($nights), fn (string $date): bool => $date >= $today));
+
+        return $this->collapseBlockedNights($dates);
+    }
+
+    /**
+     * @param  array<int, string>  $dates
+     * @return array<int, array{start: string, end: string}>
+     */
+    private function collapseBlockedNights(array $dates): array
+    {
+        $ranges = [];
+        $start = null;
+        $prev = null;
+
+        foreach ($dates as $date) {
+            if ($start === null) {
+                $start = $date;
+                $prev = $date;
+
+                continue;
+            }
+
+            if (Carbon::parse($prev)->addDay()->toDateString() === $date) {
+                $prev = $date;
+
+                continue;
+            }
+
+            $ranges[] = ['start' => $start, 'end' => Carbon::parse($prev)->addDay()->toDateString()];
+            $start = $date;
+            $prev = $date;
+        }
+
+        if ($start !== null) {
+            $ranges[] = ['start' => $start, 'end' => Carbon::parse($prev)->addDay()->toDateString()];
+        }
+
+        return $ranges;
     }
 }

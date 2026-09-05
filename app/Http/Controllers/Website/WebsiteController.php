@@ -12,7 +12,9 @@ use App\Models\Property;
 use App\Models\Room;
 use App\Models\Setting;
 use App\Services\Area\AreaIntelligenceService;
+use App\Services\Availability\AvailabilityService;
 use App\Services\System\MailConfigurationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -21,6 +23,8 @@ use Illuminate\View\View;
 
 class WebsiteController extends Controller
 {
+    public function __construct(private readonly AvailabilityService $availability) {}
+
     public function home(): View
     {
         return view('website.home', $this->propertyData());
@@ -158,7 +162,7 @@ class WebsiteController extends Controller
     /**
      * Accept a booking enquiry from the single-page enquiry form.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function enquiry(Request $request, MailConfigurationService $mailConfigurationService)
     {
@@ -208,34 +212,17 @@ class WebsiteController extends Controller
      * Return the blocked-date ranges for the booking widget.
      *
      * The front end expects an array of {start, end} objects where "end" is
-     * exclusive, so each blocked night is one range.
+     * exclusive, so each blocked night is one range. Blocked nights come
+     * from reservations, holds, calendar blocks and the website
+     * blocked-dates setting for the active property.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function availability(Request $request)
     {
-        $blocked = Setting::getValue('website_blocked_dates', []) ?: [];
+        $propertyId = Property::query()->where('status', 'active')->value('id');
 
-        $ranges = [];
-
-        foreach ((array) $blocked as $date) {
-            if (! $date) {
-                continue;
-            }
-
-            try {
-                $start = Carbon::parse($date);
-            } catch (\Throwable) {
-                continue;
-            }
-
-            $ranges[] = [
-                'start' => $start->toDateString(),
-                'end' => $start->copy()->addDay()->toDateString(),
-            ];
-        }
-
-        return response()->json($ranges);
+        return response()->json($this->availability->websiteBlockedRanges($propertyId ? (int) $propertyId : null));
     }
 
     public function privacy(): View
