@@ -48,7 +48,7 @@ class RevenueAnalyticsService
             ->whereDate('check_in', '<=', $to->toDateString())
             ->whereDate('check_out', '>=', $from->toDateString());
 
-        $revenue = (float) (clone $period)->whereIn('status', ['confirmed', 'checked_in', 'checked_out', 'pending', 'hold'])->sum('total_amount');
+        $revenue = (float) (clone $period)->whereIn('status', ['confirmed', 'checked_in', 'checked_out'])->sum('total_amount');
         $bookings = (clone $period)->whereIn('status', ['confirmed', 'checked_in', 'checked_out'])->count();
         $nightsSold = (clone $period)->whereIn('status', ['confirmed', 'checked_in', 'checked_out'])->get()
             ->sum(fn (Reservation $reservation): int => max(1, $reservation->check_in->diffInDays($reservation->check_out)));

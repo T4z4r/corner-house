@@ -53,4 +53,37 @@ class RevenueAnalyticsTest extends TestCase
         $this->assertSame(1, $snapshot->bookings_count);
         $this->assertSame(1, $snapshot->direct_bookings);
     }
+
+    public function test_dashboard_revenue_excludes_pending_and_hold_bookings(): void
+    {
+        $property = Property::factory()->create();
+        $from = now()->startOfMonth();
+        $to = now()->endOfMonth();
+
+        Reservation::factory()->create([
+            'property_id' => $property->id,
+            'status' => 'confirmed',
+            'check_in' => $from->copy()->addDays(2),
+            'check_out' => $from->copy()->addDays(4),
+            'total_amount' => 100.00,
+        ]);
+        Reservation::factory()->create([
+            'property_id' => $property->id,
+            'status' => 'pending',
+            'check_in' => $from->copy()->addDays(5),
+            'check_out' => $from->copy()->addDays(7),
+            'total_amount' => 200.00,
+        ]);
+        Reservation::factory()->create([
+            'property_id' => $property->id,
+            'status' => 'hold',
+            'check_in' => $from->copy()->addDays(8),
+            'check_out' => $from->copy()->addDays(10),
+            'total_amount' => 300.00,
+        ]);
+
+        $stats = app(RevenueAnalyticsService::class)->dashboardStats($property->id, $from, $to);
+
+        $this->assertSame(100.00, $stats['revenue']);
+    }
 }
