@@ -295,4 +295,13 @@ class PublicWebsiteTest extends TestCase
                 ['start' => '2026-10-15', 'end' => '2026-10-16'],
             ]);
     }
+
+    public function test_website_config_feeds_stay_on_the_same_origin(): void
+    {
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('window.__SITE__', false)
+            ->assertSee('"availabilityUrl":"/booking/availability"', false)
+            ->assertSee('"bookingEndpoint":"/booking/enquiry"', false);
+    }
 }

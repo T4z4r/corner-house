@@ -72,8 +72,10 @@ class WebsiteContentService
 
         return [
             'enquiryEmail' => Setting::getValue('website_contact_email', 'bookings@example.com'),
-            'bookingEndpoint' => Route::has('booking.enquiry') ? route('booking.enquiry') : '',
-            'availabilityUrl' => Route::has('booking.availability') ? route('booking.availability') : '',
+            // Relative paths keep the browser on the site's own origin, whatever
+            // host/scheme it is served over (APP_URL is only ever a fallback).
+            'bookingEndpoint' => Route::has('booking.enquiry') ? route('booking.enquiry', [], false) : '',
+            'availabilityUrl' => Route::has('booking.availability') ? route('booking.availability', [], false) : '',
             'nightlyRate' => (int) Setting::getValue('nightly_rate', 950),
             'securityDeposit' => (int) Setting::getValue('damage_deposit', Setting::getValue('nightly_rate', 950)),
             'cleaningFee' => (int) Setting::getValue('cleaning_fee', 250),
