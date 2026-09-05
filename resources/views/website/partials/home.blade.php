@@ -15,8 +15,8 @@
                     $main = \App\Models\Setting::getValue('website_hero_gallery_main');
                     $small = \App\Models\Setting::getValue('website_hero_gallery_small');
                 @endphp
-                <figure>@if($main)<img src="{{ asset('storage/'.$main) }}" alt="Corner House exterior">@else<div class="photo tall">House exterior</div>@endif</figure>
-                <figure>@if($small)<img src="{{ asset('storage/'.$small) }}" alt="Corner House, Braunston">@else<div class="photo tall">Gardens &amp; grounds</div>@endif</figure>
+                <figure>@if($main)<img src="{{ asset('storage/'.$main) }}" alt="The ivy-covered front of Corner House from Old Road">@else<img src="{{ asset('images/hero-front.jpg') }}" alt="The ivy-covered front of Corner House from Old Road">@endif<figcaption>The front</figcaption></figure>
+                <figure>@if($small)<img src="{{ asset('storage/'.$small) }}" alt="The rear of Corner House with the raised patio and landscaped garden">@else<img src="{{ asset('images/hero-garden.jpg') }}" alt="The rear of Corner House with the raised patio and landscaped garden">@endif<figcaption>The garden</figcaption></figure>
             </div>
             </div>
             <ul class="facts">
@@ -73,7 +73,7 @@
         <div class="wrap">
             <div class="feature-row flip">
                 @php $marina = \App\Models\Setting::getValue('website_hero_image'); @endphp
-                <div class="photo">@if($marina)<img src="{{ asset('storage/'.$marina) }}">@endif</div>
+                <div class="photo">@if($marina)<img src="{{ asset('storage/'.$marina) }}" alt="Narrowboats moored on the canal at Braunston">@else<img src="{{ asset('images/marina.jpg') }}" alt="Narrowboats moored on the canal at Braunston">@endif</div>
                 <div>
                     <h2>Footsteps from the marina</h2>
                     <p>Braunston is where the Grand Union and Oxford canals meet. Walk out of the gate and you are on the towpath, with the Gongoozlers Rest canal-boat café and the Admiral Nelson pub alongside the water, historic working boats in the marina and walking routes to Willoughby and Ashby St Ledgers.</p>

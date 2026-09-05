@@ -179,38 +179,65 @@ class SettingsSeeder extends Seeder
     }
 
     /**
-     * @return array<int, array{title: string, items: array<int, string>}>
+     * @return array<int, array{title: string, items: array<int, string>, flag?: bool}>
      */
     public static function defaultBookingRules(): array
     {
         return [
             [
-                'title' => 'Pricing and payment',
+                'title' => 'Who can book',
                 'items' => [
-                    'The whole house is let to one party at a time, for a minimum of 2 nights.',
-                    'The nightly rate is &pound;550 Monday to Thursday and &pound;625 Friday to Sunday, rising to &pound;645 Friday to Sunday from April 2027, plus a &pound;50 cleaning fee and a refundable security deposit.',
-                    'A non-refundable deposit of 25% secures the dates, with the balance due 8 weeks before arrival.',
+                    'The lead guest must be 21 or over and must stay at the property for the whole booking.',
+                    'The booking is for the whole house only. We do not let individual rooms.',
+                    'Bookings made directly with us are 10% cheaper than the same dates on Airbnb, Booking.com or Vrbo.',
+                    'Overnight occupancy is capped at 12 adults and 2 children. This is a fire and insurance limit and cannot be exceeded.',
+                    'Additional guests are welcome during the day for an event or gathering. Please tell us the expected numbers when you book.',
+                    'We ask for a full guest list, with names and ages of any children, before arrival.',
                 ],
             ],
             [
-                'title' => 'Dates and changes',
+                'title' => 'Length of stay',
                 'items' => [
-                    'Check-in from 5:00pm, check-out by 10:00am on the day of departure.',
-                    'Changes to a confirmed booking are subject to availability and may carry a fee.',
-                    'We hold dates for 7 days while an enquiry or deposit is outstanding.',
+                    'Minimum stay of 2 nights.',
+                    'Minimum of 3 nights over bank holiday weekends, and 3 nights over Christmas and New Year.',
+                    'Check-in from 3:00pm. Check-out by 12:00 noon.',
+                    'Earlier check-in or later check-out may be possible if the house is free either side. Please ask; it is never guaranteed.',
+                ],
+            ],
+            [
+                'title' => 'Paying',
+                'items' => [
+                    'A non-refundable booking fee of 30% of the accommodation cost is payable when you book. This confirms the dates.',
+                    'The balance is due 28 days before arrival. For bookings made within 28 days of arrival, the full amount is payable at the time of booking.',
+                    'Payment by bank transfer or card. We do not accept cash.',
+                    'Prices include the cleaning fee, linen, towels and utilities.',
                 ],
             ],
             [
                 'title' => 'Security deposit',
                 'items' => [
-                    'A refundable security deposit is collected with the balance and returned within 7 days of departure, less any deductions for damage or breakages.',
-                    'The hot tub, gym and garden bar are included in the rate; extra charges apply for event furniture hire and some add-ons.',
+                    'A refundable security deposit of &pound;950 is payable 7 days before arrival, by bank transfer or a card pre-authorisation.',
+                    'It is returned in full within 7 days of departure, provided the house is left as found, there is no damage beyond fair wear and tear, and no rules have been broken.',
+                    'We will always send you photographs and a written explanation of any deduction before it is made.',
+                    'The deposit is a contribution, not a cap. If damage exceeds &pound;950, the lead guest remains liable for the balance.',
                 ],
             ],
             [
-                'title' => 'Cancellation',
+                'title' => 'Agreement and identification',
                 'items' => [
-                    'See our <a href="#refunds">refund policy</a> for the amounts payable if you cancel.',
+                    'Direct bookings require a short written rental agreement, signed by the lead guest before arrival.',
+                    'We ask the lead guest for one form of photo identification (passport or driving licence) and proof of home address dated within the last three months.',
+                    'We use this only to confirm you are who you say you are. It is stored securely, is not shared with anyone, and is deleted within 30 days of your departure unless there is an open damage claim.',
+                    'We may decline a booking, without giving a reason, if identification is not provided.',
+                ],
+            ],
+            [
+                'title' => 'Changes and cancellations',
+                'items' => [
+                    'Cancellations follow our refund policy, which mirrors Airbnb&rsquo;s Moderate policy.',
+                    'Date changes are treated as a cancellation and a new booking, though we will always try to move you if we can re-let the dates.',
+                    'We strongly recommend travel insurance that covers cancellation.',
+                    '<a href="#refunds">Read the full refund policy</a>',
                 ],
             ],
         ];
@@ -223,32 +250,62 @@ class SettingsSeeder extends Seeder
     {
         return [
             [
-                'title' => 'To keep you and the house safe',
+                'title' => 'Events and gatherings',
                 'items' => [
-                    'No unaccompanied children. The hot tub, gym, canal and Marina are not supervised, and the garden pond is deep.',
-                    'The hot tub is used at your own risk. No alcohol or glass on the poolside. Over-12s only for the hot tub; over-16s only for the gym.',
+                    'The house is built for entertaining and we are happy for you to hold an event or function here. Please tell us what you are planning when you book.',
+                    'Additional guests may join you during the day. Overnight numbers are strictly capped at 12 adults and 2 children.',
+                    'Amplified music, sound systems and DJs are fine within the quiet hours below.',
+                    'For a larger event, please talk to us first about parking, numbers and anything you plan to bring in.',
                 ],
             ],
             [
-                'title' => 'To keep neighbours happy',
-                'items' => [
-                    'Be courteous to our neighbours, especially during garden social evenings and late arrivals. Noise carries in the village.',
-                ],
-            ],
-            [
-                'title' => 'To keep the house in good order',
-                'items' => [
-                    'No smoking or vaping anywhere in the house, outbuilding or on the grounds. A &pound;200 cleaning charge applies for smoking indoors or the use of a vape.',
-                    'Up to 12 adults plus 2 children, in five bedrooms. Different occupancy requires prior written agreement.',
-                    'Only use a barbecue in the designated Kadai and garden bar, well clear of the house and outbuildings. Never leave a hot barbecue unattended.',
-                    'The cinema room and games room are in the cellar; take care on the cellar stairs.',
-                ],
-            ],
-            [
-                'title' => 'And finally',
+                'title' => 'No smoking or vaping',
                 'flag' => true,
                 'items' => [
-                    'If we think you are breaking the house rules, we will talk to you, of course. But persistent or serious breaches of the rules are not tolerated and may result in the termination of your booking without refund.',
+                    'No smoking or vaping anywhere inside the house or the garden buildings.',
+                    'Smoking is permitted outdoors on the patio only. Please use the ashtray provided.',
+                    'Evidence of smoking indoors results in a deduction from the security deposit to cover specialist cleaning.',
+                    'No candles, incense, fireworks, Chinese lanterns or open flames anywhere on the property.',
+                ],
+            ],
+            [
+                'title' => 'Gym',
+                'items' => [
+                    'A gym waiver is displayed on the gym door and left on the table with the keys. Please read it before anyone uses the equipment.',
+                    'The lead guest accepts the waiver on behalf of the party as part of the booking, and is responsible for making sure everyone has read it.',
+                    'Over-16s only. Children must not enter the gym at any time.',
+                    'Use the equipment at your own risk, and never alone: always have someone else present.',
+                    'Do not use the gym after drinking alcohol.',
+                ],
+            ],
+            [
+                'title' => 'Hot tub',
+                'items' => [
+                    'Available from 8:00am to 11:00pm, in line with the quiet hours. It is close to neighbouring homes, so please keep noise down.',
+                    'No glass on or near the patio. Plastic drinkware is provided.',
+                    'Please shower before use, and do not use it after drinking heavily.',
+                    'Children must be supervised by an adult at all times. Not suitable for anyone who is pregnant or has a heart condition without medical advice.',
+                    'Do not adjust the chemical dosing or the controls.',
+                ],
+            ],
+            [
+                'title' => 'Noise and neighbours',
+                'flag' => true,
+                'items' => [
+                    'Music and noise are fine between 8:00am and 11:00pm.',
+                    'From 11:00pm to 8:00am, please move indoors, close doors and windows, turn music off and keep the garden and patio clear.',
+                    'This is a residential village and our neighbours are close by. The 11:00pm limit is the one rule we cannot be flexible about.',
+                    'Please park in the gated parking only, which takes up to six cars, rather than on Old Road.',
+                ],
+            ],
+            [
+                'title' => 'The house and grounds',
+                'items' => [
+                    'The garage and its outbuildings are private working areas and are not part of the let. No access at any time.',
+                    'Please use the Kadai barbecue only in the position provided, and never under cover or close to the building.',
+                    'No pets.',
+                    'Please report any damage or breakage to us during your stay rather than after it. Accidents happen and we would much rather know.',
+                    'Please leave the house tidy, with rubbish and recycling in the bins outside and furniture back where you found it. You do not need to clean &mdash; that is what the cleaning fee is for.',
                 ],
             ],
         ];

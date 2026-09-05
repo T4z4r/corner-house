@@ -1,27 +1,37 @@
 <section class="page" id="page-spirits" data-page="spirits">
-    <div class="section">
+    <div class="section ivy">
         <div class="wrap">
-            <div class="spirits-head">
+            <div class="serengeti-mark">
                 @php $spiritsLogo = \App\Models\Setting::getValue('website_spirits_logo'); @endphp
-                <div class="photo logo">@if($spiritsLogo)<img src="{{ asset('storage/'.$spiritsLogo) }}" alt="Serengeti Spirits logo">@else<span>Serengeti Spirits logo</span>@endif</div>
-                <div>
-                    <h1 style="font-size:clamp(2.4rem,5vw,4rem)">Serengeti Spirits</h1>
-                    <p class="lede">Distilled on site at Corner House, sourced from the shores of Lake Victoria, and named for the Big Five.</p>
-                </div>
+                @if($spiritsLogo)<img src="{{ asset('storage/'.$spiritsLogo) }}" alt="Serengeti Spirits">@else<img src="{{ asset('images/serengeti-logo.png') }}" alt="Serengeti Spirits">@endif
             </div>
-            <div class="grid-2" style="margin-top:2rem">
+            <h1 style="font-size:clamp(2.4rem,5vw,4rem);color:var(--stone)">Made here at Corner House</h1>
+            <div class="grid-2">
                 <div>
-                    <p>Corner House is the home of Serengeti Spirits, a small batch gin and vodka distillery. Every bottle is made, and every room named, for one of the Big Five: Lion, Elephant, Leopard, Rhino and Buffalo.</p>
-                    <p>Order a case for your stay — we have a growing drinks cabinet of gin, vodka and liqueurs — or commission a custom-labelled bottle, individually numbered, for a birthday, wedding, or hen party.</p>
-                    <p>For groups we can arrange a tasting or a blending session on site, so you can take a bottle away with your own label.</p>
-                    <p class="small">Please drink responsibly. Our spirits are for over-18s only.</p>
+                    <p class="lede">Our African-inspired gins and spirits are made here at Corner House. Order before you arrive and they can be waiting in the kitchen when you get here.</p>
+                    <p>Serengeti Spirits runs entirely on solar power and gives five per cent of its profits to the Wright Foundation, which supports children's homes and wildlife conservation in Tanzania. Every bottle bought during your stay contributes.</p>
                 </div>
-                <a class="photo tall" href="{{ $site['spirits_website'] }}" target="_blank" rel="noopener">Serengeti Spirits</a>
+                <div class="photo">Serengeti Spirits bottle photo</div>
             </div>
 
-            <h2 class="band">Order in advance</h2>
-            <p>Order your case or tasting before you arrive so it is ready for you. Tell us your dates in the booking enquiry, or email <a href="mailto:{{ $site['contact_email'] }}">{{ $site['contact_email'] }}</a>.</p>
-            <a class="btn btn-primary" href="{{ $site['spirits_website'] }}" target="_blank" rel="noopener">Visit Serengeti Spirits</a>
+            <div class="spirit-cards">
+                <div class="spirit-card">
+                    <h3>Stock the house</h3>
+                    <p>Order bottles or a case of six before you arrive and we will have it chilled and ready. Choose your bottles on the Serengeti shop and mention your booking dates at checkout.</p>
+                    <a class="btn btn-outline" href="https://shop.serengetispirits.com/retail" target="_blank" rel="noopener">Shop Serengeti Spirits</a>
+                </div>
+                <div class="spirit-card">
+                    <h3>Custom bottles for the occasion</h3>
+                    <p>A birthday, an anniversary, a wedding party or a hen weekend: we will make a bottle with your own label and message. Allow two weeks before your stay.</p>
+                    <a class="btn btn-outline" href="https://www.serengetispirits.com/products/custom-bottle-whitelabel" target="_blank" rel="noopener">Order a custom bottle</a>
+                </div>
+                <div class="spirit-card">
+                    <h3>Drinks package</h3>
+                    <p>Add a welcome package to your booking: a selection of Serengeti gins with tonics, garnishes and glassware laid out in the garden bar. Tick the box on the enquiry form or ask us when we confirm.</p>
+                    <a class="btn btn-outline" href="#book">Add to a booking</a>
+                </div>
+            </div>
+            <p class="small" style="margin-top:2rem;color:var(--sage)">Purchases are completed on the Serengeti Spirits website. Spirits are sold to over-18s only.</p>
         </div>
     </div>
 </section>

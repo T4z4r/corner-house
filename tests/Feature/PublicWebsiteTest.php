@@ -184,6 +184,81 @@ class PublicWebsiteTest extends TestCase
         ])->assertRedirect();
     }
 
+    public function test_home_page_showcase_section_has_hero_figcaptions(): void
+    {
+        Property::factory()->create(['name' => 'Corner House']);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('The front', false)
+            ->assertSee('The garden', false)
+            ->assertSee('hero-front.jpg', false)
+            ->assertSee('hero-garden.jpg', false);
+    }
+
+    public function test_home_page_spirits_section_has_reference_structure(): void
+    {
+        Property::factory()->create(['name' => 'Corner House']);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Made here at Corner House', false)
+            ->assertSee('serengeti-logo.png', false)
+            ->assertSee('Stock the house', false)
+            ->assertSee('Custom bottles for the occasion', false)
+            ->assertSee('Drinks package', false)
+            ->assertSee('shop.serengetispirits.com', false);
+    }
+
+    public function test_home_page_foundation_section_has_wright_foundation_content(): void
+    {
+        Property::factory()->create(['name' => 'Corner House']);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('The Wright Foundation', false)
+            ->assertSee('Sintanizer', false)
+            ->assertSee('JKT Wildlife, Kibaha', false)
+            ->assertSee('cdn.shopify.com', false);
+    }
+
+    public function test_home_page_terms_section_has_legal_clauses(): void
+    {
+        Property::factory()->create(['name' => 'Corner House']);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Terms and conditions', false)
+            ->assertSee('Parties and the agreement', false)
+            ->assertSee('Draft for review', false)
+            ->assertSee('Security deposit', false);
+    }
+
+    public function test_home_page_refunds_section_has_airbnb_moderate_policy(): void
+    {
+        Property::factory()->create(['name' => 'Corner House']);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Cancellation and refund policy', false)
+            ->assertSee('Within 24 hours of booking', false)
+            ->assertSee('More than 5 days', false);
+    }
+
+    public function test_home_page_booking_and_house_rules_use_reference_content(): void
+    {
+        Property::factory()->create(['name' => 'Corner House']);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Who can book', false)
+            ->assertSee('Length of stay', false)
+            ->assertSee('Changes and cancellations', false)
+            ->assertSee('Events and gatherings', false)
+            ->assertSee('No smoking or vaping', false)
+            ->assertSee('Noise and neighbours', false);
+    }
+
     public function test_booking_enquiry_accepts_the_widget_payload(): void
     {
         $this->postJson(route('booking.enquiry'), [

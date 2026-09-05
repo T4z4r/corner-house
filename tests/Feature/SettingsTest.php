@@ -119,7 +119,7 @@ class SettingsTest extends TestCase
         $site = app(WebsiteContentService::class)->data();
 
         $this->assertIsArray($site['bookingRules']);
-        $this->assertSame('Pricing and payment', $site['bookingRules'][0]['title'] ?? null);
+        $this->assertSame('Who can book', $site['bookingRules'][0]['title'] ?? null);
     }
 
     public function test_setting_value_is_cast_correctly(): void
