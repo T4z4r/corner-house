@@ -78,8 +78,9 @@
                         <div class="ch-suite-body">
                             <div class="ch-suite-eyebrow">{{ ucfirst($room->type ?? 'Room') }}</div>
                             <h3>{{ $room->name }}</h3>
-                            <p class="ch-suite-meta">Sleeps {{ $room->capacity }} · from £{{ number_format($room->base_rate, 2) }} / night</p>
+                            <p class="ch-suite-meta">Sleeps {{ $room->capacity }} · Weekday £{{ number_format(\App\Models\Setting::getValue('min_price_weekday', $room->base_rate), 0) }} · Weekend £{{ number_format(\App\Models\Setting::getValue('min_price_weekend', $room->base_rate), 0) }} / night</p>
                             <p>{{ \Illuminate\Support\Str::limit($room->description, 160) }}</p>
+                            <p class="small text-muted mb-2">Direct rate &mdash; already includes our {{ \App\Models\Setting::getValue('direct_booking_discount', 10) }}% direct-booking discount.</p>
                             <a class="ch-text-link" href="{{ route('property.room', $room) }}">View details</a>
                         </div>
                     </article>

@@ -69,6 +69,9 @@
                 <p class="ch-suite-meta">{{ $quote['nights'] }} night(s) · {{ $guests }} guest(s)</p>
                 <hr>
                 <div class="d-flex justify-content-between"><span>Stay</span><span>£{{ number_format($quote['base_amount'], 2) }}</span></div>
+                @if ($quote['discount_amount'] > 0)
+                    <div class="d-flex justify-content-between"><span>Direct-booking discount ({{ \App\Models\Setting::getValue('direct_booking_discount', 10) }}%)</span><span class="text-success">-£{{ number_format($quote['discount_amount'], 2) }}</span></div>
+                @endif
                 @if ($quote['fees_amount'] > 0)
                     <div class="d-flex justify-content-between"><span>Cleaning fee</span><span>£{{ number_format($quote['fees_amount'], 2) }}</span></div>
                 @endif
@@ -79,6 +82,7 @@
                 <div class="d-flex justify-content-between"><span>Taxes</span><span>£{{ number_format($quote['tax_amount'], 2) }}</span></div>
                 <div class="d-flex justify-content-between ch-price mt-3"><span>Total</span><span id="totalDisplay">£{{ number_format($quote['total'], 2) }}</span></div>
                 <input type="hidden" id="baseTotal" value="{{ $quote['total'] }}">
+                <p class="small text-muted mt-2 mb-0">Direct rate &mdash; this price includes our {{ \App\Models\Setting::getValue('direct_booking_discount', 10) }}% direct-booking discount.</p>
 
             </div>
 

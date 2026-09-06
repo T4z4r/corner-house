@@ -88,7 +88,7 @@
                         <label class="check"><input type="checkbox" name="agree" required>I have read the <a href="#rules">booking rules</a>, <a href="#house-rules">house rules</a> and <a href="#terms">terms and conditions</a></label>
                         <button class="btn btn-primary" type="submit">Send booking enquiry</button>
                     </form>
-                    <p class="alt-book">An enquiry is not a confirmed booking. Dates are held only once the rental agreement is signed and the first payment has cleared.</p>
+                    <p class="alt-book">An enquiry does not confirm a booking. Dates are held only once the rental agreement has been signed and the first payment has cleared.</p>
                 </aside>
             </div>
         </div>
