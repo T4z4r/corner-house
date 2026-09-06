@@ -9,7 +9,7 @@
             <dt>Phone</dt><dd><a href="tel:07940973529">07940 973529</a></dd>
             <dt>Hours</dt><dd>Seasonal — check Facebook</dd>
         </dl>
-        <a class="more" href="https://gongoozlersrest.wixsite.com/gongoozler" target="_blank" rel="noopener">Visit website</a>
+        <a class="more" href="#" data-placeholder target="_blank" rel="noopener">Find them on Facebook</a>
     </li>
     <li class="place local">
         <h3>The Admiral Nelson</h3>

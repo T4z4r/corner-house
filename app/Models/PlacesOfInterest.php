@@ -14,10 +14,13 @@ class PlacesOfInterest extends Model
         'slug',
         'description',
         'category',
+        'sub_category',
         'address',
         'distance',
+        'is_local',
         'website',
         'phone',
+        'hours',
         'image',
         'is_active',
         'sort_order',
@@ -25,6 +28,7 @@ class PlacesOfInterest extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_local' => 'boolean',
         'sort_order' => 'integer',
     ];
 

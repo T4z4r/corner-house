@@ -2,7 +2,6 @@
     <div class="section">
         <div class="wrap">
             <h1 style="font-size:clamp(2.4rem,5vw,4rem)">Places of interest</h1>
-            <p class="lede">Where to eat and drink in the village, days out across the Midlands and the Cotswolds, and the walks we send guests on.</p>
 
             <div class="tabs" role="tablist">
                 <button class="tab" role="tab" aria-selected="true" data-tab="food">Food &amp; drink</button>
@@ -11,22 +10,26 @@
             </div>
 
             <div class="panel active" id="panel-food" role="tabpanel">
-                <p>Everything below is within a fifteen-minute walk of the front door. The notes are ours; we have no affiliation with any of these venues.</p>
                 @if ($site['placesFood']->isNotEmpty())
                     <ul class="places">
                         @foreach ($site['placesFood'] as $place)
                             <li class="place local">
                                 <h3>{{ $place->name }}</h3>
                                 @if($place->distance)<p class="dist">{{ $place->distance }}</p>@endif
-                                @if($place->category)<p class="cat">{{ $place->category }}</p>@endif
+                                @if($place->sub_category || $place->category)<p class="cat">{{ $place->sub_category ?: $place->category }}</p>@endif
                                 @if($place->description)<p class="note">{{ $place->description }}</p>@endif
-                                @if($place->address || $place->phone || $place->website)
+                                @if($place->address || $place->phone || $place->hours)
                                 <dl class="meta">
                                     @if($place->address)<dt>Address</dt><dd>{{ $place->address }}</dd>@endif
                                     @if($place->phone)<dt>Phone</dt><dd><a href="tel:{{ preg_replace('/[^0-9+]/', '', $place->phone) }}">{{ $place->phone }}</a></dd>@endif
+                                    @if($place->hours)<dt>Hours</dt><dd>{{ $place->hours }}</dd>@endif
                                 </dl>
                                 @endif
-                                @if($place->website)<a class="more" href="{{ $place->website }}" target="_blank" rel="noopener">Visit website</a>@endif
+                                @if($place->website)
+                                    <a class="more" href="{{ $place->website }}" target="_blank" rel="noopener">Visit website</a>
+                                @else
+                                    <a class="more" href="#" data-placeholder target="_blank" rel="noopener">Find them on Facebook</a>
+                                @endif
                             </li>
                         @endforeach
                     </ul>
@@ -37,14 +40,14 @@
             </div>
 
             <div class="panel" id="panel-days" role="tabpanel">
-                <p>Days out within about fifty miles, sorted by driving distance from the house.</p>
                 @if ($site['placesDays']->isNotEmpty())
                     <ul class="places">
                         @foreach ($site['placesDays'] as $place)
-                            <li class="place">
+                            <li class="place{{ $place->is_local ? ' local' : '' }}">
                                 <h3>{{ $place->name }}</h3>
                                 @if($place->distance)<p class="dist">{{ $place->distance }}</p>@endif
-                                @if($place->category)<p class="cat">{{ $place->category }}</p>@endif
+                                @if($place->sub_category || $place->category)<p class="cat">{{ $place->sub_category ?: $place->category }}</p>@endif
+                                @if($place->is_local && $place->description)<p class="note">{{ $place->description }}</p>@endif
                                 @if($place->address)<dl class="meta"><dt>Where</dt><dd>{{ $place->address }}</dd></dl>@endif
                             </li>
                         @endforeach
