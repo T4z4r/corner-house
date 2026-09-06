@@ -306,4 +306,54 @@ class SettingsTest extends TestCase
             ->assertSee('storage/website/house-exterior.png', false)
             ->assertSee('storage/website/gardens.png', false);
     }
+
+    public function test_hero_facts_use_seeded_settings_values(): void
+    {
+        $this->seed(SettingsSeeder::class);
+
+        $site = app(WebsiteContentService::class)->data();
+
+        $bedrooms = $site['heroFacts'][0];
+        $guests = $site['heroFacts'][1];
+
+        $this->assertSame('5', $bedrooms['value']);
+        $this->assertSame('12', $guests['value']);
+    }
+
+    public function test_inside_spaces_match_template_copy(): void
+    {
+        $this->seed(SettingsSeeder::class);
+
+        $site = app(WebsiteContentService::class)->data();
+
+        $names = collect($site['spacesInside'])->pluck('name')->all();
+
+        $this->assertContains('Orangery', $names);
+        $this->assertNotContains('Garden dining room', $names);
+    }
+
+    public function test_outside_spaces_match_template_copy(): void
+    {
+        $this->seed(SettingsSeeder::class);
+
+        $site = app(WebsiteContentService::class)->data();
+
+        $names = collect($site['spacesOutside'])->pluck('name')->all();
+
+        $this->assertContains('Hot tub', $names);
+        $this->assertNotContains('Garden room', $names);
+        $this->assertContains('Office', $names);
+    }
+
+    public function test_review_rating_label_includes_settings_suffix_when_from_settings(): void
+    {
+        $this->seed(SettingsSeeder::class);
+
+        $site = app(WebsiteContentService::class)->data();
+
+        $line = $site['heroFacts'][5]['label'];
+
+        $this->assertStringContainsString('Airbnb reviews', $line);
+        $this->assertStringContainsString('39 five-star', $line);
+    }
 }

@@ -7,6 +7,8 @@ use App\Models\Property;
 use App\Models\Review;
 use App\Models\Room;
 use App\Models\Setting;
+use Database\Seeders\AmenitySeeder;
+use Database\Seeders\RoomSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -303,5 +305,54 @@ class PublicWebsiteTest extends TestCase
             ->assertSee('window.__SITE__', false)
             ->assertSee('"availabilityUrl":"\\/booking\\/availability"', false)
             ->assertSee('"bookingEndpoint":"\\/booking\\/enquiry"', false);
+    }
+
+    public function test_home_page_amenities_match_template_list(): void
+    {
+        $property = Property::factory()->create(['name' => 'Corner House', 'slug' => 'corner-house', 'status' => 'active']);
+        $this->seed(AmenitySeeder::class);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Orangery dining room', false)
+            ->assertSee('First-floor balcony', false)
+            ->assertSee('Five ensuite bedrooms', false)
+            ->assertSee('Hot tub on the patio', false)
+            ->assertSee('Cinema room in the cellar', false)
+            ->assertSee('Games room', false)
+            ->assertSee('Garden bar and Kadai BBQ', false)
+            ->assertSee('Fully equipped gym', false)
+            ->assertSee('Hard-wired office', false)
+            ->assertSee('Landscaped garden', false)
+            ->assertSee('Private gated parking for 6 cars', false)
+            ->assertSee('Sky TV in every bedroom', false)
+            ->assertDontSee('Garden room and first-floor balcony', false);
+    }
+
+    public function test_home_page_rooms_ordered_by_sort_order(): void
+    {
+        $property = Property::factory()->create(['name' => 'Corner House', 'slug' => 'corner-house', 'status' => 'active']);
+        $this->seed(RoomSeeder::class);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Lion', false)
+            ->assertSee('Elephant', false)
+            ->assertSee('Buffalo', false)
+            ->assertSee('Rhino', false)
+            ->assertSee('Leopard', false)
+            ->assertSee('Master suite', false)
+            ->assertSee('King or twin', false);
+    }
+
+    public function test_home_page_template_copy_matches(): void
+    {
+        $property = Property::factory()->create(['name' => 'Corner House', 'slug' => 'corner-house', 'status' => 'active', 'description' => null]);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('The Wright Foundation', false)
+            ->assertSee('Made here at Corner House', false)
+            ->assertSee('the orangery which houses the dining room', false);
     }
 }

@@ -281,6 +281,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::get('/channels/booking', [ChannelController::class, 'booking'])->name('channels.booking');
         Route::get('/channels/vrbo', [ChannelController::class, 'vrbo'])->name('channels.vrbo');
         Route::post('/channels/prices/import', [ChannelController::class, 'importPrices'])->name('channels.prices.import')->middleware('can:channels.configure');
+        Route::post('/channels/showdata/import', [ChannelController::class, 'importShowData'])->name('channels.showdata.import')->middleware('can:channels.configure');
         Route::post('/channels/properties/{property}/publish', [ChannelController::class, 'publishProperty'])->name('channels.properties.publish')->middleware('can:channels.configure');
         Route::post('/channels/bookings/{reservation}/publish', [ChannelController::class, 'publishBooking'])->name('channels.bookings.publish')->middleware('can:channels.configure');
         Route::post('/channels/bookings/{reservation}/guests', [ChannelController::class, 'publishGuests'])->name('channels.bookings.guests.publish')->middleware('can:channels.configure');

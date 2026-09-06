@@ -21,6 +21,7 @@ use App\Services\Beds24\Beds24Client;
 use App\Services\Beds24\Beds24MappingService;
 use App\Services\Beds24\Beds24PricingPublisher;
 use App\Services\Beds24\Beds24PropertyPublisher;
+use App\Services\Beds24\Beds24ShowDataService;
 use App\Services\Beds24\Beds24SyncService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
@@ -418,6 +419,41 @@ class ChannelController extends Controller
             $result['overrides'] === 1 ? '' : 's',
             $result['blocks'],
             $result['blocks'] === 1 ? '' : 's',
+        ));
+    }
+
+    public function importShowData(Request $request, Beds24ShowDataService $service): RedirectResponse
+    {
+        $data = $request->validate([
+            'account_id' => ['required', 'exists:channel_accounts,id'],
+            'room_id' => ['nullable', 'exists:rooms,id'],
+            'beds24_room_id' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $account = ChannelAccount::query()->findOrFail($data['account_id']);
+        if ($account->provider !== 'beds24') {
+            return back()->withErrors(['error' => 'Only Beds24 accounts can import channel availability.']);
+        }
+
+        $directRoom = isset($data['room_id']) ? Room::query()->find((int) $data['room_id']) : null;
+        $directBeds24RoomId = $data['beds24_room_id'] ?? null;
+
+        $result = $service->import($account, $directRoom, $directBeds24RoomId);
+
+        if ($result['rooms'] === 0) {
+            return back()->withErrors(['error' => 'No Beds24 room mappings found. Sync rooms and map them to Corner House rooms first, or pick a room directly.']);
+        }
+
+        $this->auditLogger->log('channels.showdata_imported', 'channels', 'channel_account', (string) $account->id);
+
+        return back()->with('status', sprintf(
+            'Imported %d blocked range%s (%d night%s) across %d room%s from the Beds24 channel feed.',
+            $result['ranges'],
+            $result['ranges'] === 1 ? '' : 's',
+            $result['nights'],
+            $result['nights'] === 1 ? '' : 's',
+            $result['rooms'],
+            $result['rooms'] === 1 ? '' : 's',
         ));
     }
 

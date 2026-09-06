@@ -168,6 +168,29 @@
                                             <input type="hidden" name="channel_account_id" value="{{ $account->id }}">
                                             <button type="submit" class="btn btn-sm btn-outline-success">Save rooms to system</button>
                                         </form>
+                                        <form method="POST" action="{{ route('admin.channels.showdata.import') }}" class="mt-2">
+                                            @csrf
+                                            <input type="hidden" name="account_id" value="{{ $account->id }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-warning">Import mapped channel availability</button>
+                                        </form>
+                                        <form method="POST" action="{{ route('admin.channels.showdata.import') }}" class="row g-2 mt-2 align-items-end">
+                                            @csrf
+                                            <input type="hidden" name="account_id" value="{{ $account->id }}">
+                                            <div class="col-6">
+                                                <select name="room_id" class="form-select form-select-sm" required>
+                                                    <option value="">Choose a room…</option>
+                                                    @foreach ($rooms->where('status', 'active') as $directRoom)
+                                                        <option value="{{ $directRoom->id }}">{{ $directRoom->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="input-group input-group-sm">
+                                                    <input name="beds24_room_id" class="form-control" placeholder="Beds24 room ID" value="">
+                                                    <button type="submit" class="btn btn-outline-warning">Import</button>
+                                                </div>
+                                            </div>
+                                        </form>
                                         @if (! empty($account->settings['scopes']))
                                             <div class="small text-muted mt-1">Scopes: {{ implode(', ', $account->settings['scopes']) }}</div>
                                         @endif
