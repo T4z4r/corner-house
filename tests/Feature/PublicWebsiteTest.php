@@ -53,7 +53,7 @@ class PublicWebsiteTest extends TestCase
             ->assertDontSee('A review we have not approved yet.');
     }
 
-    public function test_home_page_review_stats_reflect_approved_reviews(): void
+    public function test_home_page_shows_review_claim(): void
     {
         Property::factory()->create(['name' => 'Corner House']);
         Review::factory()->approved()->create(['stars' => 5]);
@@ -62,7 +62,7 @@ class PublicWebsiteTest extends TestCase
 
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee('average from 2 Airbnb reviews', false);
+            ->assertSee('All 5 star reviews from more than 30 Airbnb guests within the first year of listing', false);
     }
 
     public function test_uploaded_logo_overrides_bundled_default(): void

@@ -114,15 +114,13 @@ class WebsiteContentService
      */
     private function heroFacts(?Property $property, int $roomCount): array
     {
-        $reviewStats = $this->reviewStats();
-
         return [
             ['value' => (string) (Setting::getValue('hero_bedrooms', $roomCount ?: ($property?->bedrooms ?? 5)) ?: ($roomCount ?: ($property?->bedrooms ?? 5))), 'label' => 'ensuite bedrooms'],
             ['value' => (string) (Setting::getValue('hero_guests', $property?->capacity ?? '12') ?: ($property?->capacity ?? '12')), 'label' => 'adults + 2 children'],
             ['value' => (string) (Setting::getValue('hero_square_feet', '4,000') ?: '4,000'), 'label' => 'square feet'],
             ['value' => (string) (Setting::getValue('hero_kitchen', '25 ft') ?: '25 ft'), 'label' => 'centrepiece kitchen'],
             ['value' => (string) (Setting::getValue('hero_built', '1850') ?: '1850'), 'label' => 'the year it was built'],
-            ['value' => (string) number_format($reviewStats['score'], 2), 'label' => $this->reviewHeadlineLabel($reviewStats)],
+            ['value' => '', 'label' => 'All 5 star reviews from more than 30 Airbnb guests within the first year of listing'],
         ];
     }
 
@@ -199,45 +197,6 @@ class WebsiteContentService
                 'cite' => $review->cite,
             ])
             ->all();
-    }
-
-    /**
-     * @return array{count: int, score: float, from_settings: bool}
-     */
-    private function reviewStats(): array
-    {
-        $settingsCount = (int) Setting::getValue('review_count', 0);
-        $settingsScore = Setting::getValue('review_score', null);
-
-        if ($settingsCount > 0 && $settingsScore !== null) {
-            return [
-                'count' => $settingsCount,
-                'score' => (float) $settingsScore,
-                'from_settings' => true,
-            ];
-        }
-
-        $reviews = Review::approved()->get(['stars']);
-
-        return [
-            'count' => $reviews->count(),
-            'score' => $reviews->isEmpty() ? (float) ($settingsScore ?? 4.95) : round($reviews->avg('stars'), 2),
-            'from_settings' => false,
-        ];
-    }
-
-    /**
-     * @param  array{count: int, score: float, from_settings: bool}  $stats
-     */
-    private function reviewHeadlineLabel(array $stats): string
-    {
-        $label = sprintf('average from %d %s', $stats['count'], $stats['count'] === 1 ? 'Airbnb review' : 'Airbnb reviews');
-
-        if ($stats['from_settings']) {
-            $label .= ' — 39 five-star, one three-star';
-        }
-
-        return $label;
     }
 
     /**

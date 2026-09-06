@@ -345,15 +345,13 @@ class SettingsTest extends TestCase
         $this->assertContains('Office', $names);
     }
 
-    public function test_review_rating_label_includes_settings_suffix_when_from_settings(): void
+    public function test_review_claim_is_static_on_hero_facts(): void
     {
         $this->seed(SettingsSeeder::class);
 
         $site = app(WebsiteContentService::class)->data();
 
-        $line = $site['heroFacts'][5]['label'];
-
-        $this->assertStringContainsString('Airbnb reviews', $line);
-        $this->assertStringContainsString('39 five-star', $line);
+        $this->assertSame('All 5 star reviews from more than 30 Airbnb guests within the first year of listing', $site['heroFacts'][5]['label']);
+        $this->assertSame('', $site['heroFacts'][5]['value']);
     }
 }

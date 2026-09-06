@@ -21,7 +21,11 @@
             </div>
             <ul class="facts">
                 @foreach ($site['heroFacts'] as $fact)
-                    <li><strong>{{ $fact['value'] }}</strong>{{ $fact['label'] }}</li>
+                    @if(($fact['value'] ?? '') !== '')
+                        <li><strong>{{ $fact['value'] }}</strong>{{ $fact['label'] }}</li>
+                    @else
+                        <li>{{ $fact['label'] }}</li>
+                    @endif
                 @endforeach
             </ul>
         </div>
@@ -99,10 +103,9 @@
 
     <section class="reviews">
         <div class="reviews-head">
-            <span class="score">{{ $site['heroFacts'][5]['value'] ?? '4.95' }}</span>
             <div>
                 <h2>What guests say</h2>
-                <p><span class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span> {{ $site['heroFacts'][5]['label'] ?? '40 reviews on Airbnb' }}</p>
+                <p><span class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span> {{ $site['heroFacts'][5]['label'] ?? 'All 5 star reviews from more than 30 Airbnb guests within the first year of listing' }}</p>
             </div>
         </div>
         <div class="marquee">
