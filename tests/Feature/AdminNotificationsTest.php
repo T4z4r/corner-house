@@ -34,7 +34,9 @@ class AdminNotificationsTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('unread_count', 1)
             ->assertJsonPath('notifications.0.title', 'Reservation confirmed')
-            ->assertJsonPath('notifications.0.url', route('admin.reservations.show', $reservation))
+            ->assertJsonPath('notifications.0.url', route('admin.reservations.show', $reservation, false))
+            ->assertJsonPath('all_read_url', route('admin.notifications.mark-all-read', [], false))
+            ->assertJsonPath('index_url', route('admin.notifications.index', [], false))
             ->assertJsonStructure([
                 'unread_count',
                 'latest_id',

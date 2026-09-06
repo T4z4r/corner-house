@@ -116,7 +116,7 @@ class AvailabilityService
                 ->active()
                 ->get(['check_in', 'check_out'])
                 ->each(function (Reservation $reservation) use (&$nights): void {
-                    for ($date = $reservation->check_in; $date->lt($reservation->check_out); $date = $date->addDay()) {
+                    for ($date = $reservation->check_in->copy(); $date->lt($reservation->check_out); $date = $date->addDay()) {
                         $nights[$date->toDateString()] = true;
                     }
                 });
@@ -126,7 +126,7 @@ class AvailabilityService
                 ->active()
                 ->get(['check_in', 'check_out'])
                 ->each(function (BookingHold $hold) use (&$nights): void {
-                    for ($date = $hold->check_in; $date->lt($hold->check_out); $date = $date->addDay()) {
+                    for ($date = $hold->check_in->copy(); $date->lt($hold->check_out); $date = $date->addDay()) {
                         $nights[$date->toDateString()] = true;
                     }
                 });
@@ -139,7 +139,7 @@ class AvailabilityService
                 })
                 ->get()
                 ->each(function (CalendarBlock $block) use (&$nights): void {
-                    for ($date = $block->start_date; $date->lte($block->end_date); $date = $date->addDay()) {
+                    for ($date = $block->start_date->copy(); $date->lte($block->end_date); $date = $date->addDay()) {
                         $nights[$date->toDateString()] = true;
                     }
                 });

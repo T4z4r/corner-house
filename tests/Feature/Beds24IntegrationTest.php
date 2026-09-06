@@ -1105,6 +1105,90 @@ class Beds24IntegrationTest extends TestCase
         ]);
     }
 
+    public function test_synced_beds24_bookings_and_closed_days_show_on_the_website_calendar(): void
+    {
+        $account = ChannelAccount::factory()->create([
+            'provider' => 'beds24',
+            'status' => 'active',
+            'credentials' => [
+                'refresh_token' => 'refresh-token',
+                'access_token' => 'access-1',
+                'access_token_expires_at' => now()->addHour()->toIso8601String(),
+            ],
+        ]);
+        $property = Property::factory()->create(['status' => 'active']);
+        $room = Room::factory()->create([
+            'property_id' => $property->id,
+            'name' => 'Oak Suite',
+            'status' => 'active',
+        ]);
+
+        ChannelMapping::create([
+            'channel_account_id' => $account->id,
+            'provider' => 'beds24',
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'external_property_id' => '2001',
+            'external_room_id' => '77',
+            'status' => 'active',
+        ]);
+
+        $checkIn = now()->addDays(20)->toDateString();
+        $checkOut = now()->addDays(23)->toDateString();
+        $closed = now()->addDays(5)->toDateString();
+
+        Http::fake([
+            '*properties*' => Http::response(['data' => []], 200),
+            '*bookings*' => Http::response([
+                'data' => [[
+                    'id' => 9002,
+                    'propertyId' => 2001,
+                    'roomId' => 77,
+                    'arrival' => $checkIn,
+                    'departure' => $checkOut,
+                    'firstName' => 'Lee',
+                    'lastName' => 'Guest',
+                    'email' => 'lee@example.com',
+                    'numAdult' => 2,
+                    'status' => 'confirmed',
+                    'channel' => 'airbnb',
+                    'price' => 400,
+                ]],
+            ], 200),
+            '*inventory/rooms/calendar*' => Http::response([
+                'data' => [[
+                    'roomId' => 77,
+                    'calendar' => [
+                        ['date' => $closed, 'numAvail' => 0, 'price1' => 150, 'minStay' => 2],
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        $counts = app(Beds24SyncService::class)->synchronize($account);
+
+        $this->assertSame(1, $counts['bookings']);
+        $this->assertDatabaseHas('reservations', [
+            'external_booking_id' => '9002',
+            'room_id' => $room->id,
+            'status' => 'confirmed',
+        ]);
+        $this->assertTrue(
+            CalendarBlock::query()
+                ->where('room_id', $room->id)
+                ->where('type', 'channel')
+                ->whereDate('start_date', $closed)
+                ->whereDate('end_date', $closed)
+                ->exists()
+        );
+
+        $this->getJson(route('booking.availability'))
+            ->assertOk()
+            ->assertJsonCount(2)
+            ->assertJsonFragment(['start' => $closed, 'end' => now()->addDays(5)->addDay()->toDateString()])
+            ->assertJsonFragment(['start' => $checkIn, 'end' => $checkOut]);
+    }
+
     public function test_pricing_rule_can_be_posted_to_beds24_when_requested(): void
     {
         $account = ChannelAccount::factory()->create([

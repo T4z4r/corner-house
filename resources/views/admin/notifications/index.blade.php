@@ -13,7 +13,7 @@
             <h4>System notifications</h4>
             <p class="ch-subtitle">Track booking, payment, and communication activity in one place.</p>
         </div>
-        <form method="POST" action="{{ route('admin.notifications.mark-all-read') }}">
+        <form method="POST" action="{{ route('admin.notifications.mark-all-read', [], false) }}">
             @csrf
             <button type="submit" class="btn btn-ch-primary">
                 <i class="bi bi-check2-all me-1"></i> Mark all read

@@ -301,7 +301,7 @@ class PublicWebsiteTest extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertSee('window.__SITE__', false)
-            ->assertSee('"availabilityUrl":"/booking/availability"', false)
-            ->assertSee('"bookingEndpoint":"/booking/enquiry"', false);
+            ->assertSee('"availabilityUrl":"\\/booking\\/availability"', false)
+            ->assertSee('"bookingEndpoint":"\\/booking\\/enquiry"', false);
     }
 }

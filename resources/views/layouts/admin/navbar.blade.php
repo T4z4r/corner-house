@@ -28,9 +28,9 @@
         <div
             class="dropdown"
             data-notifications-widget
-            data-notifications-feed-url="{{ route('admin.notifications.feed') }}"
-            data-notifications-read-all-url="{{ route('admin.notifications.mark-all-read') }}"
-            data-notifications-index-url="{{ route('admin.notifications.index') }}"
+            data-notifications-feed-url="{{ route('admin.notifications.feed', [], false) }}"
+            data-notifications-read-all-url="{{ route('admin.notifications.mark-all-read', [], false) }}"
+            data-notifications-index-url="{{ route('admin.notifications.index', [], false) }}"
             data-notifications-count="{{ $navUnreadCount }}"
             data-notifications-latest-id="{{ $navNotifications->first()?->id }}"
         >
@@ -66,7 +66,7 @@
                         @endphp
                         <a
                             class="dropdown-item py-3 border-bottom {{ $isUnread ? 'ch-notification-unread' : '' }}"
-                            href="{{ $notification->data['url'] ?? route('admin.notifications.index') }}"
+                            href="{{ $notification->data['url'] ?? route('admin.notifications.index', [], false) }}"
                             data-notification-link
                             data-notification-id="{{ $notification->id }}"
                         >
@@ -94,7 +94,7 @@
                     @endforelse
                 </div>
                 <div class="border-top">
-                    <a class="dropdown-item text-center py-2" href="{{ route('admin.notifications.index') }}">View all notifications</a>
+                    <a class="dropdown-item text-center py-2" href="{{ route('admin.notifications.index', [], false) }}">View all notifications</a>
                 </div>
             </div>
         </div>

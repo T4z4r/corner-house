@@ -12,6 +12,14 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
+/**
+ * In-app system notifications.
+ *
+ * URLs are stored relative (/admin/...) because notifications are only ever
+ * rendered inside the admin, on the same origin they were created on. A stored
+ * absolute URL bakes in whatever host the notification was generated under
+ * (e.g. APP_URL fallbacks) and breaks once the app is served elsewhere.
+ */
 class SystemNotificationService
 {
     public function reservationCreated(Reservation $reservation, ?int $actorId = null): void
@@ -23,7 +31,7 @@ class SystemNotificationService
                 $reservation->reference,
                 $reservation->guest?->full_name ?? 'a guest',
             ),
-            url: route('admin.reservations.show', $reservation),
+            url: route('admin.reservations.show', $reservation, false),
             level: $reservation->status === 'confirmed' ? 'success' : 'info',
             icon: 'bi-calendar-check',
             actorId: $actorId,
@@ -39,7 +47,7 @@ class SystemNotificationService
         $this->broadcast(
             title: 'Reservation updated',
             message: sprintf('Reservation %s has been updated.', $reservation->reference),
-            url: route('admin.reservations.show', $reservation),
+            url: route('admin.reservations.show', $reservation, false),
             level: 'info',
             icon: 'bi-calendar-check',
             actorId: $actorId,
@@ -55,7 +63,7 @@ class SystemNotificationService
         $this->broadcast(
             title: 'Reservation cancelled',
             message: sprintf('Reservation %s was cancelled.', $reservation->reference),
-            url: route('admin.reservations.show', $reservation),
+            url: route('admin.reservations.show', $reservation, false),
             level: 'warning',
             icon: 'bi-calendar-x',
             actorId: $actorId,
@@ -71,7 +79,7 @@ class SystemNotificationService
         $this->broadcast(
             title: 'Guest checked in',
             message: sprintf('Reservation %s is now checked in.', $reservation->reference),
-            url: route('admin.reservations.show', $reservation),
+            url: route('admin.reservations.show', $reservation, false),
             level: 'info',
             icon: 'bi-door-open',
             actorId: $actorId,
@@ -87,7 +95,7 @@ class SystemNotificationService
         $this->broadcast(
             title: 'Guest checked out',
             message: sprintf('Reservation %s is now checked out.', $reservation->reference),
-            url: route('admin.reservations.show', $reservation),
+            url: route('admin.reservations.show', $reservation, false),
             level: 'info',
             icon: 'bi-door-closed',
             actorId: $actorId,
@@ -114,7 +122,7 @@ class SystemNotificationService
                 number_format((float) $payment->amount, 2),
                 $reservation->reference,
             ),
-            url: route('admin.payments.show', $payment),
+            url: route('admin.payments.show', $payment, false),
             level: 'success',
             icon: 'bi-credit-card',
             actorId: $actorId,
@@ -142,7 +150,7 @@ class SystemNotificationService
                 number_format((float) $refund->amount, 2),
                 $reservation->reference,
             ),
-            url: route('admin.payments.show', $payment),
+            url: route('admin.payments.show', $payment, false),
             level: 'warning',
             icon: 'bi-arrow-counterclockwise',
             actorId: $actorId,
@@ -164,7 +172,7 @@ class SystemNotificationService
                 Str::lower($communication->channel),
                 $communication->recipient,
             ),
-            url: route('admin.communications.index'),
+            url: route('admin.communications.index', [], false),
             level: 'info',
             icon: 'bi-chat-dots',
             actorId: $actorId,
