@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Amenity;
+use App\Models\Property;
 use Illuminate\Database\Seeder;
 
 class AmenitySeeder extends Seeder
@@ -46,6 +47,7 @@ class AmenitySeeder extends Seeder
             ['name' => 'First-floor balcony', 'icon' => 'bi-house-door', 'category' => 'The house', 'description' => 'A balcony off the Lion suite over the garden and the entertaining patio.', 'is_active' => true],
             ['name' => 'Landscaped garden', 'icon' => 'bi-flower1', 'category' => 'Outside', 'description' => 'A tranquil landscaped garden laid out for a full house.', 'is_active' => true],
             ['name' => 'Private gated parking for 6 cars', 'icon' => 'bi-car-front', 'category' => 'Outside', 'description' => 'Private gated parking for up to six cars.', 'is_active' => true],
+            ['name' => 'EV charger', 'icon' => 'bi-lightning-charge', 'category' => 'Outside', 'description' => 'Charge your electric car while you stay.', 'is_active' => true],
             ['name' => 'Sky TV in every bedroom', 'icon' => 'bi-tv', 'category' => 'The house', 'description' => 'A large TV with its own Sky puck in every bedroom.', 'is_active' => true],
         ];
 
@@ -62,13 +64,14 @@ class AmenitySeeder extends Seeder
             'Landscaped garden',
             'Private gated parking for 6 cars',
             'Sky TV in every bedroom',
+            'EV charger',
         ];
 
         foreach ($amenities as $amenity) {
             Amenity::firstOrCreate(['name' => $amenity['name']], $amenity);
         }
 
-        $property = \App\Models\Property::where('slug', 'corner-house')->first();
+        $property = Property::where('slug', 'corner-house')->first();
 
         if ($property) {
             $property->amenities()->sync(

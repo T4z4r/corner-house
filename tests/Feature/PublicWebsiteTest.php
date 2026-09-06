@@ -326,6 +326,7 @@ class PublicWebsiteTest extends TestCase
             ->assertSee('Landscaped garden', false)
             ->assertSee('Private gated parking for 6 cars', false)
             ->assertSee('Sky TV in every bedroom', false)
+            ->assertSee('EV charger', false)
             ->assertDontSee('Garden room and first-floor balcony', false);
     }
 
