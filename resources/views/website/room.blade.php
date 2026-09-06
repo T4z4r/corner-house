@@ -5,11 +5,11 @@
 @php
     $hero = $room->primaryImage();
     $images = $room->images->sortBy('sort_order')->values();
-    $minStay = $room->min_stay ?: Setting::getValue('min_stay_nights', 2);
+    $minStay = $room->min_stay ?: \App\Models\Setting::getValue('min_stay_nights', 2);
 @endphp
 
 @section('content')
-@include('website._page-hero', ['kicker' => ucfirst($room->type ?? 'Room'), 'title' => $room->name, 'subtitle' => 'Sleeps '.$room->capacity.' · Weekday £'.number_format(Setting::getValue('min_price_weekday', $room->base_rate), 0).' · Weekend £'.number_format(Setting::getValue('min_price_weekend', $room->base_rate), 0).' / night'])
+@include('website._page-hero', ['kicker' => ucfirst($room->type ?? 'Room'), 'title' => $room->name, 'subtitle' => 'Sleeps '.$room->capacity.' · Weekday £'.number_format(\App\Models\Setting::getValue('min_price_weekday', $room->base_rate), 0).' · Weekend £'.number_format(\App\Models\Setting::getValue('min_price_weekend', $room->base_rate), 0).' / night'])
 
 <section class="ch-section">
     <div class="container">
@@ -56,13 +56,13 @@
                     </div>
                     <div class="col-6">
                         <div class="ch-stat-card">
-                            <div class="ch-stat-value">£{{ number_format(Setting::getValue('min_price_weekday', $room->base_rate), 0) }}</div>
+                            <div class="ch-stat-value">£{{ number_format(\App\Models\Setting::getValue('min_price_weekday', $room->base_rate), 0) }}</div>
                             <div class="ch-stat-label">Weekday / night</div>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="ch-stat-card">
-                            <div class="ch-stat-value">£{{ number_format(Setting::getValue('min_price_weekend', $room->base_rate), 0) }}</div>
+                            <div class="ch-stat-value">£{{ number_format(\App\Models\Setting::getValue('min_price_weekend', $room->base_rate), 0) }}</div>
                             <div class="ch-stat-label">Weekend / night</div>
                         </div>
                     </div>
@@ -79,7 +79,7 @@
                         </div>
                     </div>
                 </div>
-                <p class="small text-muted mb-4">Direct rate &mdash; already includes our {{ Setting::getValue('direct_booking_discount', 10) }}% direct-booking discount.</p>
+                <p class="small text-muted mb-4">Direct rate &mdash; already includes our {{ \App\Models\Setting::getValue('direct_booking_discount', 10) }}% direct-booking discount.</p>
 
                 @if ($room->property?->amenities->isNotEmpty())
                     <div class="mb-4">

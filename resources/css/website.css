@@ -62,7 +62,7 @@ img{max-width:100%;display:block}
 /* ---------- Header ---------- */
 .site-header{position:sticky;top:0;z-index:50;background:var(--ivy-deep);color:var(--stone);border-bottom:1px solid rgba(255,255,255,.08)}
 .site-header .wrap{display:flex;align-items:center;justify-content:space-between;gap:1rem;min-height:88px;padding-top:.5rem;padding-bottom:.5rem}
-.brand{display:block;flex:0 0 auto;line-height:0;background:var(--stone-light);border-radius:10px;padding:.45rem .8rem}
+.brand{display:block;flex:0 0 auto;line-height:0;padding:.45rem .8rem}
 .brand img{height:64px;width:auto;display:block}
 @media (max-width:420px){.brand{padding:.35rem .6rem}.brand img{height:50px}}
 .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(2rem,5vw,4.5rem);align-items:center}
