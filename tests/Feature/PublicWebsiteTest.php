@@ -183,7 +183,15 @@ class PublicWebsiteTest extends TestCase
             'name' => 'Sam Guest',
             'email' => 'sam@example.com',
             'message' => 'Can we arrive early?',
-        ])->assertRedirect();
+        ])->assertRedirect()->assertSessionHas('status');
+
+        $this->assertDatabaseHas('enquiries', [
+            'type' => 'contact',
+            'name' => 'Sam Guest',
+            'email' => 'sam@example.com',
+            'message' => 'Can we arrive early?',
+            'status' => 'new',
+        ]);
     }
 
     public function test_home_page_showcase_section_has_hero_figcaptions(): void
@@ -274,6 +282,21 @@ class PublicWebsiteTest extends TestCase
             'drinksPackage' => true,
             'acceptedTerms' => true,
         ])->assertOk()->assertJson(['status' => 'ok']);
+
+        $this->assertDatabaseHas('enquiries', [
+            'type' => 'booking',
+            'name' => 'Sam Guest',
+            'email' => 'sam@example.com',
+            'phone' => '07700 900123',
+            'guests' => '12',
+            'check_in' => '2026-10-02',
+            'check_out' => '2026-10-04',
+            'nights' => 2,
+            'message' => 'A birthday weekend.',
+            'drinks_package' => true,
+            'terms_accepted' => true,
+            'status' => 'new',
+        ]);
     }
 
     public function test_booking_availability_returns_blocked_ranges(): void

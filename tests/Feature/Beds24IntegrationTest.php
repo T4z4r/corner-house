@@ -1668,6 +1668,84 @@ class Beds24IntegrationTest extends TestCase
         ]);
     }
 
+    public function test_prices_from_beds24_range_ranges_are_mapped_into_daily_overrides(): void
+    {
+        $account = ChannelAccount::factory()->create([
+            'provider' => 'beds24',
+            'status' => 'active',
+            'credentials' => [
+                'refresh_token' => 'refresh-token',
+                'access_token' => 'access-1',
+                'access_token_expires_at' => now()->addHour()->toIso8601String(),
+            ],
+        ]);
+        $property = Property::factory()->create();
+        $room = Room::factory()->create([
+            'property_id' => $property->id,
+            'status' => 'active',
+            'base_rate' => 0,
+        ]);
+
+        ChannelMapping::create([
+            'channel_account_id' => $account->id,
+            'provider' => 'beds24',
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'external_property_id' => '352139',
+            'external_room_id' => '726384',
+            'status' => 'active',
+        ]);
+
+        $from = now()->addDays(10)->toDateString();
+        $mid = now()->addDays(11)->toDateString();
+        $to = now()->addDays(12)->toDateString();
+        $weekend = now()->addDays(13)->toDateString();
+
+        Http::fake([
+            '*properties*' => Http::response(['data' => []], 200),
+            '*bookings*' => Http::response(['data' => []], 200),
+            '*inventory/rooms/calendar*' => Http::response([
+                'data' => [[
+                    'roomId' => 726384,
+                    'propertyId' => 352139,
+                    'name' => 'Corner House - Large country house next to marina',
+                    'calendar' => [
+                        ['from' => $from, 'to' => $to, 'numAvail' => 1, 'minStay' => 2, 'maxStay' => 365, 'override' => 'none', 'multiplier' => 1, 'price1' => 550],
+                        ['from' => $weekend, 'to' => $weekend, 'numAvail' => 1, 'minStay' => 2, 'maxStay' => 365, 'override' => 'none', 'multiplier' => 1, 'price1' => 625],
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        app(Beds24SyncService::class)->synchronize($account);
+
+        foreach ([$from, $mid, $to] as $date) {
+            $this->assertTrue(
+                PricingOverride::query()
+                    ->where('room_id', $room->id)
+                    ->whereDate('start_date', $date)
+                    ->whereDate('end_date', $date)
+                    ->where('rate', 550)
+                    ->where('minimum_stay', 2)
+                    ->where('is_enabled', true)
+                    ->where('notes', 'beds24-sync')
+                    ->exists()
+            );
+        }
+
+        $this->assertTrue(
+            PricingOverride::query()
+                ->where('room_id', $room->id)
+                ->whereDate('start_date', $weekend)
+                ->whereDate('end_date', $weekend)
+                ->where('rate', 625)
+                ->where('minimum_stay', 2)
+                ->where('is_enabled', true)
+                ->where('notes', 'beds24-sync')
+                ->exists()
+        );
+    }
+
     public function test_pricing_rule_can_be_published_from_integrations_page(): void
     {
         $account = ChannelAccount::factory()->create([

@@ -38,6 +38,13 @@
                 </a>
             </li>
         @endcan
+        @can('enquiries.view')
+            <li class="nav-item">
+                <a href="{{ route('admin.enquiries.index') }}" class="nav-link {{ request()->routeIs('admin.enquiries.*') ? 'active' : '' }}">
+                    <i class="bi bi-inbox me-2"></i><span class="nav-text">Enquiries</span>
+                </a>
+            </li>
+        @endcan
 
         <li class="sidebar-heading">Management</li>
         @can('properties.view')
@@ -206,6 +213,13 @@
                 <li class="nav-item">
                     <a href="{{ route('admin.reviews.index') }}" class="nav-link {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}">
                         <i class="bi bi-chat-quote me-2"></i><span class="nav-text">Reviews</span>
+                    </a>
+                </li>
+            @endcan
+            @can('enquiries.view')
+                <li class="nav-item">
+                    <a href="{{ route('admin.enquiries.index') }}" class="nav-link {{ request()->routeIs('admin.enquiries.*') ? 'active' : '' }}">
+                        <i class="bi bi-inbox me-2"></i><span class="nav-text">Enquiries</span>
                     </a>
                 </li>
             @endcan

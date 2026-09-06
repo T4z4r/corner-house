@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ChannelController;
 use App\Http\Controllers\Admin\ChatbotController;
 use App\Http\Controllers\Admin\CommunicationController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EnquiryController;
 use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\FoodAndDrinkController;
 use App\Http\Controllers\Admin\GalleryController;
@@ -159,6 +160,12 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy')->middleware('can:reviews.delete');
         Route::post('/reviews/{review}/toggle', [ReviewController::class, 'toggle'])->name('reviews.toggle')->middleware('can:reviews.update');
         Route::post('/reviews/import', [ReviewController::class, 'importFromAirbnb'])->name('reviews.import')->middleware('can:reviews.create');
+    });
+
+    Route::middleware('can:enquiries.view')->group(function (): void {
+        Route::get('/enquiries', [EnquiryController::class, 'index'])->name('enquiries.index');
+        Route::post('/enquiries/{enquiry}/read', [EnquiryController::class, 'markRead'])->name('enquiries.read')->middleware('can:enquiries.update');
+        Route::delete('/enquiries/{enquiry}', [EnquiryController::class, 'destroy'])->name('enquiries.destroy')->middleware('can:enquiries.delete');
     });
 
     Route::middleware('can:users.view')->group(function (): void {

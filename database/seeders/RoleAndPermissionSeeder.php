@@ -50,6 +50,7 @@ class RoleAndPermissionSeeder extends Seeder
             'places' => ['view', 'create', 'update', 'delete'],
             'addons' => ['view', 'create', 'update', 'delete'],
             'reviews' => ['view', 'create', 'update', 'delete'],
+            'enquiries' => ['view', 'update', 'delete'],
         ];
 
         $permissions = [];
@@ -78,6 +79,7 @@ class RoleAndPermissionSeeder extends Seeder
                 'places.view', 'places.create', 'places.update', 'places.delete',
                 'addons.view', 'addons.create', 'addons.update', 'addons.delete',
                 'reviews.view', 'reviews.create', 'reviews.update', 'reviews.delete',
+                'enquiries.view', 'enquiries.update',
                 'guests.view', 'guests.create', 'guests.update',
                 'reservations.view', 'reservations.create', 'reservations.update', 'reservations.delete', 'reservations.cancel',
                 'calendar.view', 'calendar.manage',
