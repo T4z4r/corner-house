@@ -121,6 +121,54 @@ class AdminResourcesTest extends TestCase
             ->assertSee('Manual');
     }
 
+    public function test_calendar_events_endpoint_isolates_reservations_for_the_selected_room(): void
+    {
+        $first = Property::factory()->create();
+        $second = Property::factory()->create();
+        $firstRoom = Room::factory()->create(['property_id' => $first->id, 'name' => 'Oak Suite']);
+        $secondRoom = Room::factory()->create(['property_id' => $second->id, 'name' => 'Garden Room']);
+        $guest = Guest::factory()->create(['first_name' => 'Jane', 'last_name' => 'Doe']);
+        Reservation::factory()->create([
+            'property_id' => $first->id,
+            'room_id' => $firstRoom->id,
+            'guest_id' => $guest->id,
+            'reference' => 'CH-AAA111',
+            'status' => 'confirmed',
+            'check_in' => '2026-01-05',
+            'check_out' => '2026-01-08',
+        ]);
+        Reservation::factory()->create([
+            'property_id' => $second->id,
+            'room_id' => $secondRoom->id,
+            'guest_id' => $guest->id,
+            'reference' => 'CH-BBB222',
+            'status' => 'confirmed',
+            'check_in' => '2026-01-05',
+            'check_out' => '2026-01-08',
+        ]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->getJson(route('admin.calendar.events', [
+                'property_id' => $first->id,
+                'room_id' => $firstRoom->id,
+                'start' => '2026-01-01',
+                'end' => '2026-01-31',
+            ]))
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.title', 'Jane Doe · CH-AAA111');
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->getJson(route('admin.calendar.events', [
+                'property_id' => $first->id,
+                'room_id' => $secondRoom->id,
+                'start' => '2026-01-01',
+                'end' => '2026-01-31',
+            ]))
+            ->assertOk()
+            ->assertExactJson([]);
+    }
+
     public function test_calendar_property_filter_exposes_rooms_for_all_properties(): void
     {
         $first = Property::factory()->create(['status' => 'active']);

@@ -425,7 +425,11 @@
         let selectedDate = isSameMonth(today, visibleMonth) ? today : new Date(visibleMonth);
         let events = [];
         let activePropertyId = propertyId || '';
-        let activeRoomId = selectedRoomId || '';
+        const selectedRoom = selectedRoomId || '';
+        const selectedRoomBelongsToProperty = selectedRoom !== '' && roomsData.some((room) => (
+            String(room.property_id) === String(activePropertyId) && String(room.id) === String(selectedRoom)
+        ));
+        let activeRoomId = selectedRoomBelongsToProperty ? selectedRoom : '';
         let editingBlockId = null;
 
         const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -793,8 +797,15 @@
         const applyFilterButton = document.getElementById('applyFilterButton');
 
         function applyFilters() {
-            activePropertyId = propertyFilter ? propertyFilter.value : '';
-            activeRoomId = roomFilter ? roomFilter.value : '';
+            const nextPropertyId = propertyFilter ? propertyFilter.value : '';
+            const nextRoomId = roomFilter ? roomFilter.value : '';
+
+            activePropertyId = nextPropertyId;
+            const roomStillApplies = roomsData.some((room) => (
+                String(room.property_id) === String(nextPropertyId) && String(room.id) === String(nextRoomId)
+            ));
+            activeRoomId = roomStillApplies ? nextRoomId : '';
+
             syncUrl();
 
             if (propertyFilter) {
