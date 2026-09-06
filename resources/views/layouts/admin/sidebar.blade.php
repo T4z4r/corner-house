@@ -17,6 +17,13 @@
                 </a>
             </li>
         @endcan
+        @can('chatbot.view')
+            <li class="nav-item">
+                <a href="{{ route('admin.events.index') }}" class="nav-link {{ request()->routeIs('admin.events.*') ? 'active' : '' }}">
+                    <i class="bi bi-calendar-event me-2"></i><span class="nav-text">Events</span>
+                </a>
+            </li>
+        @endcan
         @can('settings.view')
             <li class="nav-item">
                 <a href="{{ route('admin.website.index') }}" class="nav-link {{ request()->routeIs('admin.website.*') ? 'active' : '' }}">

@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ChannelController;
 use App\Http\Controllers\Admin\ChatbotController;
 use App\Http\Controllers\Admin\CommunicationController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\FoodAndDrinkController;
 use App\Http\Controllers\Admin\GalleryController;
 use App\Http\Controllers\Admin\GuestController;
@@ -245,6 +246,17 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::delete('/calendar/blocks/{block}', [CalendarController::class, 'destroyBlock'])->name('calendar.blocks.destroy')->middleware('can:calendar.manage');
     });
 
+    Route::middleware('can:chatbot.view')->group(function (): void {
+        Route::get('/events', [EventController::class, 'index'])->name('events.index');
+        Route::get('/events/create', [EventController::class, 'create'])->name('events.create')->middleware('can:chatbot.manage');
+        Route::post('/events', [EventController::class, 'store'])->name('events.store')->middleware('can:chatbot.manage');
+        Route::get('/events/{event}/edit', [EventController::class, 'edit'])->name('events.edit')->middleware('can:chatbot.manage');
+        Route::put('/events/{event}', [EventController::class, 'update'])->name('events.update')->middleware('can:chatbot.manage');
+        Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy')->middleware('can:chatbot.manage');
+        Route::post('/events/{event}/toggle', [EventController::class, 'toggle'])->name('events.toggle')->middleware('can:chatbot.manage');
+        Route::post('/events/ai/generate', [EventController::class, 'generate'])->name('events.ai.generate')->middleware('can:chatbot.manage');
+    });
+
     Route::middleware('can:pricing.view')->group(function (): void {
         Route::get('/pricing', [PricingController::class, 'index'])->name('pricing.index');
         Route::post('/pricing/ai/generate', [PricingController::class, 'generateSeasonalRules'])->name('pricing.ai.generate')->middleware('can:pricing.create');
@@ -284,6 +296,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::post('/channels/import', [ChannelController::class, 'import'])->name('channels.import')->middleware('can:channels.configure');
         Route::post('/channels/properties/sync', [ChannelController::class, 'syncProperties'])->name('channels.properties.sync')->middleware('can:channels.configure');
         Route::post('/channels/rooms/sync', [ChannelController::class, 'syncRooms'])->name('channels.rooms.sync')->middleware('can:channels.configure');
+        Route::post('/channels/booking-mapping/sync', [ChannelController::class, 'syncBookingMapping'])->name('channels.booking-mapping.sync')->middleware('can:channels.configure');
         Route::post('/channels/{account}/setup', [ChannelController::class, 'setup'])->name('channels.setup')->middleware('can:channels.configure');
         Route::post('/channels/{account}/details', [ChannelController::class, 'details'])->name('channels.details')->middleware('can:channels.configure');
         Route::post('/channels/{account}/test', [ChannelController::class, 'test'])->name('channels.test')->middleware('can:channels.configure');

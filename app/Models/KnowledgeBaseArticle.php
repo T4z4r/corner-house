@@ -18,6 +18,7 @@ class KnowledgeBaseArticle extends Model
         'priority',
         'starts_at',
         'ends_at',
+        'ai_generation_key',
         'source',
         'show_on_website',
         'source_message_id',

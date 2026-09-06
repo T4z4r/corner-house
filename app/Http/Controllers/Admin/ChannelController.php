@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\SyncBeds24BookingsJob;
 use App\Models\ChannelAccount;
 use App\Models\ChannelMapping;
+use App\Models\ChannelRateMap;
 use App\Models\ChannelSyncLog;
 use App\Models\PricingOverride;
 use App\Models\PricingRule;
@@ -17,6 +18,7 @@ use App\Services\Beds24\Beds24AuthService;
 use App\Services\Beds24\Beds24BookingPublisher;
 use App\Services\Beds24\Beds24ChannelProvider;
 use App\Services\Beds24\Beds24Client;
+use App\Services\Beds24\Beds24MappingService;
 use App\Services\Beds24\Beds24PricingPublisher;
 use App\Services\Beds24\Beds24PropertyPublisher;
 use App\Services\Beds24\Beds24SyncService;
@@ -216,6 +218,23 @@ class ChannelController extends Controller
         $selectedAccount = $this->selectedBeds24Account($accounts, $request->query('account_id'));
         $beds24Rooms = $this->beds24Rooms();
 
+        $rateMaps = $selectedAccount instanceof ChannelAccount
+            ? ChannelRateMap::query()
+                ->with('rates')
+                ->where('channel_account_id', $selectedAccount->id)
+                ->orderBy('updated_at', 'desc')
+                ->get()
+            : collect();
+
+        $mappedPropertyIds = $selectedAccount instanceof ChannelAccount
+            ? $selectedAccount->mappings()
+                ->whereNotNull('external_property_id')
+                ->distinct()
+                ->pluck('external_property_id')
+                ->unique()
+                ->values()
+            : collect();
+
         $selectedRoomId = null;
         $reviews = [];
         $reviewsError = null;
@@ -242,7 +261,45 @@ class ChannelController extends Controller
             'reviews' => $reviews,
             'reviewsError' => $reviewsError,
             'selectedRoomId' => $selectedRoomId,
+            'rateMaps' => $rateMaps,
+            'mappedPropertyIds' => $mappedPropertyIds,
         ]);
+    }
+
+    public function syncBookingMapping(Request $request, Beds24MappingService $service): RedirectResponse
+    {
+        $data = $request->validate([
+            'account_id' => ['required', 'integer', 'exists:channel_accounts,id'],
+            'propid' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $account = ChannelAccount::findOrFail($data['account_id']);
+
+        $propertyId = trim((string) ($data['propid'] ?? ''));
+
+        if ($propertyId === '') {
+            $propertyId = (string) ($account->mappings()
+                ->whereNotNull('external_property_id')
+                ->value('external_property_id') ?? '');
+        }
+
+        if ($propertyId === '') {
+            return back()->with('status', 'No mapped Beds24 property found. Provide a propid to sync the Booking.com rate mapping.');
+        }
+
+        try {
+            $map = $service->sync($account, $propertyId);
+
+            return back()->with('status', sprintf(
+                'Booking.com rate mapping synced for property %s (%d rates).',
+                $propertyId,
+                $map->rates()->count(),
+            ));
+        } catch (\Throwable $e) {
+            $account->update(['last_error' => $e->getMessage()]);
+
+            return back()->with('status', 'Could not sync the Booking.com rate mapping: '.$e->getMessage());
+        }
     }
 
     public function vrbo(Request $request, Beds24Client $client): View

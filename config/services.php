@@ -43,6 +43,7 @@ return [
 
     'beds24' => [
         'api_url' => env('BEDS24_API_URL', 'https://beds24.com/api/v2'),
+        'booking_mapping_url' => env('BEDS24_BOOKING_MAPPING_URL', 'https://beds24.com/api/booking.com/getmapping.php'),
         'refresh_token' => env('BEDS24_REFRESH_TOKEN'),
         'webhook_secret' => env('BEDS24_WEBHOOK_SECRET'),
     ],

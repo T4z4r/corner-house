@@ -43,6 +43,11 @@ class ChannelAccount extends Model
         return $this->hasMany(ChannelSyncLog::class);
     }
 
+    public function rateMaps(): HasMany
+    {
+        return $this->hasMany(ChannelRateMap::class);
+    }
+
     public function isActive(): bool
     {
         return $this->status === 'active';
