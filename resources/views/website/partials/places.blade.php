@@ -3,6 +3,8 @@
         <div class="wrap">
             <h1 style="font-size:clamp(2.4rem,5vw,4rem)">Places of interest</h1>
 
+            <p class="small">Corner House does not hold any affiliations with the places listed.</p>
+
             <div class="tabs" role="tablist">
                 <button class="tab" role="tab" aria-selected="true" data-tab="food">Food &amp; drink</button>
                 <button class="tab" role="tab" aria-selected="false" data-tab="days">Days out</button>
