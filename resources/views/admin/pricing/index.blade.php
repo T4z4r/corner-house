@@ -77,7 +77,7 @@
                                         </td>
                                         <td class="small">
                                             @if ($rule->recurring)
-                                                Annually: {{ $rule->start_date->format('d M') }} -> {{ $rule->end_date?->format('d M') ?? 'open' }}
+                                                Annually: {{ $rule->start_date?->format('d M') ?? 'always' }} -> {{ $rule->end_date?->format('d M') ?? 'open' }}
                                                 <span class="badge text-bg-info ms-1">Recurring</span>
                                             @elseif ($rule->start_date)
                                                 {{ $rule->start_date->format('d M Y') }} -> {{ $rule->end_date?->format('d M Y') ?? 'open' }}

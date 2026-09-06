@@ -449,6 +449,30 @@ class AdminResourcesTest extends TestCase
         $this->assertDatabaseHas('pricing_rules', ['name' => 'Summer high season', 'adjustment_value' => 20, 'max_stay' => 5]);
     }
 
+    public function test_recurring_pricing_rule_without_dates_renders_on_pricing_page(): void
+    {
+        $property = Property::factory()->create();
+        PricingRule::create([
+            'property_id' => $property->id,
+            'name' => 'Open-ended recurring rule',
+            'rule_type' => 'seasonal',
+            'priority' => 4,
+            'adjustment_type' => 'percent',
+            'adjustment_value' => 10,
+            'start_date' => null,
+            'end_date' => null,
+            'recurring' => true,
+            'is_enabled' => true,
+        ]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.pricing.index'))
+            ->assertOk()
+            ->assertSee('Open-ended recurring rule')
+            ->assertSee('Annually:')
+            ->assertSee('Recurring');
+    }
+
     public function test_guest_manager_can_store_scheduled_event_articles(): void
     {
         $this->seed(RoleAndPermissionSeeder::class);
