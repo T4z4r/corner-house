@@ -72,7 +72,6 @@
                         </div>
                     @endforeach
                 @endif
-                <p class="small" style="margin-top:1.5rem">These three routes still need checking on the ground — distances, times and terrain are indicative until you confirm them. Route maps or GPX files can be added here.</p>
             </div>
         </div>
     </div>
