@@ -239,7 +239,7 @@ class Beds24ShowDataImportTest extends TestCase
         $this->assertDatabaseHas('calendar_blocks', [
             'room_id' => $room->id,
             'type' => 'channel',
-            'start_date' => $closedStart->toDateString(),
+            'start_date' => $closedStart->startOfDay()->toDateTimeString(),
         ]);
     }
 
