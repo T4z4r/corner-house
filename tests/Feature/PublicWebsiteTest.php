@@ -232,7 +232,6 @@ class PublicWebsiteTest extends TestCase
             ->assertOk()
             ->assertSee('Terms and conditions', false)
             ->assertSee('Parties and the agreement', false)
-            ->assertSee('Draft for review', false)
             ->assertSee('Security deposit', false);
     }
 

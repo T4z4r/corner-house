@@ -5,8 +5,6 @@
             <p class="lede">Our direct-booking policy mirrors Airbnb&rsquo;s Moderate cancellation policy, so the terms are the same wherever you choose to book with us.</p>
             <p class="small">Last updated: <span class="rev-date"></span></p>
 
-            <div class="notice"><strong>Draft for review.</strong> Airbnb rebuilt its cancellation system in October 2025. Check the wording below against the policy currently shown on your own Airbnb listing before publishing, and have it reviewed alongside your terms.</div>
-
             <h2>If you booked through a platform</h2>
             <p>Bookings made through Airbnb, Booking.com or Vrbo are cancelled and refunded under that platform&rsquo;s policy, through that platform. Please cancel in your account there rather than contacting us, so that the refund is processed correctly. The policy shown at the time you booked is the one that applies.</p>
 
