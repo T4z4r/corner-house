@@ -172,7 +172,8 @@ document.getElementById("enquiry").addEventListener("submit", async e=>{
   };
   if(CONFIG.bookingEndpoint){
     try{
-      const r=await fetch(CONFIG.bookingEndpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+      const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+      const r=await fetch(CONFIG.bookingEndpoint,{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrf},body:JSON.stringify(payload)});
       if(!r.ok) throw new Error();
       e.target.innerHTML = `<p><strong>Enquiry sent.</strong> We will reply to ${payload.email} within 24 hours to confirm availability and price.</p>`;
     }catch(err){ setError("The enquiry could not be sent. Please email us directly at "+CONFIG.enquiryEmail+"."); }
