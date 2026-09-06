@@ -32,7 +32,7 @@
             <div class="feature-row">
                 <div>
                     <h2>Built for a full house</h2>
-                    <p>{{ $site['property']?->description ?: 'The house is arranged around a 25-foot kitchen, with the orangery converted into a garden dining room that seats ten at a handmade farmhouse table. Downstairs there is a games room and a cinema room in the converted cellar; outside, a garden bar, a Kadai fire-pit barbecue, a fully equipped gym and a hard-wired office in the grounds.' }}</p>
+                    <p>{{ $site['property']?->description ?: 'The house is arranged around a 25-foot kitchen, with the orangery which houses the dining room that seats ten at a handmade farmhouse table. Downstairs there is a games room and a cinema room in the converted cellar; outside, a garden bar, a Kadai fire-pit barbecue, a fully equipped gym and a hard-wired office in the grounds.' }}</p>
                     <ul class="amenities">
                         @foreach ($site['amenities'] as $amenity)
                             <li>{{ $amenity }}</li>
@@ -88,7 +88,7 @@
             <div class="grid-2">
                 <div>
                     <h2>Distilled on site</h2>
-                    <p class="lede">Serengeti Spirits is made here at Corner House. Order a case for your stay, or commission a custom-labelled bottle for a birthday, wedding or hen weekend.</p>
+                    <p class="lede">Serengeti Spirits is made here at Corner House. Order a case for your stay, or commission a custom-labelled bottle for a birthday, event or special occasion.</p>
                 </div>
                 <div style="align-self:end">
                     <a class="btn btn-outline" href="#spirits">Spirits and drinks packages</a>

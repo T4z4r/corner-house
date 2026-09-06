@@ -1,6 +1,7 @@
 <section class="page" id="page-foundation" data-page="foundation">
     <div class="section">
         <div class="wrap">
+            <img class="foundation-mark" src="https://cdn.shopify.com/s/files/1/0908/4557/7581/files/wright_foundation_5932cb48-3e94-4bff-95ae-09dc81042a92.png?v=1743752822" alt="The Wright Foundation">
             <h1 style="font-size:clamp(2.4rem,5vw,4rem)">The Wright Foundation</h1>
             <div class="grid-2">
                 <div>

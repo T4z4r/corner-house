@@ -73,8 +73,9 @@ img{max-width:100%;display:block}
 .hero-split figcaption{position:absolute;left:0;bottom:0;right:0;background:linear-gradient(transparent,rgba(31,56,38,.85));color:var(--stone);font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;padding:1.6rem .7rem .6rem}
 @media (max-width:520px){.hero-split img{aspect-ratio:4/5}}
 .footer-logo{height:86px;width:auto;margin-bottom:1rem}
-.serengeti-mark{background:#fff;border-radius:var(--radius);padding:1.1rem 1.6rem;display:inline-grid;place-items:center;margin-bottom:1.6rem;max-width:340px}
+.serengeti-mark{display:block;margin:0 0 1.8rem;max-width:320px}
 .serengeti-mark img{width:100%;height:auto;display:block}
+.foundation-mark{max-width:280px;max-height:150px;width:auto;height:auto;object-fit:contain;object-position:left;margin-bottom:1.5rem;mix-blend-mode:multiply}
 .brand span{font-family:var(--body);font-size:.85rem;color:var(--sage)}
 .nav{display:flex;gap:1.05rem;align-items:center;flex-wrap:nowrap}
 .nav a{color:var(--stone);text-decoration:none;font-weight:500;font-size:.9rem;padding:.4rem 0;border-bottom:2px solid transparent;white-space:nowrap}
@@ -179,6 +180,8 @@ h2.band{margin-top:clamp(3rem,6vw,4.5rem);padding-top:1.2rem;border-top:3px soli
 .place .meta dt{font-weight:700;color:var(--ink)}
 .place .meta dd{margin:0}
 .place .more{display:inline-block;margin-top:.8rem;font-size:.9rem;font-weight:700}
+.place .more[data-placeholder]{opacity:.55;pointer-events:none;text-decoration:none}
+.place .more[data-placeholder]::after{content:" (link to add)";font-weight:400}
 .place.local{border-left:4px solid var(--ivy)}
 .walk{display:grid;grid-template-columns:1fr 1fr;gap:2rem;padding:1.6rem 0;border-bottom:1px solid var(--line)}
 .walk dl{display:grid;grid-template-columns:auto 1fr;gap:.3rem 1rem;margin:.4rem 0 0;font-size:.95rem}
@@ -242,6 +245,7 @@ form.enquiry .check input{width:auto;margin-top:.25rem}
 .platform p{margin:0;font-size:.96rem;flex:1}
 .platform .btn{align-self:flex-start;margin-top:.4rem}
 .platform a[data-placeholder]{opacity:.55;pointer-events:none}
+.platform a[data-placeholder]::after{content:" (link to add)";font-weight:400;font-size:.85em}
 
 .rules-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.8rem 2.4rem;margin-top:2rem}
 .rule h3{font-size:1.35rem;margin-bottom:.5rem;padding-bottom:.5rem;border-bottom:2px solid var(--sage)}
@@ -267,9 +271,10 @@ form.enquiry .check input{width:auto;margin-top:.25rem}
 
 /* ---------- Spirits ---------- */
 .spirit-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.5rem;margin-top:2rem}
-.spirit-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:var(--radius);padding:1.6rem}
+.spirit-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:1.6rem;display:flex;flex-direction:column}
 .spirit-card h3{margin-bottom:.5rem}
-.spirit-card p{font-size:.98rem;color:var(--sage)}
+.spirit-card p{font-size:.98rem;flex:1}
+.spirit-card .btn{align-self:flex-start}
 .spirit-card .btn{margin-top:.6rem}
 
 /* ---------- Foundation ---------- */

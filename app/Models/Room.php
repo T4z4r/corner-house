@@ -27,6 +27,7 @@ class Room extends Model
         'min_stay',
         'max_stay',
         'features',
+        'sort_order',
     ];
 
     protected $casts = [

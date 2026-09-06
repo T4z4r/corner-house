@@ -6,8 +6,8 @@
                 <div>
                     <p class="lede">A stunning five-bedroom period country house, covered in ivy, at nearly 4,000 square feet and a few steps from Braunston Marina.</p>
                     <p>The property is built around a 25-foot centrepiece kitchen, perfect for entertaining. For family fun there is a dedicated games room and a cinema room in the converted cellar. Within the grounds you will find outside entertaining spaces, a garden bar, Kadai BBQ, a fully equipped gym and a purpose-built, hard-wired office.</p>
-                    <p>The house sleeps twelve adults and two children, with every bedroom ensuite. The orangery has been converted into a garden dining room seating ten at a handmade farmhouse table and chairs.</p>
-                    <p>At the end of the day, unwind in the hot tub on the patio, in the garden room, or on the balcony above, all set in a tranquil landscaped garden.</p>
+                    <p>The house sleeps twelve adults and two children, with every bedroom ensuite. The orangery has been converted into a dining room seating ten at a handmade farmhouse table and chairs.</p>
+                    <p>At the end of the day, unwind in the hot tub on the patio, in the orangery, or on the balcony above, all set in a tranquil landscaped garden.</p>
                     <a class="btn btn-outline" href="#rooms">Room by room</a>
                 </div>
                 @php $aboutImage = \App\Models\Setting::getValue('website_about_image'); @endphp

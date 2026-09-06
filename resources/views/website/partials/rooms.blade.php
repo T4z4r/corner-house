@@ -10,7 +10,7 @@
             </nav>
 
             <h2 id="bedrooms" class="band">Five bedrooms</h2>
-            <p>Every bedroom is named for one of the Big Five, a nod to the Serengeti Spirits made here, and every one has its own ensuite. Beds are Hypnos throughout, and each room has a large TV with its own Sky puck. Two rooms convert from a king to twin singles.</p>
+            <p>Every bedroom is named after one of the Big Five, a nod to the Serengeti Spirits made here, and every one has its own ensuite. Beds are Hypnos throughout, and each room has a large TV with its own Sky puck. Two rooms convert from a king to twin singles.</p>
 
             <ol class="rooms" id="rooms-list">
                 @forelse ($site['rooms'] as $index => $room)
@@ -42,7 +42,7 @@
                 @empty
                     <li class="room">
                         <div class="num">1</div>
-                        <div><h3>Lion</h3><p class="who">Master suite</p></div>
+                        <div><h3>Lion</h3><p class="who">Master suite · Second floor</p></div>
                         <div><p>Publish your rooms in the admin to show them here.</p></div>
                         <div class="photo">Room photo</div>
                     </li>

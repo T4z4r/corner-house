@@ -101,7 +101,8 @@ class WebsiteContentService
             'Garden bar and Kadai BBQ',
             'Fully equipped gym',
             'Hard-wired office',
-            'Garden room and first-floor balcony',
+            'Orangery dining room',
+            'First-floor balcony',
             'Landscaped garden',
             'Private gated parking for 6 cars',
             'Sky TV in every bedroom',
@@ -116,12 +117,12 @@ class WebsiteContentService
         $reviewStats = $this->reviewStats();
 
         return [
-            ['value' => (string) Setting::getValue('hero_bedrooms', $roomCount ?: ($property?->bedrooms ?? 5)), 'label' => 'ensuite bedrooms'],
-            ['value' => (string) Setting::getValue('hero_guests', $property?->capacity ?? '12'), 'label' => 'adults + 2 children'],
-            ['value' => (string) Setting::getValue('hero_square_feet', '4,000'), 'label' => 'square feet'],
-            ['value' => (string) Setting::getValue('hero_kitchen', '25 ft'), 'label' => 'centrepiece kitchen'],
-            ['value' => (string) Setting::getValue('hero_built', '1850'), 'label' => 'the year it was built'],
-            ['value' => (string) number_format($reviewStats['score'], 2), 'label' => sprintf('average from %d %s', $reviewStats['count'], $reviewStats['count'] === 1 ? 'Airbnb review' : 'Airbnb reviews')],
+            ['value' => (string) (Setting::getValue('hero_bedrooms', $roomCount ?: ($property?->bedrooms ?? 5)) ?: ($roomCount ?: ($property?->bedrooms ?? 5))), 'label' => 'ensuite bedrooms'],
+            ['value' => (string) (Setting::getValue('hero_guests', $property?->capacity ?? '12') ?: ($property?->capacity ?? '12')), 'label' => 'adults + 2 children'],
+            ['value' => (string) (Setting::getValue('hero_square_feet', '4,000') ?: '4,000'), 'label' => 'square feet'],
+            ['value' => (string) (Setting::getValue('hero_kitchen', '25 ft') ?: '25 ft'), 'label' => 'centrepiece kitchen'],
+            ['value' => (string) (Setting::getValue('hero_built', '1850') ?: '1850'), 'label' => 'the year it was built'],
+            ['value' => (string) number_format($reviewStats['score'], 2), 'label' => $this->reviewHeadlineLabel($reviewStats)],
         ];
     }
 
@@ -201,20 +202,42 @@ class WebsiteContentService
     }
 
     /**
-     * @return array{count: int, score: ?float}
+     * @return array{count: int, score: float, from_settings: bool}
      */
     private function reviewStats(): array
     {
-        $reviews = Review::approved()->get(['stars']);
+        $settingsCount = (int) Setting::getValue('review_count', 0);
+        $settingsScore = Setting::getValue('review_score', null);
 
-        if ($reviews->isEmpty()) {
-            return ['count' => (int) Setting::getValue('review_count', 0), 'score' => (float) Setting::getValue('review_score', 4.95)];
+        if ($settingsCount > 0 && $settingsScore !== null) {
+            return [
+                'count' => $settingsCount,
+                'score' => (float) $settingsScore,
+                'from_settings' => true,
+            ];
         }
+
+        $reviews = Review::approved()->get(['stars']);
 
         return [
             'count' => $reviews->count(),
-            'score' => round($reviews->avg('stars'), 2),
+            'score' => $reviews->isEmpty() ? (float) ($settingsScore ?? 4.95) : round($reviews->avg('stars'), 2),
+            'from_settings' => false,
         ];
+    }
+
+    /**
+     * @param  array{count: int, score: float, from_settings: bool}  $stats
+     */
+    private function reviewHeadlineLabel(array $stats): string
+    {
+        $label = sprintf('average from %d %s', $stats['count'], $stats['count'] === 1 ? 'Airbnb review' : 'Airbnb reviews');
+
+        if ($stats['from_settings']) {
+            $label .= ' — 39 five-star, one three-star';
+        }
+
+        return $label;
     }
 
     /**
@@ -234,11 +257,11 @@ class WebsiteContentService
     private function defaultInside(): array
     {
         return [
-            ['name' => 'The kitchen', 'where' => 'Ground floor', 'description' => 'The 25-foot centrepiece of the house, and the reason it works so well for a full party. Everyone ends up here, so there is room for everyone to be here.', 'label' => 'The kitchen photo', 'feature' => '1'],
-            ['name' => 'Garden dining room', 'where' => 'Ground floor, the old orangery', 'description' => 'The orangery, converted into a dining room that seats ten at a handmade farmhouse table and chairs, with the garden on three sides.', 'label' => 'Garden dining room photo'],
-            ['name' => 'Lounge', 'where' => 'Ground floor', 'description' => 'The lounge is a calm space on the ground floor with seating, a fireplace and a television, flowing into the kitchen and the garden dining room.', 'label' => 'Lounge photo'],
-            ['name' => 'Games room', 'where' => 'Ground floor', 'description' => 'A dedicated room for the games, with a pool table, darts, board games and a console.', 'label' => 'Games room photo'],
-            ['name' => 'Cinema room', 'where' => 'The converted cellar', 'description' => 'The cellar has been converted into a cinema room with a projector screen and comfortable seating for the whole party.', 'label' => 'Cinema room photo'],
+            ['name' => 'The kitchen', 'where' => 'Ground floor', 'description' => 'At 25 feet, the kitchen is the hub of the house, and its size is the reason the house works so well for a full party. There is room for everyone to congregate in one place.', 'label' => 'The kitchen photo', 'feature' => '1'],
+            ['name' => 'Orangery', 'where' => 'Ground floor', 'description' => 'The orangery, converted into a dining room that seats ten at a handmade farmhouse table and chairs, overlooking the patio.', 'label' => 'Orangery photo'],
+            ['name' => 'Lounge', 'where' => 'Ground floor', 'description' => 'Gather around the cosy log fireplace, with sofas to sink into. The lounge runs conveniently off the kitchen, so the party stays together.', 'label' => 'Lounge photo'],
+            ['name' => 'Games room', 'where' => 'Ground floor', 'description' => 'A pool table that converts to air hockey and table tennis, plus a dart board and a walk-in cupboard full of toys to entertain children of all ages.', 'label' => 'Games room photo'],
+            ['name' => 'Cinema room', 'where' => 'The converted cellar', 'description' => 'The cellar has been converted into a cinema room, with a projector screen and comfortable seating for the whole party.', 'label' => 'Cinema room photo'],
         ];
     }
 
@@ -249,11 +272,10 @@ class WebsiteContentService
     {
         return [
             ['name' => 'Entertaining patio and garden bar', 'where' => 'The garden', 'description' => 'The patio is where the house spills out on a warm evening: the garden bar, the Kadai fire-pit barbecue and the hot tub, with the landscaped garden beyond.', 'label' => 'Entertaining patio and garden bar photo', 'feature' => '1'],
-            ['name' => 'Hot tub', 'where' => 'On the patio', 'description' => 'Sits on the patio, a few steps from the garden bar, and is available between 8:00am and 11:00pm.', 'label' => 'Hot tub photo'],
-            ['name' => 'Garden room', 'where' => 'The garden', 'description' => 'A quiet spot in the garden to sit out of the weather, whatever the season.', 'label' => 'Garden room photo'],
+            ['name' => 'Hot tub', 'where' => 'On the patio', 'description' => 'Seats four to six. Sits on the patio, a few steps from the garden bar.', 'label' => 'Hot tub photo'],
             ['name' => 'Balcony', 'where' => 'First floor, off the Lion suite', 'description' => 'A large balcony over the garden and the entertaining patio, reached through the double doors in the Lion suite. Good for a first coffee of the day.', 'label' => 'Balcony photo'],
             ['name' => 'Gym', 'where' => 'The grounds', 'description' => 'Fully equipped in its own building in the grounds, with cardio, weights and racks. Over-16s only.', 'label' => 'Gym photo'],
-            ['name' => 'Office', 'where' => 'The grounds', 'description' => 'A purpose-built, hard-wired office in the grounds, with a desk and fast broadband for remote working.', 'label' => 'Office photo'],
+            ['name' => 'Office', 'where' => 'The grounds', 'description' => 'A purpose-built, hard-wired office in the grounds. Add the desk setup and broadband speed — this is the detail that wins remote-working bookings.', 'label' => 'Office photo'],
         ];
     }
 
@@ -365,7 +387,7 @@ class WebsiteContentService
                 'items' => [
                     'The house is built for entertaining and we are happy for you to hold an event or function here. Please tell us what you are planning when you book.',
                     'Additional guests may join you during the day. Overnight numbers are strictly capped at 12 adults and 2 children.',
-                    'Amplified music, sound systems and DJs are fine within the quiet hours below.',
+                    'Amplified music, sound systems and DJs are all fine. Please keep noise down in the quiet hours of 11:00pm to 8:00am, to be courteous to our neighbours.',
                     'For a larger event, please talk to us first about parking, numbers and anything you plan to bring in.',
                 ],
             ],
@@ -392,7 +414,6 @@ class WebsiteContentService
             [
                 'title' => 'Hot tub',
                 'items' => [
-                    'Available from 8:00am to 11:00pm, in line with the quiet hours. It is close to neighbouring homes, so please keep noise down.',
                     'No glass on or near the patio. Plastic drinkware is provided.',
                     'Please shower before use, and do not use it after drinking heavily.',
                     'Children must be supervised by an adult at all times. Not suitable for anyone who is pregnant or has a heart condition without medical advice.',

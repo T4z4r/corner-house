@@ -12,7 +12,7 @@
 
             <h2 id="platforms" class="band">Where to book</h2>
             <p>We list on three platforms as well as taking bookings ourselves, and we genuinely do not mind which you use. Booking through a platform means your payment is handled by them, with their guest protection and support behind it. Booking directly is 10% cheaper than the platform rate, because we are not paying their commission.</p>
-            <p class="rating-line"><strong>{{ $site['heroFacts'][5]['value'] ?? '4.95' }}</strong> {{ $site['heroFacts'][5]['label'] ?? 'average from 40 reviews on Airbnb' }}</p>
+            <p class="rating-line"><strong>{{ $site['heroFacts'][5]['value'] ?? '4.95' }}</strong> {{ $site['heroFacts'][5]['label'] ?? 'average from 40 reviews on Airbnb' }}, putting us among the highest-rated whole-house lets on the platform.</p>
             <ul class="platforms">
                 <li class="platform recommended">
                     <span class="tag">Recommended</span>

@@ -1,11 +1,11 @@
 <section class="page" id="page-spirits" data-page="spirits">
-    <div class="section ivy">
+    <div class="section">
         <div class="wrap">
             <div class="serengeti-mark">
                 @php $spiritsLogo = \App\Models\Setting::getValue('website_spirits_logo'); @endphp
                 @if($spiritsLogo)<img src="{{ asset('storage/'.$spiritsLogo) }}" alt="Serengeti Spirits">@else<img src="{{ asset('images/serengeti-logo.png') }}" alt="Serengeti Spirits">@endif
             </div>
-            <h1 style="font-size:clamp(2.4rem,5vw,4rem);color:var(--stone)">Made here at Corner House</h1>
+            <h1 style="font-size:clamp(2.4rem,5vw,4rem)">Made here at Corner House</h1>
             <div class="grid-2">
                 <div>
                     <p class="lede">Our African-inspired gins and spirits are made here at Corner House. Order before you arrive and they can be waiting in the kitchen when you get here.</p>
@@ -22,7 +22,7 @@
                 </div>
                 <div class="spirit-card">
                     <h3>Custom bottles for the occasion</h3>
-                    <p>A birthday, an anniversary, a wedding party or a hen weekend: we will make a bottle with your own label and message. Allow two weeks before your stay.</p>
+                    <p>A birthday, an anniversary, a wedding party or a hen weekend: we will make a bottle with your own label and message. Please allow us two weeks&rsquo; notice before your stay so we have time to make them.</p>
                     <a class="btn btn-outline" href="https://www.serengetispirits.com/products/custom-bottle-whitelabel" target="_blank" rel="noopener">Order a custom bottle</a>
                 </div>
                 <div class="spirit-card">
@@ -31,7 +31,7 @@
                     <a class="btn btn-outline" href="#book">Add to a booking</a>
                 </div>
             </div>
-            <p class="small" style="margin-top:2rem;color:var(--sage)">Purchases are completed on the Serengeti Spirits website. Spirits are sold to over-18s only.</p>
+            <p class="small" style="margin-top:2rem">Purchases are completed on the Serengeti Spirits website. Spirits are sold to over-18s only.</p>
         </div>
     </div>
 </section>

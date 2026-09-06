@@ -14,8 +14,8 @@ class PropertySeeder extends Seeder
             [
                 'name' => 'Corner House',
                 'slug' => 'corner-house',
-                'description' => 'Corner House is a beautifully restored luxury countryside retreat nestled in the heart of Braunston, Northamptonshire. With five individually themed bedrooms inspired by African wildlife, the house offers a unique blend of character, comfort, and modern amenities. Whether you are planning a family gathering, a countryside escape, or a celebration with friends, Corner House provides the perfect setting with flexible booking options — individual rooms or the entire house.',
-                'short_description' => 'A luxury countryside retreat in Braunston, Northamptonshire with five themed bedrooms and flexible booking options.',
+                'description' => 'The house is arranged around a 25-foot kitchen, with the orangery which houses the dining room that seats ten at a handmade farmhouse table. Downstairs there is a games room and a cinema room in the converted cellar; outside, a garden bar, a Kadai fire-pit barbecue, a fully equipped gym and a hard-wired office in the grounds.',
+                'short_description' => 'Corner House is a 175-year-old period home a few footsteps from Braunston Marina — five ensuite bedrooms, a 25ft kitchen built for entertaining, a games room and plenty of outside space, for family and friends to socialise and enjoy.',
                 'address_line_1' => 'Corner House',
                 'address_line_2' => 'Main Street',
                 'city' => 'Braunston',
