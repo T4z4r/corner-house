@@ -35,6 +35,9 @@
                             <tr>
                                 <td class="fw-semibold">
                                     <a href="{{ route('admin.properties.show', $property) }}" class="text-decoration-none">{{ $property->name }}</a>
+                                    @if ($property->is_primary)
+                                        <span class="ch-badge ch-badge-primary ms-2"><i class="bi bi-star-fill me-1"></i>Primary</span>
+                                    @endif
                                 </td>
                                 <td>{{ $property->city }}, {{ $property->country }}</td>
                                 <td>

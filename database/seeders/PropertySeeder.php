@@ -27,6 +27,7 @@ class PropertySeeder extends Seeder
                 'bedrooms' => 5,
                 'bathrooms' => 4,
                 'status' => 'active',
+                'is_primary' => true,
                 'currency' => 'GBP',
                 'smoking_allowed' => false,
                 'children_allowed' => true,

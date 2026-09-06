@@ -18,6 +18,16 @@
         </select>
     </div>
     <div class="col-12">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="is_primary" value="1" id="is_primary"
+                   @checked(old('is_primary', $property?->is_primary ?? false))>
+            <label class="form-check-label" for="is_primary">
+                <i class="bi bi-star-fill text-warning me-1"></i>Primary property
+            </label>
+            <div class="form-text">The primary property is highlighted first across the admin and website. Only one property can be primary.</div>
+        </div>
+    </div>
+    <div class="col-12">
         <label class="form-label" for="short_description">Short description</label>
         <input type="text" class="form-control" id="short_description" name="short_description" maxlength="500"
                value="{{ old('short_description', $property?->short_description) }}" placeholder="A short summary shown in listings">

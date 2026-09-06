@@ -27,6 +27,7 @@ class Property extends Model
         'bedrooms',
         'bathrooms',
         'status',
+        'is_primary',
         'currency',
         'smoking_allowed',
         'children_allowed',
@@ -48,6 +49,7 @@ class Property extends Model
         'smoking_allowed' => 'boolean',
         'children_allowed' => 'boolean',
         'parties_allowed' => 'boolean',
+        'is_primary' => 'boolean',
     ];
 
     protected static function booted(): void

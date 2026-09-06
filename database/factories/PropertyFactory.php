@@ -32,6 +32,7 @@ class PropertyFactory extends Factory
             'bedrooms' => 2,
             'bathrooms' => 1,
             'status' => 'active',
+            'is_primary' => false,
             'currency' => 'GBP',
         ];
     }

@@ -887,6 +887,51 @@ class AdminResourcesTest extends TestCase
         $this->assertDatabaseHas('properties', ['name' => 'Sea View House']);
     }
 
+    public function test_super_admin_can_create_property_as_primary(): void
+    {
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->post(route('admin.properties.store'), [
+                'name' => 'Sea View House',
+                'status' => 'active',
+                'city' => 'Brighton',
+                'currency' => 'GBP',
+                'is_primary' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('properties', ['name' => 'Sea View House', 'is_primary' => true]);
+    }
+
+    public function test_setting_a_property_as_primary_clears_the_previous_primary(): void
+    {
+        $first = Property::factory()->create(['name' => 'Maple Cottage', 'is_primary' => true]);
+        $second = Property::factory()->create(['name' => 'Willow Lodge', 'is_primary' => false]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->put(route('admin.properties.update', $second), [
+                'name' => 'Willow Lodge',
+                'status' => 'active',
+                'city' => 'York',
+                'currency' => 'GBP',
+                'is_primary' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('properties', ['id' => $second->id, 'is_primary' => true]);
+        $this->assertDatabaseHas('properties', ['id' => $first->id, 'is_primary' => false]);
+    }
+
+    public function test_primary_property_shows_badge_on_index(): void
+    {
+        Property::factory()->create(['name' => 'Maple Cottage', 'is_primary' => true]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.properties.index'))
+            ->assertOk()
+            ->assertSee('Maple Cottage')
+            ->assertSee('Primary');
+    }
+
     public function test_super_admin_can_delete_property_and_null_orphaned_related_records(): void
     {
         $property = Property::factory()->create(['name' => 'Maple Cottage']);

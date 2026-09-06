@@ -22,7 +22,7 @@ class PropertyController extends Controller
     {
         $properties = Property::query()
             ->withCount('rooms')
-            ->orderBy('name')
+            ->orderByRaw('is_primary DESC, name ASC')
             ->paginate(15);
 
         return view('admin.properties.index', ['properties' => $properties]);
@@ -45,6 +45,10 @@ class PropertyController extends Controller
         $data = $this->validated($request);
 
         $property = Property::create($data);
+
+        if ($property->is_primary) {
+            Property::whereKeyNot($property->id)->update(['is_primary' => false]);
+        }
 
         if ($request->has('amenity_ids')) {
             $property->amenities()->sync($request->input('amenity_ids'));
@@ -71,6 +75,10 @@ class PropertyController extends Controller
 
         $data = $this->validated($request, $property);
         $property->update($data);
+
+        if ($property->is_primary) {
+            Property::whereKeyNot($property->id)->update(['is_primary' => false]);
+        }
 
         if ($request->has('amenity_ids')) {
             $property->amenities()->sync($request->input('amenity_ids'));
@@ -146,6 +154,7 @@ class PropertyController extends Controller
             'bedrooms' => ['nullable', 'integer', 'min:0'],
             'bathrooms' => ['nullable', 'integer', 'min:0'],
             'status' => ['required', 'in:active,inactive,maintenance'],
+            'is_primary' => ['nullable', 'boolean'],
             'smoking_allowed' => ['nullable', 'boolean'],
             'children_allowed' => ['nullable', 'boolean'],
             'parties_allowed' => ['nullable', 'boolean'],
@@ -161,6 +170,7 @@ class PropertyController extends Controller
 
         return array_merge($data, [
             'slug' => $existingSlug ?? Str::slug($request->input('name')),
+            'is_primary' => $request->boolean('is_primary'),
         ]);
     }
 }
