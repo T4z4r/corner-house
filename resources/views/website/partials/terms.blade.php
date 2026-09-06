@@ -5,8 +5,6 @@
             <p class="lede">These terms apply to bookings made directly with us. Bookings made through Airbnb, Booking.com or Vrbo are governed by that platform&rsquo;s terms, which take precedence over these where the two differ.</p>
             <p class="small">Last updated: <span class="rev-date"></span></p>
 
-            <div class="notice"><strong>Draft for review.</strong> These terms were prepared as a working draft and have not been reviewed by a solicitor. Have them checked against your insurance policy and current UK consumer law before you publish them.</div>
-
             <ol class="clauses">
                 <li>
                     <h2>Parties and the agreement</h2>
