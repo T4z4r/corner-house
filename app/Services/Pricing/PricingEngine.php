@@ -444,34 +444,34 @@ class PricingEngine
         return round($rates->avg(), 2);
     }
 
+    /**
+     * Whether any night of the stay falls within a bank-holiday weekend.
+     * A Monday holiday (including weekend substitutes) pulls the preceding
+     * Friday/Saturday/Sunday nights into the holiday weekend, and Good
+     * Friday covers the Friday/Saturday/Sunday that follows it. Easter
+     * Monday is already covered by the Good Friday window.
+     */
     private function isBankHolidayWeekend(Carbon $checkIn, Carbon $checkOut): bool
     {
-        $months = [$checkIn->month, $checkOut->month];
+        foreach (range($checkIn->year, $checkOut->year) as $year) {
+            foreach ($this->ukBankHolidaysForYear($year) as $holiday) {
+                if ($holiday->dayOfWeek === Carbon::FRIDAY) {
+                    $weekendStart = $holiday->copy();
+                    $weekendEnd = $holiday->copy()->addDays(3);
+                } elseif ($holiday->dayOfWeek === Carbon::MONDAY) {
+                    $weekendStart = $holiday->copy()->subDays(3);
+                    $weekendEnd = $holiday->copy()->addDay();
+                } else {
+                    continue;
+                }
 
-        foreach ($months as $month) {
-            $holiday = $this->bankHolidayForMonth($checkIn->year, $month);
-            if ($holiday && $holiday->gte($checkIn) && $holiday->lt($checkOut)) {
-                return true;
+                if ($checkIn->lt($weekendEnd) && $checkOut->gt($weekendStart)) {
+                    return true;
+                }
             }
         }
 
         return false;
-    }
-
-    /**
-     * Compute the England & Wales bank holiday for a given year and month,
-     * using PHP's built-in Easter date plus the fixed/schedule rules observed
-     * by the UK government. Returns null when no holiday falls within the month.
-     */
-    private function bankHolidayForMonth(int $year, int $month): ?Carbon
-    {
-        foreach ($this->ukBankHolidaysForYear($year) as $holiday) {
-            if ($holiday->month === $month) {
-                return $holiday;
-            }
-        }
-
-        return null;
     }
 
     /**

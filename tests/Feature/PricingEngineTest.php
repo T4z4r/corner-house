@@ -515,6 +515,95 @@ class PricingEngineTest extends TestCase
         ));
     }
 
+    public function test_monday_bank_holiday_weekend_raises_minimum_stay_to_three(): void
+    {
+        $room = $this->makeRoom(100);
+
+        // Early May bank holiday Monday 3 May 2027 pulls in the preceding weekend.
+        $this->assertSame(3, $this->engine->minimumStayForRange(
+            $room,
+            Carbon::parse('2027-04-30'),
+            Carbon::parse('2027-05-01'),
+        ));
+
+        // Spring bank holiday Monday 31 May 2027.
+        $this->assertSame(3, $this->engine->minimumStayForRange(
+            $room,
+            Carbon::parse('2027-05-28'),
+            Carbon::parse('2027-05-30'),
+        ));
+
+        // A normal summer weekend keeps the standard two-night minimum.
+        $this->assertSame(2, $this->engine->minimumStayForRange(
+            $room,
+            Carbon::parse('2027-06-05'),
+            Carbon::parse('2027-06-06'),
+        ));
+    }
+
+    public function test_good_friday_weekend_raises_minimum_stay_to_three(): void
+    {
+        $room = $this->makeRoom(100);
+
+        // Good Friday 26 March 2027 starts a three-night holiday weekend.
+        $this->assertSame(3, $this->engine->minimumStayForRange(
+            $room,
+            Carbon::parse('2027-03-26'),
+            Carbon::parse('2027-03-27'),
+        ));
+
+        $this->assertSame(3, $this->engine->minimumStayForRange(
+            $room,
+            Carbon::parse('2027-03-27'),
+            Carbon::parse('2027-03-29'),
+        ));
+
+        // A weekend shortly after Easter keeps the two-night minimum.
+        $this->assertSame(2, $this->engine->minimumStayForRange(
+            $room,
+            Carbon::parse('2027-04-10'),
+            Carbon::parse('2027-04-11'),
+        ));
+    }
+
+    public function test_bank_holiday_minimum_stay_applies_in_2028(): void
+    {
+        $room = $this->makeRoom(100);
+
+        // Early May bank holiday Monday 1 May 2028 is the preceding Friday's weekend.
+        $this->assertSame(3, $this->engine->minimumStayForRange(
+            $room,
+            Carbon::parse('2028-04-28'),
+            Carbon::parse('2028-04-29'),
+        ));
+
+        // Good Friday 14 April 2028.
+        $this->assertSame(3, $this->engine->minimumStayForRange(
+            $room,
+            Carbon::parse('2028-04-14'),
+            Carbon::parse('2028-04-16'),
+        ));
+
+        // Summer bank holiday Monday 28 August 2028.
+        $this->assertSame(3, $this->engine->minimumStayForRange(
+            $room,
+            Carbon::parse('2028-08-25'),
+            Carbon::parse('2028-08-27'),
+        ));
+    }
+
+    public function test_christmas_bank_holiday_minimum_stay_starts_on_christmas_eve(): void
+    {
+        $room = $this->makeRoom(100);
+
+        // The Christmas substitute bank holiday (Mon 27 Dec 2027) pulls in from Christmas Eve.
+        $this->assertSame(3, $this->engine->minimumStayForRange(
+            $room,
+            Carbon::parse('2027-12-24'),
+            Carbon::parse('2027-12-25'),
+        ));
+    }
+
     public function test_holiday_weekend_uplift_applies_on_bank_holiday_weekends(): void
     {
         Setting::firstOrCreate(['key' => 'holiday_weekend_uplift_enabled'], ['value' => '1', 'group' => 'pricing', 'label' => 'Uplift enabled', 'cast' => 'boolean']);
@@ -547,16 +636,16 @@ class PricingEngineTest extends TestCase
         Setting::firstOrCreate(['key' => 'holiday_weekend_uplift_enabled'], ['value' => '1', 'group' => 'pricing', 'label' => 'Uplift enabled', 'cast' => 'boolean']);
         Setting::firstOrCreate(['key' => 'holiday_weekend_uplift'], ['value' => '5', 'group' => 'pricing', 'label' => 'Uplift', 'cast' => 'integer']);
         Setting::firstOrCreate(['key' => 'school_holiday_periods'], ['value' => json_encode([
-            ['label' => 'Summer holiday', 'start' => '2026-07-20', 'end' => '2026-08-31'],
+            ['label' => '23–25 Oct 2026', 'start' => '2026-10-23', 'end' => '2026-10-25'],
         ]), 'group' => 'pricing', 'label' => 'School holidays', 'cast' => 'json']);
 
         $room = $this->makeRoom(100);
 
-        // Saturday 1 August 2026 sits inside the school-holiday window.
-        $this->assertSame(105.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-08-01')));
+        // Saturday 24 October 2026 sits inside the school-holiday weekend window.
+        $this->assertSame(105.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-10-24')));
 
-        // A mid-week night in the same window is not uplifted (weekend days only).
-        $this->assertSame(100.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-07-29')));
+        // A mid-week night just after the window is not uplifted (weekend days only).
+        $this->assertSame(100.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-10-28')));
 
         // A normal Saturday outside any school holiday is not uplifted.
         $this->assertSame(100.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-06-13')));
@@ -567,12 +656,12 @@ class PricingEngineTest extends TestCase
         Setting::firstOrCreate(['key' => 'holiday_weekend_uplift_enabled'], ['value' => '0', 'group' => 'pricing', 'label' => 'Uplift enabled', 'cast' => 'boolean']);
         Setting::firstOrCreate(['key' => 'holiday_weekend_uplift'], ['value' => '5', 'group' => 'pricing', 'label' => 'Uplift', 'cast' => 'integer']);
         Setting::firstOrCreate(['key' => 'school_holiday_periods'], ['value' => json_encode([
-            ['label' => 'Summer holiday', 'start' => '2026-07-20', 'end' => '2026-08-31'],
+            ['label' => '23–25 Oct 2026', 'start' => '2026-10-23', 'end' => '2026-10-25'],
         ]), 'group' => 'pricing', 'label' => 'School holidays', 'cast' => 'json']);
 
         $room = $this->makeRoom(100);
 
-        $this->assertSame(100.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-08-01')));
+        $this->assertSame(100.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-10-24')));
     }
 
     public function test_holiday_weekend_uplift_skips_event_rules_and_explicit_rates(): void

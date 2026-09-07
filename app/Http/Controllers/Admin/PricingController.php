@@ -31,8 +31,8 @@ class PricingController extends Controller
         }
 
         return view('admin.pricing.index', [
-            'rules' => $ruleQuery->get(),
-            'overrides' => $overrideQuery->get(),
+            'rules' => $ruleQuery->paginate(20)->withQueryString(),
+            'overrides' => $overrideQuery->paginate(20)->withQueryString(),
             'properties' => Property::query()->where('status', 'active')->get(),
             'rooms' => Room::query()->with('property')->orderBy('name')->get(),
             'selectedPropertyId' => $propertyId,

@@ -44,10 +44,10 @@
 
     <ul class="nav nav-tabs" id="pricingTab" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="rules-tab" data-bs-toggle="tab" data-bs-target="#rules" type="button" role="tab">Rules ({{ $rules->count() }})</button>
+            <button class="nav-link active" id="rules-tab" data-bs-toggle="tab" data-bs-target="#rules" type="button" role="tab">Rules ({{ $rules->total() }})</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="overrides-tab" data-bs-toggle="tab" data-bs-target="#overrides" type="button" role="tab">Rate overrides ({{ $overrides->count() }})</button>
+            <button class="nav-link" id="overrides-tab" data-bs-toggle="tab" data-bs-target="#overrides" type="button" role="tab">Rate overrides ({{ $overrides->total() }})</button>
         </li>
     </ul>
 
@@ -121,6 +121,9 @@
                                 @endforelse
                             </tbody>
                         </table>
+                    </div>
+                    <div class="card-body border-top py-2">
+                        {{ $rules->links() }}
                     </div>
                 </div>
             </div>
@@ -251,6 +254,9 @@
                                 @endforelse
                             </tbody>
                         </table>
+                    </div>
+                    <div class="card-body border-top py-2">
+                        {{ $overrides->links() }}
                     </div>
                 </div>
             </div>
