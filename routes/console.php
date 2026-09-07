@@ -2,6 +2,7 @@
 
 use App\Jobs\ExpireBookingHoldsJob;
 use App\Jobs\GenerateRevenueSnapshotJob;
+use App\Jobs\GenerateSeasonalPricingJob;
 use App\Jobs\PushBeds24RatesJob;
 use App\Jobs\SendCheckInNotificationJob;
 use App\Jobs\SendCheckoutNotificationJob;
@@ -22,6 +23,17 @@ Schedule::job(new SendPreArrivalMessageJob)->dailyAt('09:00');
 Schedule::job(new SendCheckInNotificationJob)->dailyAt('08:00');
 Schedule::job(new SendCheckoutNotificationJob)->dailyAt('08:30');
 Schedule::job(new GenerateRevenueSnapshotJob)->dailyAt('01:00');
+
+if (Setting::getValue('pricing_auto_generate_enabled', false)) {
+    $frequency = Setting::getValue('pricing_auto_generate_frequency', 'weekly');
+    $schedule = Schedule::job(new GenerateSeasonalPricingJob);
+    match ($frequency) {
+        'daily' => $schedule->dailyAt('02:00'),
+        'weekly' => $schedule->weeklyOn(Schedule::MONDAY, '02:00'),
+        'monthly' => $schedule->monthlyOn(1, '02:00'),
+        default => $schedule->weeklyOn(Schedule::MONDAY, '02:00'),
+    };
+}
 
 if (Setting::getValue('schedule_beds24_sync_bookings_enabled', true)) {
     $frequency = Setting::getValue('schedule_beds24_sync_bookings_frequency', 'every_five_minutes');

@@ -42,6 +42,8 @@ class SettingsSeeder extends Seeder
             ['group' => 'booking', 'key' => 'min_price_weekend', 'value' => '600', 'label' => 'Minimum price - weekend (£/night)', 'cast' => 'decimal:2'],
             ['group' => 'pricing', 'key' => 'holiday_weekend_uplift_enabled', 'value' => '1', 'label' => 'Weekend uplift on UK holidays enabled', 'cast' => 'boolean'],
             ['group' => 'pricing', 'key' => 'holiday_weekend_uplift', 'value' => '5', 'label' => 'Weekend uplift on UK holidays (%)', 'cast' => 'integer'],
+            ['group' => 'pricing', 'key' => 'pricing_auto_generate_enabled', 'value' => '0', 'label' => 'Auto-generate seasonal pricing on a schedule', 'cast' => 'boolean'],
+            ['group' => 'pricing', 'key' => 'pricing_auto_generate_frequency', 'value' => 'weekly', 'label' => 'Auto-generate seasonal pricing frequency (daily, weekly or monthly)', 'cast' => 'string'],
             ['group' => 'pricing', 'key' => 'school_holiday_periods', 'value' => json_encode(SettingsSeeder::defaultSchoolHolidayPeriods()), 'label' => 'School holiday periods (weekend uplift windows)', 'cast' => 'json'],
             ['group' => 'notifications', 'key' => 'email_notifications_enabled', 'value' => '1', 'label' => 'Enable email notifications', 'cast' => 'boolean'],
             ['group' => 'notifications', 'key' => 'email_booking_confirmation_enabled', 'value' => '1', 'label' => 'Booking confirmation emails', 'cast' => 'boolean'],

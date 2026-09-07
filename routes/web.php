@@ -329,6 +329,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::post('/messages/fetch', [MessageInboxController::class, 'fetch'])->name('messages.fetch')->middleware('can:channels.sync');
         Route::post('/messages/{message}/read', [MessageInboxController::class, 'markRead'])->name('messages.read')->middleware('can:channels.sync');
         Route::post('/messages/{message}/reply', [MessageInboxController::class, 'reply'])->name('messages.reply')->middleware('can:communications.send');
+        Route::get('/messages/{message}/draft', [MessageInboxController::class, 'draft'])->name('messages.draft')->middleware('can:communications.send');
     });
 
     Route::middleware('can:chatbot.view')->group(function (): void {

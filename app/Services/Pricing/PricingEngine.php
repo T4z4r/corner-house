@@ -6,6 +6,7 @@ use App\Models\CalendarBlock;
 use App\Models\CompetitorRate;
 use App\Models\PricingOverride;
 use App\Models\PricingRule;
+use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\Setting;
 use Illuminate\Support\Carbon;
@@ -233,6 +234,11 @@ class PricingEngine
      */
     public function calculateRateForDate(Room $room, Carbon $date, int $guests = 1, ?float $occupancyPct = null): float
     {
+        // When no occupancy is supplied, derive the live per-night occupancy
+        // from the existing reservations so occupancy and demand rules fire
+        // based on the real booking load instead of staying dormant.
+        $occupancyPct ??= $this->occupancyForDate($room, $date);
+
         // 1. Manual override (highest priority)
         $override = $this->findOverride($room, $date);
         if ($override) {
@@ -442,6 +448,36 @@ class PricingEngine
         $rates = $latestByCompetitor->map(fn ($rate) => (float) $rate->rate);
 
         return round($rates->avg(), 2);
+    }
+
+    /**
+     * Live property-wide occupancy percentage for a single night, derived
+     * from active reservations that cover the date. Only active rooms in the
+     * property are counted as sellable. Returns 0 when there is no seller
+     * visibility, so occupancy rules never misfire on empty properties.
+     */
+    private function occupancyForDate(Room $room, Carbon $date): float
+    {
+        $activeRooms = Room::query()
+            ->where('property_id', $room->property_id)
+            ->where('status', 'active')
+            ->count();
+
+        if ($activeRooms === 0) {
+            return 0.0;
+        }
+
+        $soldRooms = Reservation::query()
+            ->active()
+            ->whereHas('room', fn ($q) => $q
+                ->where('property_id', $room->property_id)
+                ->where('status', 'active'))
+            ->whereDate('check_in', '<=', $date->toDateString())
+            ->whereDate('check_out', '>', $date->toDateString())
+            ->distinct()
+            ->count('room_id');
+
+        return round(($soldRooms / $activeRooms) * 100, 2);
     }
 
     /**

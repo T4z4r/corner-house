@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\BookingHold;
 use App\Models\CalendarBlock;
+use App\Models\PricingOverride;
 use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Room;
@@ -143,6 +144,37 @@ class CalendarController extends Controller
                 'end' => $hold->check_out->toDateString(),
                 'className' => 'fc-event--hold',
                 'extendedProps' => ['type' => 'hold', 'room_id' => $hold->room_id, 'room_name' => $roomName],
+            ]);
+        }
+
+        $overrides = PricingOverride::query()
+            ->where('is_enabled', true)
+            ->with('room')
+            ->when($propertyId, fn ($q) => $q->whereHas('room', fn ($r) => $r->where('property_id', $propertyId)))
+            ->when($roomId, fn ($q) => $q->where('room_id', $roomId))
+            ->when($start, fn ($q) => $q->whereDate('end_date', '>=', $start))
+            ->when($end, fn ($q) => $q->whereDate('start_date', '<=', $end))
+            ->orderBy('start_date')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($overrides as $override) {
+            $roomName = $override->room?->name ?? '';
+            $events->push([
+                'id' => 'rate-'.$override->id,
+                'title' => '£'.number_format((float) $override->rate, 2).($roomName !== '' ? ' · '.$roomName : ''),
+                'start' => $override->start_date->toDateString(),
+                'end' => $override->end_date->toDateString(),
+                'className' => 'fc-event--block fc-event--block-rates',
+                'extendedProps' => [
+                    'type' => 'rate',
+                    'override_id' => $override->id,
+                    'rate' => (float) $override->rate,
+                    'minimum_stay' => $override->minimum_stay,
+                    'room_id' => $override->room_id,
+                    'room_name' => $roomName,
+                    'from_beds24' => $override->notes === 'beds24-sync',
+                ],
             ]);
         }
 

@@ -10,6 +10,7 @@ use App\Models\FoodAndDrink;
 use App\Models\Guest;
 use App\Models\KnowledgeBaseArticle;
 use App\Models\PlacesOfInterest;
+use App\Models\PricingOverride;
 use App\Models\PricingRule;
 use App\Models\Property;
 use App\Models\Reservation;
@@ -217,6 +218,89 @@ class AdminResourcesTest extends TestCase
             ->getJson(route('admin.calendar.events', ['property_id' => $property->id]))
             ->assertOk()
             ->assertJson([]);
+    }
+
+    public function test_calendar_events_show_beds24_imported_prices(): void
+    {
+        $property = Property::factory()->create();
+        $room = Room::factory()->create(['property_id' => $property->id, 'name' => 'Oak Suite']);
+
+        PricingOverride::query()->create([
+            'room_id' => $room->id,
+            'start_date' => '2026-02-10',
+            'end_date' => '2026-02-10',
+            'rate' => 185,
+            'minimum_stay' => 2,
+            'is_enabled' => true,
+            'notes' => 'beds24-sync',
+        ]);
+        PricingOverride::query()->create([
+            'room_id' => $room->id,
+            'start_date' => '2026-02-11',
+            'end_date' => '2026-02-12',
+            'rate' => 200,
+            'minimum_stay' => 2,
+            'is_enabled' => true,
+            'notes' => 'beds24-sync',
+        ]);
+        // A disabled override should not appear.
+        PricingOverride::query()->create([
+            'room_id' => $room->id,
+            'start_date' => '2026-02-20',
+            'end_date' => '2026-02-20',
+            'rate' => 999,
+            'is_enabled' => false,
+            'notes' => 'beds24-sync',
+        ]);
+
+        $response = $this->actingAs($this->actingAsSuperAdmin())
+            ->getJson(route('admin.calendar.events', [
+                'property_id' => $property->id,
+                'room_id' => $room->id,
+                'start' => '2026-02-01',
+                'end' => '2026-02-28',
+            ]))
+            ->assertOk();
+
+        $rateEvents = collect($response->json())
+            ->where('extendedProps.type', 'rate')
+            ->values();
+
+        $this->assertCount(2, $rateEvents);
+        $this->assertSame('£185.00 · Oak Suite', $rateEvents[0]['title']);
+        $this->assertSame('2026-02-10', $rateEvents[0]['start']);
+        $this->assertTrue($rateEvents[0]['extendedProps']['from_beds24']);
+        $this->assertEqualsWithDelta(185.0, (float) $rateEvents[0]['extendedProps']['rate'], 0.001);
+        $this->assertSame('2026-02-12', $rateEvents[1]['end']);
+    }
+
+    public function test_calendar_events_do_not_include_rates_from_other_rooms(): void
+    {
+        $property = Property::factory()->create();
+        $selected = Room::factory()->create(['property_id' => $property->id, 'name' => 'Oak Suite']);
+        $other = Room::factory()->create(['property_id' => $property->id, 'name' => 'Garden Room']);
+
+        PricingOverride::query()->create([
+            'room_id' => $other->id,
+            'start_date' => '2026-03-05',
+            'end_date' => '2026-03-05',
+            'rate' => 150,
+            'is_enabled' => true,
+        ]);
+
+        $rateEvents = collect($this->actingAs($this->actingAsSuperAdmin())
+            ->getJson(route('admin.calendar.events', [
+                'property_id' => $property->id,
+                'room_id' => $selected->id,
+                'start' => '2026-03-01',
+                'end' => '2026-03-31',
+            ]))
+            ->assertOk()
+            ->json())
+            ->where('extendedProps.type', 'rate')
+            ->values();
+
+        $this->assertCount(0, $rateEvents);
     }
 
     public function test_calendar_events_endpoint_titles_show_guest_name_and_reference(): void

@@ -4,8 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\ChannelAccount;
 use App\Models\Communication;
+use App\Models\Reservation;
+use App\Models\Setting;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
+use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Spatie\Permission\Models\Role;
@@ -28,6 +31,32 @@ class MessageInboxTest extends TestCase
         $user->assignRole(Role::findByName('Super Admin'));
 
         return $user;
+    }
+
+    private function inboundMessage(array $attributes = []): Communication
+    {
+        return Communication::factory()->create(array_merge([
+            'channel' => 'beds24',
+            'direction' => 'inbound',
+            'body' => 'Is late checkout possible?',
+            'sender_name' => 'Jane Doe',
+            'status' => 'pending',
+            'metadata' => ['beds24_booking_id' => 1001, 'beds24_message_id' => 550],
+        ], $attributes));
+    }
+
+    private function configureOpenAi(array $reply): void
+    {
+        $this->seed(SettingsSeeder::class);
+        Setting::query()->where('key', 'ai_provider')->update(['value' => 'openai']);
+        Setting::query()->where('key', 'openai_api_key')->update(['value' => Setting::encryptSecret('sk-test-openai')]);
+        cache()->forget('settings.all');
+
+        Http::fake([
+            'api.openai.com/*' => Http::response([
+                'choices' => [['message' => ['content' => $reply['content'] ?? 'Thanks for asking!']]],
+            ], 200),
+        ]);
     }
 
     public function test_super_admin_can_view_inbox_with_only_beds24_messages(): void
@@ -123,5 +152,81 @@ class MessageInboxTest extends TestCase
             ->post(route('admin.messages.fetch'))
             ->assertRedirect(route('admin.messages.index'))
             ->assertSessionHas('status');
+    }
+
+    public function test_super_admin_can_ai_draft_a_reply_for_an_inbound_message(): void
+    {
+        $user = $this->adminUser();
+        $reservation = Reservation::factory()->create([
+            'reference' => 'CH-ABC123',
+            'check_in' => now()->addDays(10)->toDateString(),
+            'check_out' => now()->addDays(12)->toDateString(),
+        ]);
+        $message = $this->inboundMessage(['reservation_id' => $reservation->id]);
+
+        $this->configureOpenAi(['content' => 'Of course, late checkout is usually available.']);
+
+        $this->actingAs($user)
+            ->getJson(route('admin.messages.draft', $message))
+            ->assertOk()
+            ->assertJsonPath('draft', 'Of course, late checkout is usually available.');
+
+        Http::assertSent(function ($request) use ($reservation, $message): bool {
+            $payload = $request->data();
+            $userPrompt = $payload['messages'][1]['content'] ?? '';
+
+            return str_contains($userPrompt, $message->body)
+                && str_contains($userPrompt, 'Jane Doe')
+                && str_contains($userPrompt, $reservation->reference);
+        });
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'messages.drafted',
+            'record_type' => 'communication',
+            'record_id' => (string) $message->id,
+        ]);
+    }
+
+    public function test_ai_draft_is_denied_without_communications_send_permission(): void
+    {
+        $user = User::factory()->create();
+        $message = $this->inboundMessage();
+
+        $this->actingAs($user)
+            ->getJson(route('admin.messages.draft', $message))
+            ->assertForbidden();
+    }
+
+    public function test_ai_draft_returns_error_when_no_provider_configured(): void
+    {
+        $user = $this->adminUser();
+        $message = $this->inboundMessage();
+
+        $response = $this->actingAs($user)
+            ->getJson(route('admin.messages.draft', $message));
+
+        $response->assertStatus(422)
+            ->assertJsonStructure(['error']);
+    }
+
+    public function test_ai_draft_is_not_available_for_outbound_messages(): void
+    {
+        $user = $this->adminUser();
+        $message = $this->inboundMessage(['direction' => 'outbound']);
+
+        $this->actingAs($user)
+            ->getJson(route('admin.messages.draft', $message))
+            ->assertNotFound();
+    }
+
+    public function test_show_page_includes_ai_draft_button(): void
+    {
+        $user = $this->adminUser();
+        $message = $this->inboundMessage();
+
+        $this->actingAs($user)
+            ->get(route('admin.messages.show', $message))
+            ->assertOk()
+            ->assertSee('Draft with AI');
     }
 }

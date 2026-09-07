@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ChannelAccount;
 use App\Models\Communication;
+use App\Services\AI\AiAssistantService;
 use App\Services\Audit\AuditLogger;
 use App\Services\Beds24\Beds24MessageService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -16,6 +18,7 @@ class MessageInboxController extends Controller
     public function __construct(
         private readonly Beds24MessageService $messages,
         private readonly AuditLogger $auditLogger,
+        private readonly AiAssistantService $assistant,
     ) {}
 
     public function index(Request $request): View
@@ -96,5 +99,26 @@ class MessageInboxController extends Controller
         } catch (\DomainException $e) {
             return back()->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    public function draft(Communication $message): JsonResponse
+    {
+        abort_unless($message->channel === 'beds24' && $message->direction === 'inbound', 404);
+
+        $draft = $this->assistant->draftReply(
+            guestMessage: $message->body,
+            senderName: $message->sender_name,
+            reservation: $message->reservation,
+        );
+
+        if (! $draft) {
+            return response()->json([
+                'error' => 'The AI draft is unavailable right now. Check the AI API key is configured, then try again.',
+            ], 422);
+        }
+
+        $this->auditLogger->log('messages.drafted', 'messages', 'communication', (string) $message->id);
+
+        return response()->json(['draft' => $draft]);
     }
 }

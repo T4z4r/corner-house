@@ -78,12 +78,18 @@
             <div class="card-header bg-white fw-semibold">Reply via Beds24</div>
             <div class="card-body">
                 @can('communications.send')
-                    <form method="POST" action="{{ route('admin.messages.reply', $message) }}">
+                    <form method="POST" action="{{ route('admin.messages.reply', $message) }}" id="replyForm">
                         @csrf
-                        <div class="mb-2">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
                             <label class="form-label">Message *</label>
-                            <textarea name="body" class="form-control" rows="4" placeholder="Your reply will be sent to the guest's channel inbox (Airbnb / Booking.com etc)." required>{{ old('body') }}</textarea>
+                            <button type="button" class="btn btn-sm btn-outline-info" id="aiDraftBtn" data-draft-url="{{ route('admin.messages.draft', $message) }}">
+                                <i class="bi bi-sparkles me-1"></i>Draft with AI
+                            </button>
                         </div>
+                        <div class="mb-2">
+                            <textarea name="body" id="replyBody" class="form-control" rows="4" placeholder="Your reply will be sent to the guest's channel inbox (Airbnb / Booking.com etc)." required>{{ old('body') }}</textarea>
+                        </div>
+                        <div id="aiDraftHint" class="d-none small text-muted mb-2"></div>
                         @if ($errors->any())
                             <div class="alert alert-danger py-2 small">{{ $errors->first() }}</div>
                         @endif
@@ -96,3 +102,51 @@
         </div>
     @endif
 @endsection
+
+@push('scripts')
+    <script>
+        (function () {
+            const btn = document.getElementById('aiDraftBtn');
+            if (!btn) return;
+
+            const hint = document.getElementById('aiDraftHint');
+            const body = document.getElementById('replyBody');
+
+            btn.addEventListener('click', async function () {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Drafting...';
+                if (hint) hint.classList.add('d-none');
+
+                try {
+                    const res = await fetch(btn.dataset.draftUrl, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                    });
+                    const data = await res.json();
+
+                    if (!res.ok) {
+                        if (hint) {
+                            hint.textContent = data.error || 'Draft failed.';
+                            hint.classList.remove('d-none');
+                        }
+                        return;
+                    }
+
+                    body.value = data.draft;
+                    body.focus();
+                    if (hint) {
+                        hint.textContent = 'AI draft inserted. Review and edit before sending.';
+                        hint.classList.remove('d-none');
+                    }
+                } catch (e) {
+                    if (hint) {
+                        hint.textContent = 'Could not reach the draft feature. Please try again.';
+                        hint.classList.remove('d-none');
+                    }
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-sparkles me-1"></i>Draft with AI';
+                }
+            });
+        })();
+    </script>
+@endpush

@@ -7,6 +7,7 @@ use App\Models\CompetitorRate;
 use App\Models\PricingOverride;
 use App\Models\PricingRule;
 use App\Models\Property;
+use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\Setting;
 use App\Services\Pricing\PricingEngine;
@@ -171,6 +172,41 @@ class PricingEngineTest extends TestCase
 
         $this->assertSame(100.0, $this->engine->calculateRateForDate($room, $date, occupancyPct: 50));
         $this->assertSame(125.0, $this->engine->calculateRateForDate($room, $date, occupancyPct: 90));
+    }
+
+    public function test_occupancy_is_derived_from_live_reservations_when_not_supplied(): void
+    {
+        $property = Property::factory()->create();
+        $roomA = Room::factory()->create(['property_id' => $property->id, 'status' => 'active', 'base_rate' => 100]);
+        $roomB = Room::factory()->create(['property_id' => $property->id, 'status' => 'active', 'base_rate' => 100]);
+        Room::factory()->create(['property_id' => $property->id, 'status' => 'inactive', 'base_rate' => 100]);
+        $date = now()->addDays(10);
+
+        PricingRule::create([
+            'property_id' => $property->id,
+            'name' => 'High occupancy +25%',
+            'rule_type' => 'occupancy',
+            'adjustment_type' => 'percent',
+            'adjustment_value' => 25,
+            'occupancy_threshold' => 50,
+            'priority' => 5,
+        ]);
+
+        // No bookings yet: derived occupancy is 0%, so the rule stays dormant.
+        $this->assertSame(100.0, $this->engine->calculateRateForDate($roomA, $date));
+
+        // One of the two sellable (active) rooms is booked for the night:
+        // derived occupancy is 50%, which passes the threshold. The inactive
+        // room is not counted as sellable.
+        Reservation::factory()->create([
+            'property_id' => $property->id,
+            'room_id' => $roomA->id,
+            'check_in' => $date->copy()->subDay()->toDateString(),
+            'check_out' => $date->copy()->addDay()->toDateString(),
+            'status' => 'confirmed',
+        ]);
+
+        $this->assertSame(125.0, $this->engine->calculateRateForDate($roomB, $date));
     }
 
     public function test_calculate_for_range_totals_nightly_rates(): void

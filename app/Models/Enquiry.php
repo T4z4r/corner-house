@@ -36,8 +36,8 @@ class Enquiry extends Model
     ];
 
     protected $casts = [
-        'check_in' => 'date',
-        'check_out' => 'date',
+        'check_in' => 'date:Y-m-d',
+        'check_out' => 'date:Y-m-d',
         'nights' => 'integer',
         'drinks_package' => 'boolean',
         'terms_accepted' => 'boolean',

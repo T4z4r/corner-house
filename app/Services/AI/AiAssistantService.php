@@ -5,6 +5,7 @@ namespace App\Services\AI;
 use App\Models\AiConversation;
 use App\Models\AiMessage;
 use App\Models\Property;
+use App\Models\Reservation;
 use App\Models\Room;
 use App\Services\Area\AreaIntelligenceService;
 use App\Services\Availability\AvailabilityService;
@@ -394,5 +395,40 @@ class AiAssistantService
     public function newSessionId(): string
     {
         return (string) Str::uuid();
+    }
+
+    /**
+     * Draft a reply to a guest's inbound message (e.g. from an OTA inbox).
+     * Returns null when the AI provider is not configured or fails, so the
+     * staff member can fall back to writing the reply manually.
+     */
+    public function draftReply(string $guestMessage, ?string $senderName = null, ?Reservation $reservation = null): ?string
+    {
+        $context = [
+            'You are the Corner House host. Draft a warm, professional reply to the guest. Return only the reply body — no greeting of your own, no preamble, no quotation marks.',
+            'The reply will be reviewed and sent by a staff member, so it can be helpful and specific while staying human.',
+        ];
+
+        if ($senderName) {
+            $context[] = "Guest name: {$senderName}.";
+        }
+
+        if ($reservation) {
+            $details = collect([
+                'Reference: '.$reservation->reference,
+                $reservation->check_in ? 'Check-in: '.$reservation->check_in->format('d M Y') : null,
+                $reservation->check_out ? 'Check-out: '.$reservation->check_out->format('d M Y') : null,
+                $reservation->room?->name ? 'Room: '.$reservation->room->name : null,
+            ])->filter()->implode('. ');
+
+            $context[] = "Booking context: {$details}.";
+        }
+
+        $context[] = "The guest's message:\n".$guestMessage;
+
+        return $this->provider->complete(
+            $this->provider->instructions(),
+            implode("\n", $context),
+        );
     }
 }
