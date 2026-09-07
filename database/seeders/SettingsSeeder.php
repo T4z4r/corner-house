@@ -181,27 +181,47 @@ class SettingsSeeder extends Seeder
     }
 
     /**
-     * Representative England school-holiday windows (term holidays). Edited
-     * by the admin from the Settings page; the 5% weekend uplift treats the
-     * Friday-Sunday of each window like a bank-holiday weekend.
+     * Exact uplift weekends supplied by the client (each weekend = Fri-Sun).
+     * Edited by the admin from the Settings page; the 5% weekend uplift
+     * applies on the Friday, Saturday and Sunday of every window.
      *
      * @return array<int, array{label: string, start: string, end: string}>
      */
     public static function defaultSchoolHolidayPeriods(): array
     {
         return [
-            ['label' => 'February half term', 'start' => '2026-02-16', 'end' => '2026-02-20'],
-            ['label' => 'Easter holiday', 'start' => '2026-03-30', 'end' => '2026-04-10'],
-            ['label' => 'May half term', 'start' => '2026-05-25', 'end' => '2026-05-29'],
-            ['label' => 'Summer holiday', 'start' => '2026-07-20', 'end' => '2026-08-31'],
-            ['label' => 'October half term', 'start' => '2026-10-26', 'end' => '2026-10-30'],
-            ['label' => 'Christmas holiday', 'start' => '2026-12-21', 'end' => '2027-01-04'],
-            ['label' => 'February half term 2027', 'start' => '2027-02-15', 'end' => '2027-02-19'],
-            ['label' => 'Easter holiday 2027', 'start' => '2027-03-29', 'end' => '2027-04-09'],
-            ['label' => 'May half term 2027', 'start' => '2027-05-31', 'end' => '2027-06-04'],
-            ['label' => 'Summer holiday 2027', 'start' => '2027-07-23', 'end' => '2027-08-31'],
-            ['label' => 'October half term 2027', 'start' => '2027-10-25', 'end' => '2027-10-29'],
-            ['label' => 'Christmas holiday 2027', 'start' => '2027-12-20', 'end' => '2028-01-04'],
+            ['label' => '23–25 Oct 2026', 'start' => '2026-10-23', 'end' => '2026-10-25'],
+            ['label' => '30 Oct – 1 Nov 2026', 'start' => '2026-10-30', 'end' => '2026-11-01'],
+            ['label' => '18–20 Dec 2026', 'start' => '2026-12-18', 'end' => '2026-12-20'],
+            ['label' => '12–14 Feb 2027', 'start' => '2027-02-12', 'end' => '2027-02-14'],
+            ['label' => '26–28 Mar 2027', 'start' => '2027-03-26', 'end' => '2027-03-28'],
+            ['label' => '2–4 Apr 2027', 'start' => '2027-04-02', 'end' => '2027-04-04'],
+            ['label' => '9–11 Apr 2027', 'start' => '2027-04-09', 'end' => '2027-04-11'],
+            ['label' => '28–30 May 2027', 'start' => '2027-05-28', 'end' => '2027-05-30'],
+            ['label' => '23–25 Jul 2027', 'start' => '2027-07-23', 'end' => '2027-07-25'],
+            ['label' => '30 Jul – 1 Aug 2027', 'start' => '2027-07-30', 'end' => '2027-08-01'],
+            ['label' => '6–8 Aug 2027', 'start' => '2027-08-06', 'end' => '2027-08-08'],
+            ['label' => '13–15 Aug 2027', 'start' => '2027-08-13', 'end' => '2027-08-15'],
+            ['label' => '20–22 Aug 2027', 'start' => '2027-08-20', 'end' => '2027-08-22'],
+            ['label' => '27–29 Aug 2027', 'start' => '2027-08-27', 'end' => '2027-08-29'],
+            ['label' => '3–5 Sep 2027', 'start' => '2027-09-03', 'end' => '2027-09-05'],
+            ['label' => '22–24 Oct 2027', 'start' => '2027-10-22', 'end' => '2027-10-24'],
+            ['label' => '29–31 Oct 2027', 'start' => '2027-10-29', 'end' => '2027-10-31'],
+            ['label' => '17–19 Dec 2027', 'start' => '2027-12-17', 'end' => '2027-12-19'],
+            ['label' => '24–26 Dec 2027 (Christmas, uplifted as bank holiday)', 'start' => '2027-12-24', 'end' => '2027-12-26'],
+            ['label' => '31 Dec 2027 – 2 Jan 2028 (New Year)', 'start' => '2027-12-31', 'end' => '2028-01-02'],
+            ['label' => '11–13 Feb 2028', 'start' => '2028-02-11', 'end' => '2028-02-13'],
+            ['label' => '7–9 Apr 2028', 'start' => '2028-04-07', 'end' => '2028-04-09'],
+            ['label' => '14–16 Apr 2028 (Good Friday)', 'start' => '2028-04-14', 'end' => '2028-04-16'],
+            ['label' => '21–23 Apr 2028', 'start' => '2028-04-21', 'end' => '2028-04-23'],
+            ['label' => '26–28 May 2028', 'start' => '2028-05-26', 'end' => '2028-05-28'],
+            ['label' => '21–23 Jul 2028', 'start' => '2028-07-21', 'end' => '2028-07-23'],
+            ['label' => '28–30 Jul 2028', 'start' => '2028-07-28', 'end' => '2028-07-30'],
+            ['label' => '4–6 Aug 2028', 'start' => '2028-08-04', 'end' => '2028-08-06'],
+            ['label' => '11–13 Aug 2028', 'start' => '2028-08-11', 'end' => '2028-08-13'],
+            ['label' => '18–20 Aug 2028', 'start' => '2028-08-18', 'end' => '2028-08-20'],
+            ['label' => '25–27 Aug 2028', 'start' => '2028-08-25', 'end' => '2028-08-27'],
+            ['label' => '1–3 Sep 2028', 'start' => '2028-09-01', 'end' => '2028-09-03'],
         ];
     }
 
