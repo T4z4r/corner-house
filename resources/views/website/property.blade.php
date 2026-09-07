@@ -115,7 +115,7 @@
                     <div class="ch-info-card-content">
                         <span class="ch-info-card-badge">Minimum stay</span>
                         <h3 class="ch-info-card-title">Length of stay</h3>
-                        <p class="ch-info-card-text">2 nights minimum. 3 nights required on bank holiday weekends. 48 hours advance booking notice.</p>
+                        <p class="ch-info-card-text">2 nights minimum. 3 nights required on bank holiday weekends. 24 hours advance booking notice.</p>
                     </div>
                 </div>
             </div>

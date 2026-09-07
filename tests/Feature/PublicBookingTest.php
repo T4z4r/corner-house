@@ -61,6 +61,82 @@ class PublicBookingTest extends TestCase
         ]))->assertRedirect(route('booking.search'));
     }
 
+    public function test_check_in_on_the_checkout_day_is_rejected(): void
+    {
+        $room = Room::factory()->create(['base_rate' => 100, 'status' => 'active']);
+        $checkIn = now()->addDays(10)->toDateString();
+        $checkOut = now()->addDays(12)->toDateString();
+
+        app(BookingService::class)->create([
+            'room_id' => $room->id,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'guests_count' => 1,
+            'status' => 'confirmed',
+        ]);
+
+        // A new stay cannot begin on the day the current guest departs.
+        $this->get(route('booking.details', [
+            'room' => $room,
+            'check_in' => $checkOut,
+            'check_out' => now()->addDays(14)->toDateString(),
+            'guests' => 1,
+        ]))
+            ->assertRedirect(route('booking.search'))
+            ->assertSessionHasErrors(['error' => 'Check-in is blocked on the day the current guest departs (no same-day turnaround).']);
+    }
+
+    public function test_check_in_the_day_after_checkout_is_allowed(): void
+    {
+        $room = Room::factory()->create(['base_rate' => 100, 'status' => 'active']);
+        $checkIn = now()->addDays(10)->toDateString();
+        $checkOut = now()->addDays(12)->toDateString();
+
+        app(BookingService::class)->create([
+            'room_id' => $room->id,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'guests_count' => 1,
+            'status' => 'confirmed',
+        ]);
+
+        $this->get(route('booking.details', [
+            'room' => $room,
+            'check_in' => now()->addDays(13)->toDateString(),
+            'check_out' => now()->addDays(15)->toDateString(),
+            'guests' => 1,
+        ]))->assertOk();
+    }
+
+    public function test_hold_is_refused_when_check_in_falls_on_the_checkout_day(): void
+    {
+        $room = Room::factory()->create(['base_rate' => 80, 'status' => 'active']);
+        $checkIn = now()->addDays(10)->toDateString();
+        $checkOut = now()->addDays(12)->toDateString();
+
+        app(BookingService::class)->create([
+            'room_id' => $room->id,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'guests_count' => 1,
+            'status' => 'confirmed',
+        ]);
+
+        $this->post(route('booking.pay'), [
+            'room_id' => $room->id,
+            'check_in' => $checkOut,
+            'check_out' => now()->addDays(14)->toDateString(),
+            'guests_count' => 1,
+            'guest_first_name' => 'Alex',
+            'guest_last_name' => 'Guest',
+            'guest_email' => 'alex@example.com',
+        ])
+            ->assertSessionHasErrors(['error' => 'Room unavailable: Check-in is blocked on the day the current guest departs (no same-day turnaround).']);
+
+        $this->assertSame(1, Reservation::query()->count());
+        $this->assertDatabaseMissing('booking_holds', ['room_id' => $room->id]);
+    }
+
     public function test_guest_can_hold_and_pay_then_confirm_from_session(): void
     {
         $room = Room::factory()->create(['base_rate' => 80, 'status' => 'active']);

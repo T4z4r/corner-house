@@ -42,6 +42,7 @@ class SettingsSeeder extends Seeder
             ['group' => 'booking', 'key' => 'min_price_weekend', 'value' => '600', 'label' => 'Minimum price - weekend (£/night)', 'cast' => 'decimal:2'],
             ['group' => 'pricing', 'key' => 'holiday_weekend_uplift_enabled', 'value' => '1', 'label' => 'Weekend uplift on UK holidays enabled', 'cast' => 'boolean'],
             ['group' => 'pricing', 'key' => 'holiday_weekend_uplift', 'value' => '5', 'label' => 'Weekend uplift on UK holidays (%)', 'cast' => 'integer'],
+            ['group' => 'pricing', 'key' => 'school_holiday_periods', 'value' => json_encode(SettingsSeeder::defaultSchoolHolidayPeriods()), 'label' => 'School holiday periods (weekend uplift windows)', 'cast' => 'json'],
             ['group' => 'notifications', 'key' => 'email_notifications_enabled', 'value' => '1', 'label' => 'Enable email notifications', 'cast' => 'boolean'],
             ['group' => 'notifications', 'key' => 'email_booking_confirmation_enabled', 'value' => '1', 'label' => 'Booking confirmation emails', 'cast' => 'boolean'],
             ['group' => 'notifications', 'key' => 'email_payment_confirmation_enabled', 'value' => '1', 'label' => 'Payment confirmation emails', 'cast' => 'boolean'],
@@ -180,6 +181,31 @@ class SettingsSeeder extends Seeder
     }
 
     /**
+     * Representative England school-holiday windows (term holidays). Edited
+     * by the admin from the Settings page; the 5% weekend uplift treats the
+     * Friday-Sunday of each window like a bank-holiday weekend.
+     *
+     * @return array<int, array{label: string, start: string, end: string}>
+     */
+    public static function defaultSchoolHolidayPeriods(): array
+    {
+        return [
+            ['label' => 'February half term', 'start' => '2026-02-16', 'end' => '2026-02-20'],
+            ['label' => 'Easter holiday', 'start' => '2026-03-30', 'end' => '2026-04-10'],
+            ['label' => 'May half term', 'start' => '2026-05-25', 'end' => '2026-05-29'],
+            ['label' => 'Summer holiday', 'start' => '2026-07-20', 'end' => '2026-08-31'],
+            ['label' => 'October half term', 'start' => '2026-10-26', 'end' => '2026-10-30'],
+            ['label' => 'Christmas holiday', 'start' => '2026-12-21', 'end' => '2027-01-04'],
+            ['label' => 'February half term 2027', 'start' => '2027-02-15', 'end' => '2027-02-19'],
+            ['label' => 'Easter holiday 2027', 'start' => '2027-03-29', 'end' => '2027-04-09'],
+            ['label' => 'May half term 2027', 'start' => '2027-05-31', 'end' => '2027-06-04'],
+            ['label' => 'Summer holiday 2027', 'start' => '2027-07-23', 'end' => '2027-08-31'],
+            ['label' => 'October half term 2027', 'start' => '2027-10-25', 'end' => '2027-10-29'],
+            ['label' => 'Christmas holiday 2027', 'start' => '2027-12-20', 'end' => '2028-01-04'],
+        ];
+    }
+
+    /**
      * @return array<int, array{title: string, items: array<int, string>, flag?: bool}>
      */
     public static function defaultBookingRules(): array
@@ -201,6 +227,7 @@ class SettingsSeeder extends Seeder
                 'items' => [
                     'Minimum stay of 2 nights.',
                     'Minimum of 3 nights over bank holiday weekends, and 3 nights over Christmas and New Year.',
+                    'Long-stay discounts are applied automatically: 10% off stays of 4 nights or more, 25% off 7 nights or more, 30% off 14 nights or more, and 35% off 28 nights or more.',
                     'Check-in from 3:00pm. Check-out by 12:00 noon.',
                     'Earlier check-in or later check-out may be possible if the house is free either side. Please ask; it is never guaranteed.',
                 ],

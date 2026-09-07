@@ -542,6 +542,39 @@ class PricingEngineTest extends TestCase
         $this->assertSame(175.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-05-16')));
     }
 
+    public function test_weekend_uplift_applies_during_school_holidays(): void
+    {
+        Setting::firstOrCreate(['key' => 'holiday_weekend_uplift_enabled'], ['value' => '1', 'group' => 'pricing', 'label' => 'Uplift enabled', 'cast' => 'boolean']);
+        Setting::firstOrCreate(['key' => 'holiday_weekend_uplift'], ['value' => '5', 'group' => 'pricing', 'label' => 'Uplift', 'cast' => 'integer']);
+        Setting::firstOrCreate(['key' => 'school_holiday_periods'], ['value' => json_encode([
+            ['label' => 'Summer holiday', 'start' => '2026-07-20', 'end' => '2026-08-31'],
+        ]), 'group' => 'pricing', 'label' => 'School holidays', 'cast' => 'json']);
+
+        $room = $this->makeRoom(100);
+
+        // Saturday 1 August 2026 sits inside the school-holiday window.
+        $this->assertSame(105.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-08-01')));
+
+        // A mid-week night in the same window is not uplifted (weekend days only).
+        $this->assertSame(100.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-07-29')));
+
+        // A normal Saturday outside any school holiday is not uplifted.
+        $this->assertSame(100.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-06-13')));
+    }
+
+    public function test_school_holiday_uplift_is_off_when_disabled(): void
+    {
+        Setting::firstOrCreate(['key' => 'holiday_weekend_uplift_enabled'], ['value' => '0', 'group' => 'pricing', 'label' => 'Uplift enabled', 'cast' => 'boolean']);
+        Setting::firstOrCreate(['key' => 'holiday_weekend_uplift'], ['value' => '5', 'group' => 'pricing', 'label' => 'Uplift', 'cast' => 'integer']);
+        Setting::firstOrCreate(['key' => 'school_holiday_periods'], ['value' => json_encode([
+            ['label' => 'Summer holiday', 'start' => '2026-07-20', 'end' => '2026-08-31'],
+        ]), 'group' => 'pricing', 'label' => 'School holidays', 'cast' => 'json']);
+
+        $room = $this->makeRoom(100);
+
+        $this->assertSame(100.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-08-01')));
+    }
+
     public function test_holiday_weekend_uplift_skips_event_rules_and_explicit_rates(): void
     {
         Setting::firstOrCreate(['key' => 'holiday_weekend_uplift_enabled'], ['value' => '1', 'group' => 'pricing', 'label' => 'Uplift enabled', 'cast' => 'boolean']);

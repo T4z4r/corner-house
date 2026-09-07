@@ -262,15 +262,15 @@ class PricingEngine
             }
         }
 
-        // 4. Optional 5% weekend uplift during UK holiday periods. It is skipped
-        // when a manual override, explicit calendar rate, or a fixed event/holiday
-        // rule already set the price for the date.
+        // 4. Optional 5% weekend uplift during UK holiday periods and school
+        // holidays. It is skipped when a manual override, explicit calendar
+        // rate, or a fixed event/holiday rule already set the price for the date.
         if (
             $blockRate === null
             && $winningTier !== 'event'
             && $winningTier !== 'holiday'
             && (bool) Setting::getValue('holiday_weekend_uplift_enabled', false)
-            && $this->isUKBankHolidayWeekend($date)
+            && $this->isWeekendUpliftPeriod($date)
         ) {
             $upliftPct = (float) Setting::getValue('holiday_weekend_uplift', 5);
             $rate *= 1 + ($upliftPct / 100);
@@ -512,9 +512,10 @@ class PricingEngine
     /**
      * Whether the date is a Friday, Saturday or Sunday that forms part of a
      * UK holiday period: a bank-holiday weekend (the holiday or the two
-     * nights before it) or the festive weeks around Christmas / New Year.
+     * nights before it), the festive weeks around Christmas / New Year, or
+     * a school-holiday window.
      */
-    private function isUKBankHolidayWeekend(Carbon $date): bool
+    private function isWeekendUpliftPeriod(Carbon $date): bool
     {
         if (! in_array($date->dayOfWeek, [Carbon::FRIDAY, Carbon::SATURDAY, Carbon::SUNDAY])) {
             return false;
@@ -525,8 +526,38 @@ class PricingEngine
             return true;
         }
 
+        if ($this->isSchoolHolidayDay($date)) {
+            return true;
+        }
+
         for ($offset = 0; $offset <= 2; $offset++) {
             if ($this->isBankHolidayDate($date->copy()->addDays($offset))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether the date falls within a configured school-holiday period
+     * (a JSON list of {label, start, end} entries from the Settings).
+     */
+    private function isSchoolHolidayDay(Carbon $date): bool
+    {
+        foreach ((array) Setting::getValue('school_holiday_periods', []) as $period) {
+            if (! is_array($period) || empty($period['start']) || empty($period['end'])) {
+                continue;
+            }
+
+            try {
+                $start = Carbon::parse($period['start'])->startOfDay();
+                $end = Carbon::parse($period['end'])->startOfDay();
+            } catch (\Throwable) {
+                continue;
+            }
+
+            if ($date->gte($start) && $date->lte($end)) {
                 return true;
             }
         }

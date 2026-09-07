@@ -38,6 +38,19 @@ class AvailabilityService
             $conflicts[] = 'Overlapping confirmed or pending reservation';
         }
 
+        // Checkout day turnaround: a guest cannot check in on the date the
+        // current guest departs, so the room is never turned around same-day.
+        $turnaroundConflict = Reservation::query()
+            ->active()
+            ->where('room_id', $room->id)
+            ->whereDate('check_out', $checkIn->toDateString())
+            ->when($ignoredReservationIds, fn ($q) => $q->whereNotIn('id', $ignoredReservationIds))
+            ->exists();
+
+        if ($turnaroundConflict) {
+            $conflicts[] = 'Check-in is blocked on the day the current guest departs (no same-day turnaround).';
+        }
+
         $holdOverlap = BookingHold::query()
             ->active()
             ->overlapsDates($room->id, $checkIn, $checkOut)
