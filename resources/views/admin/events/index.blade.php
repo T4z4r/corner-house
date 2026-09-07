@@ -53,6 +53,46 @@
         </form>
     </div>
 
+    @if (count($dateRules['bankHolidayWeekends']) || count($dateRules['upliftWeekends']))
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white border-bottom py-3">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <h6 class="mb-0"><i class="bi bi-calendar-heart me-1"></i>Bank-holiday weekends and uplift dates</h6>
+                    <span class="small text-muted">System-generated from pricing rules</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Dates</th>
+                                <th>Applies to</th>
+                                <th>Effect</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($dateRules['bankHolidayWeekends'] as $rule)
+                                <tr>
+                                    <td class="small">{{ $rule['start']->format('d M Y') }} → {{ $rule['end']->format('d M Y') }}</td>
+                                    <td class="fw-semibold">{{ $rule['label'] }}</td>
+                                    <td><span class="badge text-bg-success">3-night minimum</span></td>
+                                </tr>
+                            @endforeach
+                            @foreach ($dateRules['upliftWeekends'] as $rule)
+                                <tr>
+                                    <td class="small">{{ $rule['start']->format('d M Y') }} → {{ $rule['end']->format('d M Y') }}</td>
+                                    <td class="fw-semibold">{{ $rule['label'] }}</td>
+                                    <td><span class="badge text-bg-warning">5% weekend uplift</span></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    @endif
+
     @if (! $aiConfigured)
         <div class="alert alert-warning py-2 small">
             <i class="bi bi-info-circle me-1"></i>No AI provider API key is set. "Generate with AI" will fall back to standard UK bank holidays until a provider is configured in Settings.

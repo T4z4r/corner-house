@@ -9,7 +9,7 @@
 | # | Requirement | Status |
 |---|---|---|
 | 1 | Booking rules (24h notice, no same-day check-in, checkout-day block, holiday min-stay, long-stay discounts) | **Implemented** — all gaps closed on 7 Sep 2026 |
-| 2 | Seasonal/weekend pricing (5% UK holiday uplift) | **Implemented** for UK bank holidays + festive window + school holidays; client-specific seasonal dates still to confirm |
+| 2 | Seasonal/weekend pricing (5% UK holiday uplift) | **Implemented** for UK bank-holiday weekends + festive window + client's exact 2026–2028 school-holiday windows |
 | 3 | Dynamic pricing | Rule engine implemented (incl. manual override); automated demand pricing is a scope decision pending |
 | 4 | Automated guest messages | Implemented for email; Beds24/OTA outbound messaging not yet wired (flow pending agreement) |
 
@@ -34,14 +34,14 @@ All verification performed against a copy of the live database; every change is 
 - Discount tiers now appear on the public booking-rules page — `database/seeders/SettingsSeeder.php:230` (Length of stay group).
 
 ### 4. School holidays treated as part of the 5% weekend uplift
-- New JSON setting `school_holiday_periods` (`{label, start, end}`) seeded with representative England term holidays for 2026/2027 — `database/seeders/SettingsSeeder.php:45`, defaults in `defaultSchoolHolidayPeriods()` `:190-206`. Admin-editable from Settings → Pricing (JSON textarea).
-- Engine method renamed `isUKBankHolidayWeekend` → `isWeekendUpliftPeriod`; a weekend (Fri–Sun) inside a school-holiday window now receives the same +5% as a bank-holiday weekend — `app/Services/Pricing/PricingEngine.php:518-544`; window membership via `isSchoolHolidayDay()` `:546-570`.
+- New JSON setting `school_holiday_periods` (`{label, start, end}`), admin-editable from Settings → Pricing (JSON textarea). Now seeded with the client's exact **32 weekend windows for 2026–2028** — `database/seeders/SettingsSeeder.php:45`, defaults in `defaultSchoolHolidayPeriods()` `:190-225`.
+- Engine method renamed `isUKBankHolidayWeekend` → `isWeekendUpliftPeriod`; a weekend (Fri–Sun) inside a school-holiday window now receives the same +5% as a bank-holiday weekend — `app/Services/Pricing/PricingEngine.php:558`; window membership via `isSchoolHolidayDay()` `:586`.
 - Uplift still never stacks on a manual override, explicit calendar rate, or event/holiday rule (`PricingEngine.php:268-278`).
 - Live database updated: the uplift settings that were missing (`holiday_weekend_uplift_enabled = 1`, `holiday_weekend_uplift = 5`) were inserted, and `school_holiday_periods` created.
 
 ### 5. Live database changes applied
 Updated via a temp-copy workflow (writes on a copy, then swapped in) — `database/database.sqlite` is not tracked by git. Original file backed up at `%TEMP%\opencode\live-db-original-backup.sqlite`.
-- Settings: `min_advance_days` → `1`; inserted `holiday_weekend_uplift_enabled = 1`, `holiday_weekend_uplift = 5`, `school_holiday_periods`.
+- Settings: `min_advance_days` → `1`; inserted `holiday_weekend_uplift_enabled = 1`, `holiday_weekend_uplift = 5`, `school_holiday_periods`. On 7 Sep the live `school_holiday_periods` was replaced with the client's 32 exact windows (was 12 representative England windows): live count verified = 32, first `2026-10-23`, last `2028-09-01`.
 - Pricing rules: 4 × `length_of_stay` tiers (property-wide, recurring).
 - Property `custom_rules`: 48h → 24h advance notice.
 - `website_booking_rules` JSON: long-stay discount bullet added to the Length of stay group.
@@ -50,10 +50,17 @@ Updated via a temp-copy workflow (writes on a copy, then swapped in) — `databa
 - `tests/Feature/PublicBookingTest.php:64` `test_check_in_on_the_checkout_day_is_rejected`
 - `tests/Feature/PublicBookingTest.php:89` `test_check_in_the_day_after_checkout_is_allowed` (control)
 - `tests/Feature/PublicBookingTest.php:111` `test_hold_is_refused_when_check_in_falls_on_the_checkout_day`
-- `tests/Feature/PricingEngineTest.php:545` `test_weekend_uplift_applies_during_school_holidays`
-- `tests/Feature/PricingEngineTest.php:565` `test_school_holiday_uplift_is_off_when_disabled`
+- `tests/Feature/PricingEngineTest.php:634` `test_weekend_uplift_applies_during_school_holidays`
+- `tests/Feature/PricingEngineTest.php:654` `test_school_holiday_uplift_is_off_when_disabled`
 
 Verification: `PricingEngineTest` (26) and `PublicBookingTest` (9) pass, plus all booking/hold/calendar suites. Full Feature run: 312 passed / 8 failed — all 8 are pre-existing, unrelated to these changes (2× AdminResourcesTest mailto asserts, Beds24 vrbo nav-active, iCal `DTEND`/cache-header asserts, weather chat fixture drift, Beds24 network 500 in MessageInbox, and the in-progress enquiries widget date-serialization test). Pint (`--dirty`) clean.
+
+### 7. Bank-holiday weekends: exact window semantics + dates listed in Admin Events
+- Min-stay 3 now triggers on the **bank-holiday weekend window**, not a single date: a Monday holiday covers the preceding Fri–Sun, while a Friday holiday (Good Friday) covers the Easter Fri–Sun weekend. Single source of truth is the new public `PricingEngine::bankHolidayWeekendRanges()` — `PricingEngine.php:465` — used by `isBankHolidayWeekend()` (min-stay) and the Admin Events page. Windows overlap-test as `checkIn < end && checkOut > start`; deduped by start date (Christmas + Boxing Day substitute to the same Monday); Easter Monday omitted (covered by Good Friday's Easter weekend).
+- **Easter fix:** `easter_date()` returned the wrong day on this machine (timezone corruption, e.g. 2027-03-27 instead of 03-28). Replaced with `Carbon::create($year, 3, 21)->addDays(easter_days($year))` — `ukBankHolidaysForYear()` `PricingEngine.php:523`.
+- **Dates now listed in the events page** (the user's request): the Admin Events page (Events & Holidays) renders a system section "Bank-holiday weekends and uplift dates" — every bank-holiday weekend window (3-night minimum badge) and every upcoming uplift weekend from `school_holiday_periods` (5% weekend uplift badge), generated on the fly — `app/Http/Controllers/Admin/EventController.php` `dateRules()`, `resources/views/admin/events/index.blade.php`.
+- Tests: new bank-holiday min-stay tests `test_monday_bank_holiday_weekend_raises_minimum_stay_to_three`, `test_good_friday_weekend_raises_minimum_stay_to_three`, `test_bank_holiday_minimum_stay_applies_in_2028`, `test_christmas_bank_holiday_minimum_stay_starts_on_christmas_eve`; school-holiday uplift tests pinned to the client window (Sat 24 Oct 2026 = 105.0, Wed 28 Oct = 100.0, disabled = 100.0); `AdminEventsTest::test_events_index_lists_system_date_rules`.
+- Verification: `PricingEngineTest` (30) and `AdminEventsTest` (10) pass (40 tests, 95 assertions). Full Feature run: 329 tests / 317 passed / 12 failed-errored — all 12 pre-existing and unrelated (4× Beds24MessageSync SSL cert errors, 2× AdminResourcesTest, Beds24 vrbo nav-active, 2× iCal asserts, weather fixture drift, Beds24 network 500, WIP enquiries widget). Pint (`--dirty`) clean.
 
 ---
 
@@ -74,10 +81,12 @@ Verification: `PricingEngineTest` (26) and `PublicBookingTest` (9) pass, plus al
 
 ### 1d. Minimum 3-night stay on UK bank holidays, Christmas and New Year — implemented
 - Settings: `min_stay_nights = 2`, `min_stay_bank_holiday_nights = 3` — `SettingsSeeder.php:32-33`.
-- Raised to 3 when any night falls on a bank-holiday weekend or the festive window (24 Dec–1 Jan) — `PricingEngine.php` `minimumStayForRange()` `:90`, `isBankHolidayWeekend()` `:447`, `isFestivePeriod()` `:572`.
+- Raised to 3 when any night falls on a bank-holiday **weekend window** or the festive window (24 Dec–1 Jan) — `PricingEngine.php` `minimumStayForRange()` `:90`, `isBankHolidayWeekend()` (window overlap), `isFestivePeriod()` `:612`.
+- A bank holiday usually lands on a Monday, so the window is the **preceding Fri–Sun**; for a Friday holiday (Good Friday) the window is **the holiday through Sunday** (Easter weekend). Windows are the single source in `bankHolidayWeekendRanges()` `:465`.
+- Easter is computed with `easter_days()` (not `easter_date()`, which is timezone-corrupted on this machine) — `ukBankHolidaysForYear()` `:523`.
 - Enforced on the website booking flow — `BookingController.php:97-99`, `:171-173`.
 - Public copy reflects it — `SettingsSeeder.php:229`.
-- Tests: `PricingEngineTest.php:495` `test_festive_period_raises_minimum_stay_to_three`; recurring rule min-stay `:418`.
+- Tests: `PricingEngineTest.php:495` `test_festive_period_raises_minimum_stay_to_three`; recurring rule min-stay `:418`; weekend-window min-stay `test_monday_bank_holiday_weekend_raises_minimum_stay_to_three`, `test_good_friday_weekend_raises_minimum_stay_to_three`, `test_bank_holiday_minimum_stay_applies_in_2028`, `test_christmas_bank_holiday_minimum_stay_starts_on_christmas_eve`.
 
 ### 1e. Long-stay discounts (4n 10%, 7n 25%, 14n 30%, 28n 35%) — implemented and live
 - Seeded tiers, largest qualifying tier wins — `PricingSeeder.php:74-77,82-108` (property-wide, recurring, −10/−25/−30/−35%).
@@ -87,17 +96,18 @@ Verification: `PricingEngineTest` (26) and `PublicBookingTest` (9) pass, plus al
 
 ---
 
-## 2. Seasonal / weekend pricing — implemented; client dates outstanding
+## 2. Seasonal / weekend pricing — implemented
 
-- 5% uplift configured (`holiday_weekend_uplift_enabled = 1`, `holiday_weekend_uplift = 5` — `SettingsSeeder.php:43-44`); now present in the live database.
-- Engine applies **+5% on Fri/Sat/Sun** within UK bank-holiday weekends, the festive window (20 Dec–2 Jan), or a school-holiday window — `PricingEngine.php:268-278`, `isWeekendUpliftPeriod()` `:518`.
-- School holidays are a JSON setting `school_holiday_periods`, default England 2026/2027 windows, admin-editable (Settings → Pricing) — `SettingsSeeder.php:45`, `:190-206`.
+- 5% uplift configured (`holiday_weekend_uplift_enabled = 1`, `holiday_weekend_uplift = 5` — `SettingsSeeder.php:43-44`); present in the live database.
+- Engine applies **+5% on Fri/Sat/Sun** within UK bank-holiday weekends, the festive window (20 Dec–2 Jan), or a school-holiday window — `PricingEngine.php:268-278`, `isWeekendUpliftPeriod()` `:558`.
+- School holidays are a JSON setting `school_holiday_periods` holding the client's **32 exact Fri–Sun weekend windows for 2026–2028**, admin-editable (Settings → Pricing) — `SettingsSeeder.php:45`, `:190-225`. Live database updated to the same 32 windows.
 - Never stacked over a manual override, calendar price block, or event/holiday rule — `PricingEngine.php:268-278`.
-- UK bank holidays computed programmatically (E&W, incl. weekend substitutes) — `PricingEngine.php` `ukBankHolidaysForYear()` `:483`, `isBankHolidayDate()` `:499`.
-- Tests: `PricingEngineTest.php:518` (bank-holiday weekend), `:578` (skips event/explicit rates), `:545` (school holiday), `:565` (disabled).
+- UK bank holidays computed programmatically (E&W, incl. weekend substitutes; Easter via `easter_days()`) — `PricingEngine.php` `ukBankHolidaysForYear()` `:523`, `bankHolidayWeekendRanges()` `:465`.
+- System date rules are summarised on the Admin Events page (Events & Holidays): bank-holiday weekend windows (3-night minimum) and upcoming uplift weekends (5% weekend uplift) — `EventController.php` `dateRules()`, `resources/views/admin/events/index.blade.php`.
+- Tests: `PricingEngineTest.php:607` (bank-holiday weekend), `:667` (skips event/explicit rates), `:634` (school holiday), `:654` (disabled; uplift tests pinned to the client window Sat 24 Oct 2026 = 105.0).
 - Base seasonal/weekend prices are regularly rule-driven (weekday £550, weekend £625 → £645 from Apr 2027) — `PricingSeeder.php:34-52`.
 
-> **Action needed from client:** review the seeded school-holiday windows (Settings → Pricing) and supply any client-specific seasonal date windows as recurring `seasonal` rules (admin Pricing, incl. AI-assisted generation) or per-night calendar blocks.
+> **Action:** the client's exact 32 weekend windows (2026–2028) are now seeded and live. Any *additional* client-specific seasonal dates can still be added as recurring `seasonal` rules (admin Pricing, incl. AI-assisted generation) or per-night calendar blocks.
 
 ---
 
@@ -147,7 +157,10 @@ Channel aspects:
 | ~~Checkout-day turnaround protection~~ | Done (7 Sep) | Automated in `AvailabilityService::isRoomAvailable` |
 | ~~Long-stay discounts in public copy + live rules~~ | Done (7 Sep) | Published on booking-rules page; 4 tiers seeded into production |
 | ~~School holidays in the 5% uplift~~ | Done (7 Sep) | `school_holiday_periods` setting + engine support + uplift settings inserted live |
-| School-holiday date windows | Host | Confirm/adjust the seeded England windows (Settings → Pricing) |
+| ~~School-holiday date windows~~ | Done (7 Sep) | Client's 32 exact 2026–2028 weekend windows seeded + live |
+| ~~Bank-holiday weekend min-stay~~ | Done (7 Sep) | Weekend-window semantics (Mon holiday → preceding Fri–Sun; Good Friday → Easter weekend) via `bankHolidayWeekendRanges()` |
+| ~~Easter date calculation~~ | Done (7 Sep) | Replaced timezone-broken `easter_date()` with `easter_days()` offset from 21 Mar |
+| ~~System date rules on Events page~~ | Done (7 Sep) | Admin Events (Events & Holidays) lists bank-holiday weekends (3-night min) + upcoming uplift windows |
 | Seasonal date windows | Host | Supply client-specific dates as `seasonal` rules or blocks |
 | Automated dynamic pricing scope | Host | In current scope or later phase? |
 | Beds24/OTA messaging capabilities | Dev + Host | Confirm API/channel options; agree flow; then wire outbound |

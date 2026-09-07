@@ -40,6 +40,30 @@ class AdminEventsTest extends TestCase
             ->assertSee('Braunston Canal Festival');
     }
 
+    public function test_events_index_lists_system_date_rules(): void
+    {
+        $start = now()->startOfMonth()->addMonths(3);
+
+        Setting::firstOrCreate(
+            ['key' => 'school_holiday_periods'],
+            ['value' => json_encode([
+                ['label' => 'Test spring uplift weekend', 'start' => $start->toDateString(), 'end' => $start->copy()->addDays(2)->toDateString()],
+            ]), 'group' => 'pricing', 'label' => 'School holidays', 'cast' => 'json'],
+        );
+        cache()->forget('settings.all');
+
+        $response = $this->actingAs($this->adminUser())
+            ->get(route('admin.events.index'));
+
+        $response->assertOk()
+            ->assertSee('Bank-holiday weekends and uplift dates')
+            ->assertSee('Test spring uplift weekend')
+            ->assertSee('5% weekend uplift')
+            ->assertSee('3-night minimum')
+            // Easter weekend falls inside any 24-month window.
+            ->assertSeeText('Easter weekend');
+    }
+
     public function test_events_index_is_forbidden_without_chatbot_permission(): void
     {
         $user = User::factory()->create();

@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\KnowledgeBaseArticle;
 use App\Models\Property;
+use App\Models\Setting;
 use App\Services\AI\AiProviderService;
 use App\Services\Area\LocalEventIntelligenceService;
 use App\Services\Audit\AuditLogger;
+use App\Services\Pricing\PricingEngine;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class EventController extends Controller
@@ -21,6 +24,7 @@ class EventController extends Controller
         private readonly LocalEventIntelligenceService $eventIntelligence,
         private readonly AiProviderService $provider,
         private readonly AuditLogger $auditLogger,
+        private readonly PricingEngine $pricing,
     ) {}
 
     public function index(Request $request): View
@@ -53,7 +57,42 @@ class EventController extends Controller
             'items' => $query->paginate(20)->withQueryString(),
             'range' => $range,
             'aiConfigured' => $this->provider->openaiKey() !== null || $this->provider->claudeKey() !== null,
+            'dateRules' => $this->dateRules(),
         ]);
+    }
+
+    /**
+     * System-generated date rules shown on the page: bank-holiday weekends
+     * (three-night minimum) and the client's weekend-uplift windows.
+     *
+     * @return array{
+     *     bankHolidayWeekends: array<int, array{label: string, start: Carbon, end: Carbon}>,
+     *     upliftWeekends: array<int, array{label: string, start: Carbon, end: Carbon}>,
+     * }
+     */
+    private function dateRules(): array
+    {
+        $windowStart = now()->startOfDay();
+        $windowEnd = now()->addMonths(24)->endOfMonth();
+
+        $upliftWeekends = collect((array) Setting::getValue('school_holiday_periods', []))
+            ->filter(fn (mixed $period): bool => is_array($period)
+                && ! empty($period['start'])
+                && ! empty($period['end'])
+                && ($period['end'] ?? '') >= $windowStart->toDateString())
+            ->map(fn (array $period): array => [
+                'label' => (string) ($period['label'] ?? $period['start']),
+                'start' => Carbon::parse($period['start'])->startOfDay(),
+                'end' => Carbon::parse($period['end'])->startOfDay(),
+            ])
+            ->sortBy(fn (array $period): string => $period['start']->toDateString())
+            ->values()
+            ->all();
+
+        return [
+            'bankHolidayWeekends' => $this->pricing->bankHolidayWeekendRanges($windowStart, $windowEnd),
+            'upliftWeekends' => $upliftWeekends,
+        ];
     }
 
     public function create(): View

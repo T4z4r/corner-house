@@ -446,53 +446,93 @@ class PricingEngine
 
     /**
      * Whether any night of the stay falls within a bank-holiday weekend.
-     * A Monday holiday (including weekend substitutes) pulls the preceding
-     * Friday/Saturday/Sunday nights into the holiday weekend, and Good
-     * Friday covers the Friday/Saturday/Sunday that follows it. Easter
-     * Monday is already covered by the Good Friday window.
      */
     private function isBankHolidayWeekend(Carbon $checkIn, Carbon $checkOut): bool
     {
-        foreach (range($checkIn->year, $checkOut->year) as $year) {
-            foreach ($this->ukBankHolidaysForYear($year) as $holiday) {
+        return $this->bankHolidayWeekendRanges($checkIn, $checkOut) !== [];
+    }
+
+    /**
+     * Bank-holiday weekends (the nights that carry the three-night minimum
+     * stay) that overlap a range, labelled with the holiday they belong to.
+     * A Monday holiday (including weekend substitutes) pulls the preceding
+     * Friday/Saturday/Sunday nights into the holiday weekend, and Good
+     * Friday covers the Friday/Saturday/Sunday that follows it. Easter
+     * Monday is already covered by the Good Friday weekend.
+     *
+     * @return array<int, array{label: string, start: Carbon, end: Carbon}>
+     */
+    public function bankHolidayWeekendRanges(Carbon $rangeStart, Carbon $rangeEnd): array
+    {
+        $ranges = [];
+        $seenStarts = [];
+
+        foreach (range($rangeStart->year, $rangeEnd->year) as $year) {
+            foreach ($this->ukBankHolidaysForYear($year) as $name => $holiday) {
                 if ($holiday->dayOfWeek === Carbon::FRIDAY) {
                     $weekendStart = $holiday->copy();
                     $weekendEnd = $holiday->copy()->addDays(3);
                 } elseif ($holiday->dayOfWeek === Carbon::MONDAY) {
+                    if ($name === 'Easter Monday') {
+                        continue;
+                    }
+
                     $weekendStart = $holiday->copy()->subDays(3);
                     $weekendEnd = $holiday->copy()->addDay();
                 } else {
                     continue;
                 }
 
-                if ($checkIn->lt($weekendEnd) && $checkOut->gt($weekendStart)) {
-                    return true;
+                $startKey = $weekendStart->toDateString();
+
+                if (isset($seenStarts[$startKey])) {
+                    continue;
+                }
+
+                $seenStarts[$startKey] = true;
+
+                if ($weekendStart->lt($rangeEnd) && $weekendEnd->gt($rangeStart)) {
+                    $ranges[] = [
+                        'label' => $this->bankHolidayWeekendLabel($name),
+                        'start' => $weekendStart,
+                        'end' => $weekendEnd->copy()->subDay(),
+                    ];
                 }
             }
         }
 
-        return false;
+        return $ranges;
+    }
+
+    private function bankHolidayWeekendLabel(string $name): string
+    {
+        return match ($name) {
+            'Good Friday' => 'Easter weekend',
+            'Christmas Day' => 'Christmas bank holiday',
+            default => $name,
+        };
     }
 
     /**
      * All England & Wales bank holidays for a year, including weekend
-     * substitutes (the next weekday when the date falls on a weekend).
+     * substitutes (the next weekday when the date falls on a weekend),
+     * keyed by holiday name.
      *
-     * @return array<int, Carbon>
+     * @return array<string, Carbon>
      */
     private function ukBankHolidaysForYear(int $year): array
     {
-        $easter = Carbon::createFromTimestamp(easter_date($year))->startOfDay();
+        $easter = Carbon::create($year, 3, 21)->addDays(easter_days($year))->startOfDay();
 
         return [
-            $this->nextWeekdayOrSubstitute(Carbon::create($year, 1, 1)),  // New Year's Day
-            $easter->copy()->subDays(2),   // Good Friday
-            $easter->copy()->addDay(),     // Easter Monday
-            $this->firstMondayOfMonth($year, 5),  // Early May
-            $this->lastMondayOfMonth($year, 5),   // Spring
-            $this->lastMondayOfMonth($year, 8),   // Summer
-            $this->nextWeekdayOrSubstitute(Carbon::create($year, 12, 25)), // Christmas
-            $this->nextWeekdayOrSubstitute(Carbon::create($year, 12, 26)), // Boxing Day
+            'New Year\'s Day' => $this->nextWeekdayOrSubstitute(Carbon::create($year, 1, 1)),
+            'Good Friday' => $easter->copy()->subDays(2),
+            'Easter Monday' => $easter->copy()->addDay(),
+            'Early May bank holiday' => $this->firstMondayOfMonth($year, 5),
+            'Spring bank holiday' => $this->lastMondayOfMonth($year, 5),
+            'Summer bank holiday' => $this->lastMondayOfMonth($year, 8),
+            'Christmas Day' => $this->nextWeekdayOrSubstitute(Carbon::create($year, 12, 25)),
+            'Boxing Day' => $this->nextWeekdayOrSubstitute(Carbon::create($year, 12, 26)),
         ];
     }
 
