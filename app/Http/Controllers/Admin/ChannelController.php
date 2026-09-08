@@ -425,6 +425,7 @@ class ChannelController extends Controller
     {
         $reservations = Reservation::query()
             ->with(['room', 'guest'])
+            ->where('check_in', '>=', now()->subYear()->toDateString())
             ->latest()
             ->limit(20)
             ->get();

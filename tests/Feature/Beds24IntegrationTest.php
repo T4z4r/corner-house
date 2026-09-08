@@ -1820,6 +1820,25 @@ class Beds24IntegrationTest extends TestCase
             'status' => 'active',
         ]);
 
+        $oldRoom = Room::factory()->create(['property_id' => $property->id, 'status' => 'active']);
+        $oldGuest = Guest::factory()->create([
+            'first_name' => 'Old',
+            'last_name' => 'Booking',
+            'email' => 'old@example.com',
+        ]);
+        Reservation::factory()->create([
+            'property_id' => $property->id,
+            'room_id' => $oldRoom->id,
+            'guest_id' => $oldGuest->id,
+            'status' => 'confirmed',
+            'source' => 'direct',
+            'total_amount' => 100,
+            'check_in' => now()->subYears(2)->toDateString(),
+            'check_out' => now()->subYears(2)->addDays(2)->toDateString(),
+            'external_channel' => null,
+            'external_booking_id' => null,
+        ]);
+
         $response = $this->actingAs($this->superAdmin())
             ->get(route('admin.channels.bookings.export'));
 
@@ -1831,6 +1850,8 @@ class Beds24IntegrationTest extends TestCase
         $this->assertStringContainsString("Roomid,FirstNight,CheckOut,Status,Email,Price,Referrer\n", $content);
         $this->assertStringContainsString("77,2026-09-10,2026-09-13,Confirmed,alex@example.com,250.00,direct\n", $content);
         $this->assertStringContainsString("88,2026-10-01,2026-10-03,Cancelled,bella@example.com,150.00,airbnb\n", $content);
+        $this->assertStringNotContainsString('old@example.com', $content);
+        $this->assertStringNotContainsString(',100.00,direct', $content);
     }
 
     public function test_prices_can_be_imported_from_beds24_into_local_overrides(): void
