@@ -436,6 +436,7 @@ class ChannelController extends Controller
             $handle = fopen('php://output', 'w');
 
             fputcsv($handle, [
+                'Ref',
                 'Roomid',
                 'FirstNight',
                 'CheckOut',
@@ -447,6 +448,7 @@ class ChannelController extends Controller
 
             foreach ($reservations as $reservation) {
                 fputcsv($handle, [
+                    '',
                     $this->beds24ExternalRoomId($reservation),
                     $reservation->check_in?->toDateString() ?? '',
                     $reservation->check_out?->toDateString() ?? '',

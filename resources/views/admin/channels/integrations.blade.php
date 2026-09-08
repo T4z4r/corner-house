@@ -291,7 +291,7 @@
                                                 <a href="{{ route('admin.channels.bookings.export') }}" class="btn btn-sm btn-outline-primary">
                                                     <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export bookings as CSV
                                                 </a>
-                                                <span class="small text-muted ms-2">Beds24-importable file (Roomid, FirstNight, CheckOut, Status, Email, Price, Referrer). Beds24 cannot import bookings with a check-in more than 1 year ago, so those are excluded.</span>
+                                                <span class="small text-muted ms-2">Beds24-importable file (blank Ref = new bookings; Roomid, FirstNight, CheckOut, Status, Email, Price, Referrer). Beds24 cannot import bookings with a check-in more than 1 year ago, so those are excluded. Remove rows for bookings already in Beds24 to avoid duplicates.</span>
                                             </div>
                                         </div>
                                         <div class="list-group list-group-flush bg-white rounded">

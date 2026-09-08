@@ -1847,9 +1847,9 @@ class Beds24IntegrationTest extends TestCase
 
         $content = $response->streamedContent();
 
-        $this->assertStringContainsString("Roomid,FirstNight,CheckOut,Status,Email,Price,Referrer\n", $content);
-        $this->assertStringContainsString("77,2026-09-10,2026-09-13,Confirmed,alex@example.com,250.00,direct\n", $content);
-        $this->assertStringContainsString("88,2026-10-01,2026-10-03,Cancelled,bella@example.com,150.00,airbnb\n", $content);
+        $this->assertStringContainsString("Ref,Roomid,FirstNight,CheckOut,Status,Email,Price,Referrer\n", $content);
+        $this->assertStringContainsString(",77,2026-09-10,2026-09-13,Confirmed,alex@example.com,250.00,direct\n", $content);
+        $this->assertStringContainsString(",88,2026-10-01,2026-10-03,Cancelled,bella@example.com,150.00,airbnb\n", $content);
         $this->assertStringNotContainsString('old@example.com', $content);
         $this->assertStringNotContainsString(',100.00,direct', $content);
     }
