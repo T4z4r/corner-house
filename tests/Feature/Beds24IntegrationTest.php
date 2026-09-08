@@ -1596,6 +1596,163 @@ class Beds24IntegrationTest extends TestCase
         ]);
     }
 
+    public function test_all_bookings_can_be_bulk_posted_to_beds24(): void
+    {
+        $account = ChannelAccount::factory()->create([
+            'provider' => 'beds24',
+            'status' => 'active',
+            'credentials' => [
+                'refresh_token' => 'refresh-token',
+                'access_token' => 'access-1',
+                'access_token_expires_at' => now()->addHour()->toIso8601String(),
+            ],
+        ]);
+        $property = Property::factory()->create();
+
+        $bookings = [];
+        foreach (['Alex' => [7001, now()->subDays(2)], 'Bella' => [7002, now()->subDay()]] as $name => [$externalId, $createdAt]) {
+            $room = Room::factory()->create([
+                'property_id' => $property->id,
+                'status' => 'active',
+            ]);
+            $guest = Guest::factory()->create([
+                'first_name' => $name,
+                'last_name' => 'Taylor',
+                'email' => strtolower($name).'@example.com',
+            ]);
+            $booking = Reservation::factory()->create([
+                'property_id' => $property->id,
+                'room_id' => $room->id,
+                'guest_id' => $guest->id,
+                'guests_count' => 1,
+                'status' => 'confirmed',
+                'source' => 'direct',
+                'channel' => 'website',
+                'external_channel' => null,
+                'external_booking_id' => null,
+                'created_at' => $createdAt,
+            ]);
+
+            $externalRoomId = (string) ($room->id + 1000);
+            ChannelMapping::create([
+                'channel_account_id' => $account->id,
+                'provider' => 'beds24',
+                'property_id' => $property->id,
+                'room_id' => $room->id,
+                'external_property_id' => '2001',
+                'external_room_id' => $externalRoomId,
+                'status' => 'active',
+            ]);
+
+            $bookings[$booking->id] = ['name' => $name, 'externalId' => $externalId, 'roomId' => $externalRoomId];
+        }
+
+        $publishOrder = Reservation::query()->latest()->limit(20)->pluck('id');
+
+        Http::fake([
+            '*bookings*' => Http::response([
+                'data' => $publishOrder->map(fn ($id) => ['id' => $bookings[$id]['externalId']])->all(),
+            ], 200),
+        ]);
+
+        $this->actingAs($this->superAdmin())
+            ->post(route('admin.channels.bookings.publish-all'))
+            ->assertRedirect()
+            ->assertSessionHas('status', '2 of 2 bookings posted to Beds24.');
+
+        Http::assertSent(function ($request) use ($bookings) {
+            if (! str_contains($request->url(), 'bookings')) {
+                return false;
+            }
+
+            $payload = $request->data();
+            $roomIds = collect($bookings)->pluck('roomId')->map(fn ($id) => (int) $id)->sort()->values()->all();
+            $names = collect($payload)->pluck('firstName')->sort()->values()->all();
+
+            return count($payload) === 2
+                && collect($payload)->pluck('roomId')->sort()->values()->all() === $roomIds
+                && $names === ['Alex', 'Bella'];
+        });
+
+        foreach ($bookings as $bookingId => $meta) {
+            $this->assertDatabaseHas('reservations', [
+                'id' => $bookingId,
+                'external_channel' => 'beds24',
+                'external_booking_id' => (string) $meta['externalId'],
+                'sync_status' => 'synced',
+            ]);
+        }
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'channels.bookings.publish_all',
+            'module' => 'channels',
+        ]);
+    }
+
+    public function test_bulk_publish_reports_unmapped_reservations_as_not_posted(): void
+    {
+        $account = ChannelAccount::factory()->create([
+            'provider' => 'beds24',
+            'status' => 'active',
+            'credentials' => [
+                'refresh_token' => 'refresh-token',
+                'access_token' => 'access-1',
+                'access_token_expires_at' => now()->addHour()->toIso8601String(),
+            ],
+        ]);
+        $property = Property::factory()->create();
+
+        $mappedRoom = Room::factory()->create(['property_id' => $property->id, 'status' => 'active']);
+        $mappedGuest = Guest::factory()->create(['first_name' => 'Mapped', 'last_name' => 'Guest', 'email' => 'mapped@example.com']);
+        $mapped = Reservation::factory()->create([
+            'property_id' => $property->id,
+            'room_id' => $mappedRoom->id,
+            'guest_id' => $mappedGuest->id,
+            'status' => 'confirmed',
+            'external_channel' => null,
+            'external_booking_id' => null,
+        ]);
+        ChannelMapping::create([
+            'channel_account_id' => $account->id,
+            'provider' => 'beds24',
+            'property_id' => $property->id,
+            'room_id' => $mappedRoom->id,
+            'external_property_id' => '2001',
+            'external_room_id' => '77',
+            'status' => 'active',
+        ]);
+
+        $unmappedRoom = Room::factory()->create(['property_id' => $property->id, 'status' => 'active']);
+        $unmappedGuest = Guest::factory()->create(['first_name' => 'Unmapped', 'last_name' => 'Guest', 'email' => 'unmapped@example.com']);
+        $unmapped = Reservation::factory()->create([
+            'property_id' => $property->id,
+            'room_id' => $unmappedRoom->id,
+            'guest_id' => $unmappedGuest->id,
+            'status' => 'confirmed',
+            'external_channel' => null,
+            'external_booking_id' => null,
+        ]);
+
+        Http::fake([
+            '*bookings*' => Http::response(['data' => [['id' => 9001]]], 200),
+        ]);
+
+        $this->actingAs($this->superAdmin())
+            ->post(route('admin.channels.bookings.publish-all'))
+            ->assertRedirect()
+            ->assertSessionHas('status', '1 of 2 bookings posted to Beds24.');
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $mapped->id,
+            'external_booking_id' => '9001',
+        ]);
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $unmapped->id,
+            'external_booking_id' => null,
+        ]);
+    }
+
     public function test_prices_can_be_imported_from_beds24_into_local_overrides(): void
     {
         $account = ChannelAccount::factory()->create([

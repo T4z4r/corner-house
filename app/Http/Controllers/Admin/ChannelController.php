@@ -400,6 +400,26 @@ class ChannelController extends Controller
         );
     }
 
+    public function publishAllBookings(Beds24BookingPublisher $publisher): RedirectResponse
+    {
+        $reservations = Reservation::query()
+            ->with(['room', 'guest'])
+            ->latest()
+            ->limit(20)
+            ->get();
+
+        $results = $publisher->postBookings($reservations);
+        $published = count(array_filter($results, static fn (array $result): bool => $result['success']));
+        $total = count($results);
+
+        $this->auditLogger->log('channels.bookings.publish_all', 'channels', newValues: [
+            'published' => $published,
+            'total' => $total,
+        ]);
+
+        return back()->with('status', "{$published} of {$total} bookings posted to Beds24.");
+    }
+
     public function importPrices(Request $request, Beds24SyncService $sync): RedirectResponse
     {
         $data = $request->validate([

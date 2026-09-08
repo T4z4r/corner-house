@@ -292,6 +292,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::post('/channels/properties/{property}/publish', [ChannelController::class, 'publishProperty'])->name('channels.properties.publish')->middleware('can:channels.configure');
         Route::post('/channels/bookings/{reservation}/publish', [ChannelController::class, 'publishBooking'])->name('channels.bookings.publish')->middleware('can:channels.configure');
         Route::post('/channels/bookings/{reservation}/guests', [ChannelController::class, 'publishGuests'])->name('channels.bookings.guests.publish')->middleware('can:channels.configure');
+        Route::post('/channels/bookings/publish-all', [ChannelController::class, 'publishAllBookings'])->name('channels.bookings.publish-all')->middleware('can:channels.configure');
         Route::post('/channels/pricing/rules/{rule}/publish', [ChannelController::class, 'publishPricingRule'])->name('channels.pricing.rules.publish')->middleware('can:channels.configure');
         Route::post('/channels/pricing/overrides/{override}/publish', [ChannelController::class, 'publishPricingOverride'])->name('channels.pricing.overrides.publish')->middleware('can:channels.configure');
         Route::post('/channels/airbnb/actions', [ChannelController::class, 'airbnbAction'])->name('channels.airbnb.actions')->middleware('can:channels.configure');

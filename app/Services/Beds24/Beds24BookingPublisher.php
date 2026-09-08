@@ -5,6 +5,7 @@ namespace App\Services\Beds24;
 use App\Models\ChannelAccount;
 use App\Models\ChannelMapping;
 use App\Models\Reservation;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 class Beds24BookingPublisher
@@ -41,6 +42,82 @@ class Beds24BookingPublisher
 
             return false;
         }
+    }
+
+    /**
+     * Post several bookings to Beds24 in a single request.
+     *
+     * Returns an associative array keyed by reservation id with values
+     * ['success' => bool, 'id' => string|null].
+     *
+     * @param  Collection<int, Reservation>  $reservations
+     * @return array<int, array{success: bool, id: string|null}>
+     */
+    public function postBookings(Collection $reservations): array
+    {
+        $account = $this->activeAccount();
+        if (! $account instanceof ChannelAccount) {
+            return $reservations->mapWithKeys(fn (Reservation $r) => [$r->id => ['success' => false, 'id' => null]])->all();
+        }
+
+        $reservations->loadMissing(['guest', 'guests']);
+
+        /** @var array<int, array{payload: array<string, mixed>, reservation: Reservation}> $entries */
+        $entries = [];
+
+        foreach ($reservations as $reservation) {
+            if ($reservation->status === 'cancelled' && empty($reservation->external_booking_id)) {
+                continue;
+            }
+
+            $payload = $this->bookingPayload($account, $reservation);
+            if ($payload === []) {
+                continue;
+            }
+
+            $entries[] = ['payload' => $payload, 'reservation' => $reservation];
+        }
+
+        if ($entries === []) {
+            return $reservations->mapWithKeys(fn (Reservation $r) => [$r->id => ['success' => false, 'id' => null]])->all();
+        }
+
+        /** @var array<int, array{success: bool, id: string|null}> $results */
+        $results = $reservations->mapWithKeys(fn (Reservation $r) => [$r->id => ['success' => false, 'id' => null]])->all();
+
+        $payloads = array_column($entries, 'payload');
+        $indexed = array_column($entries, 'reservation');
+
+        try {
+            $response = $this->client->post($account, 'bookings', $payloads);
+        } catch (\Throwable $e) {
+            Log::warning('Failed to bulk-post bookings to Beds24', [
+                'count' => count($payloads),
+                'message' => $e->getMessage(),
+            ]);
+
+            return $results;
+        }
+
+        $items = $this->unwrapResponse($response);
+
+        foreach ($indexed as $index => $reservation) {
+            $item = $items[$index] ?? [];
+            $externalId = isset($item['id']) ? (string) $item['id'] : null;
+            $success = (bool) ($item['success'] ?? ($externalId !== null));
+
+            if ($success && $externalId !== null) {
+                $reservation->update([
+                    'external_channel' => 'beds24',
+                    'external_booking_id' => $externalId,
+                    'sync_status' => 'synced',
+                ]);
+            }
+
+            $results[$reservation->id] = ['success' => $success, 'id' => $externalId];
+        }
+
+        return $results;
     }
 
     private function activeAccount(): ?ChannelAccount
@@ -108,6 +185,21 @@ class Beds24BookingPublisher
             'source' => $reservation->source,
             'channel' => $reservation->channel,
         ], static fn ($value) => $value !== null && $value !== '');
+    }
+
+    /**
+     * @param  array<string, mixed>  $response
+     * @return array<int, array<string, mixed>>
+     */
+    private function unwrapResponse(array $response): array
+    {
+        $items = data_get($response, 'data', $response);
+
+        if (is_array($items) && array_is_list($items)) {
+            return $items;
+        }
+
+        return is_array($items) ? [$items] : [];
     }
 
     /**

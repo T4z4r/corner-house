@@ -279,6 +279,15 @@
                             <div class="card-body">
                                 @can('channels.configure')
                                     @if ($reservations->isNotEmpty())
+                                        <div class="mb-3">
+                                            <form method="POST" action="{{ route('admin.channels.bookings.publish-all') }}">
+                                                @csrf
+                                                <button class="btn btn-sm btn-ch-primary" type="submit">
+                                                    <i class="bi bi-send-fill me-1"></i>Publish all {{ $reservations->count() }} bookings
+                                                </button>
+                                                <span class="small text-muted ms-2">Posts all listed bookings to Beds24 in one request.</span>
+                                            </form>
+                                        </div>
                                         <div class="list-group list-group-flush bg-white rounded">
                                             @foreach ($reservations as $reservation)
                                                 <div class="list-group-item d-flex justify-content-between align-items-center gap-3">
