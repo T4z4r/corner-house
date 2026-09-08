@@ -287,6 +287,12 @@
                                                 </button>
                                                 <span class="small text-muted ms-2">Posts all listed bookings to Beds24 in one request.</span>
                                             </form>
+                                            <div class="mt-2">
+                                                <a href="{{ route('admin.channels.bookings.export') }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export bookings as CSV
+                                                </a>
+                                                <span class="small text-muted ms-2">Beds24-importable file (Roomid, FirstNight, CheckOut, Status, Email, Price, Referrer).</span>
+                                            </div>
                                         </div>
                                         <div class="list-group list-group-flush bg-white rounded">
                                             @foreach ($reservations as $reservation)

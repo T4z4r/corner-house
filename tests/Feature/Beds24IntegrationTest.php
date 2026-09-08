@@ -1753,6 +1753,86 @@ class Beds24IntegrationTest extends TestCase
         ]);
     }
 
+    public function test_bookings_can_be_exported_as_beds24_compatible_csv(): void
+    {
+        $account = ChannelAccount::factory()->create([
+            'provider' => 'beds24',
+            'status' => 'active',
+            'credentials' => [
+                'refresh_token' => 'refresh-token',
+                'access_token' => 'access-1',
+                'access_token_expires_at' => now()->addHour()->toIso8601String(),
+            ],
+        ]);
+        $property = Property::factory()->create();
+
+        $confirmedRoom = Room::factory()->create(['property_id' => $property->id, 'status' => 'active']);
+        $confirmedGuest = Guest::factory()->create([
+            'first_name' => 'Alex',
+            'last_name' => 'Taylor',
+            'email' => 'alex@example.com',
+        ]);
+        Reservation::factory()->create([
+            'property_id' => $property->id,
+            'room_id' => $confirmedRoom->id,
+            'guest_id' => $confirmedGuest->id,
+            'status' => 'confirmed',
+            'source' => 'direct',
+            'total_amount' => 250,
+            'check_in' => '2026-09-10',
+            'check_out' => '2026-09-13',
+        ]);
+        ChannelMapping::create([
+            'channel_account_id' => $account->id,
+            'provider' => 'beds24',
+            'property_id' => $property->id,
+            'room_id' => $confirmedRoom->id,
+            'external_property_id' => '2001',
+            'external_room_id' => '77',
+            'status' => 'active',
+        ]);
+
+        $cancelledRoom = Room::factory()->create(['property_id' => $property->id, 'status' => 'active']);
+        $cancelledGuest = Guest::factory()->create([
+            'first_name' => 'Bella',
+            'last_name' => 'Taylor',
+            'email' => 'bella@example.com',
+        ]);
+        Reservation::factory()->create([
+            'property_id' => $property->id,
+            'room_id' => $cancelledRoom->id,
+            'guest_id' => $cancelledGuest->id,
+            'status' => 'cancelled',
+            'source' => 'airbnb',
+            'total_amount' => 150,
+            'check_in' => '2026-10-01',
+            'check_out' => '2026-10-03',
+            'external_channel' => null,
+            'external_booking_id' => null,
+        ]);
+        ChannelMapping::create([
+            'channel_account_id' => $account->id,
+            'provider' => 'beds24',
+            'property_id' => $property->id,
+            'room_id' => $cancelledRoom->id,
+            'external_property_id' => '2001',
+            'external_room_id' => '88',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($this->superAdmin())
+            ->get(route('admin.channels.bookings.export'));
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $content = $response->streamedContent();
+
+        $this->assertStringContainsString("Roomid,FirstNight,CheckOut,Status,Email,Price,Referrer\n", $content);
+        $this->assertStringContainsString("77,2026-09-10,2026-09-13,Confirmed,alex@example.com,250.00,direct\n", $content);
+        $this->assertStringContainsString("88,2026-10-01,2026-10-03,Cancelled,bella@example.com,150.00,airbnb\n", $content);
+    }
+
     public function test_prices_can_be_imported_from_beds24_into_local_overrides(): void
     {
         $account = ChannelAccount::factory()->create([
@@ -2162,6 +2242,134 @@ class Beds24IntegrationTest extends TestCase
             'id' => $reservation->id,
             'status' => 'cancelled',
         ]);
+    }
+
+    public function test_sync_pushes_local_bookings_that_were_not_eagerly_synced(): void
+    {
+        $account = ChannelAccount::factory()->create([
+            'provider' => 'beds24',
+            'status' => 'active',
+            'credentials' => [
+                'refresh_token' => 'refresh-token',
+                'access_token' => 'access-1',
+                'access_token_expires_at' => now()->addHour()->toIso8601String(),
+            ],
+        ]);
+        $property = Property::factory()->create();
+        $room = Room::factory()->create([
+            'property_id' => $property->id,
+            'status' => 'active',
+        ]);
+        ChannelMapping::create([
+            'channel_account_id' => $account->id,
+            'provider' => 'beds24',
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'external_property_id' => '2001',
+            'external_room_id' => '77',
+            'status' => 'active',
+        ]);
+
+        $pending = Reservation::factory()->create([
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'status' => 'confirmed',
+            'source' => 'direct',
+            'external_booking_id' => null,
+            'sync_status' => 'pending',
+            'check_in' => now()->addDays(30)->toDateString(),
+            'check_out' => now()->addDays(33)->toDateString(),
+        ]);
+
+        $alreadySynced = Reservation::factory()->create([
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'status' => 'confirmed',
+            'source' => 'direct',
+            'external_booking_id' => '9999',
+            'sync_status' => 'synced',
+            'check_in' => now()->addDays(40)->toDateString(),
+            'check_out' => now()->addDays(42)->toDateString(),
+        ]);
+
+        Http::fake([
+            '*properties*' => Http::response(['data' => []], 200),
+            '*bookings*' => Http::response(['data' => [['id' => 8001]]], 200),
+            '*inventory/rooms/calendar*' => Http::response(['data' => []], 200),
+        ]);
+
+        $counts = app(Beds24SyncService::class)->synchronize($account);
+
+        $this->assertSame(1, $counts['bookings_pushed']);
+        $this->assertDatabaseHas('reservations', [
+            'id' => $pending->id,
+            'external_booking_id' => '8001',
+            'external_channel' => 'beds24',
+            'sync_status' => 'synced',
+        ]);
+        $this->assertDatabaseHas('reservations', [
+            'id' => $alreadySynced->id,
+            'external_booking_id' => '9999',
+            'sync_status' => 'synced',
+        ]);
+    }
+
+    public function test_sync_pushes_cancellations_for_previously_synced_local_bookings(): void
+    {
+        $account = ChannelAccount::factory()->create([
+            'provider' => 'beds24',
+            'status' => 'active',
+            'credentials' => [
+                'refresh_token' => 'refresh-token',
+                'access_token' => 'access-1',
+                'access_token_expires_at' => now()->addHour()->toIso8601String(),
+            ],
+        ]);
+        $property = Property::factory()->create();
+        $room = Room::factory()->create([
+            'property_id' => $property->id,
+            'status' => 'active',
+        ]);
+        ChannelMapping::create([
+            'channel_account_id' => $account->id,
+            'provider' => 'beds24',
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'external_property_id' => '2001',
+            'external_room_id' => '77',
+            'status' => 'active',
+        ]);
+
+        $cancelled = Reservation::factory()->create([
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'status' => 'cancelled',
+            'source' => 'direct',
+            'external_booking_id' => '8101',
+            'external_channel' => 'beds24',
+            'sync_status' => 'pending',
+            'cancelled_at' => now(),
+            'check_in' => now()->addDays(50)->toDateString(),
+            'check_out' => now()->addDays(52)->toDateString(),
+        ]);
+
+        Http::fake([
+            '*properties*' => Http::response(['data' => []], 200),
+            '*bookings*' => Http::response(['data' => [['id' => 8101]]], 200),
+            '*inventory/rooms/calendar*' => Http::response(['data' => []], 200),
+        ]);
+
+        $counts = app(Beds24SyncService::class)->synchronize($account);
+
+        $this->assertSame(1, $counts['bookings_pushed']);
+        $this->assertDatabaseHas('reservations', [
+            'id' => $cancelled->id,
+            'external_booking_id' => '8101',
+            'sync_status' => 'synced',
+        ]);
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'bookings')
+            && (int) ($request->data()[0]['id'] ?? 0) === 8101
+            && (string) ($request->data()[0]['status'] ?? '') === 'cancelled');
     }
 
     private const BOOKING_MAPPING_XML = <<<'XML'

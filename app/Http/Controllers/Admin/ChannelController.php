@@ -29,6 +29,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ChannelController extends Controller
 {
@@ -418,6 +419,64 @@ class ChannelController extends Controller
         ]);
 
         return back()->with('status', "{$published} of {$total} bookings posted to Beds24.");
+    }
+
+    public function exportBookings(): StreamedResponse
+    {
+        $reservations = Reservation::query()
+            ->with(['room', 'guest'])
+            ->latest()
+            ->limit(20)
+            ->get();
+
+        $filename = 'bookings-beds24-'.now()->format('Y-m-d-H-i').'.csv';
+
+        return response()->streamDownload(function () use ($reservations): void {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'Roomid',
+                'FirstNight',
+                'CheckOut',
+                'Status',
+                'Email',
+                'Price',
+                'Referrer',
+            ]);
+
+            foreach ($reservations as $reservation) {
+                fputcsv($handle, [
+                    $this->beds24ExternalRoomId($reservation),
+                    $reservation->check_in?->toDateString() ?? '',
+                    $reservation->check_out?->toDateString() ?? '',
+                    $this->beds24Status($reservation->status),
+                    $reservation->guest?->email ?? '',
+                    $reservation->total_amount !== null ? number_format((float) $reservation->total_amount, 2, '.', '') : '',
+                    $reservation->source,
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    private function beds24ExternalRoomId(Reservation $reservation): string
+    {
+        return (string) ChannelMapping::query()
+            ->where('provider', 'beds24')
+            ->where('room_id', $reservation->room_id)
+            ->whereNotNull('external_room_id')
+            ->value('external_room_id');
+    }
+
+    private function beds24Status(string $status): string
+    {
+        return match ($status) {
+            'confirmed', 'checked_in', 'checked_out' => 'Confirmed',
+            'cancelled', 'no_show' => 'Cancelled',
+            'pending' => 'Request',
+            default => 'New',
+        };
     }
 
     public function importPrices(Request $request, Beds24SyncService $sync): RedirectResponse

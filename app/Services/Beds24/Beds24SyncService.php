@@ -7,6 +7,7 @@ use App\Models\ChannelAccount;
 use App\Models\ChannelMapping;
 use App\Models\PricingOverride;
 use App\Models\Property;
+use App\Models\Reservation;
 use App\Models\Room;
 use App\Services\Channel\ChannelManager;
 use Illuminate\Support\Carbon;
@@ -18,10 +19,11 @@ class Beds24SyncService
     public function __construct(
         private readonly Beds24ChannelProvider $provider,
         private readonly ChannelManager $channels,
+        private readonly Beds24BookingPublisher $publisher,
     ) {}
 
     /**
-     * @return array{properties: int, rooms: int, bookings: int, overrides: int, blocks: int, errors: string[]}
+     * @return array{properties: int, rooms: int, bookings: int, bookings_pushed: int, overrides: int, blocks: int, errors: string[]}
      */
     public function synchronize(ChannelAccount $account): array
     {
@@ -44,6 +46,14 @@ class Beds24SyncService
         }
 
         try {
+            $bookingsPushed = $this->pushPendingBookings($account);
+        } catch (\Throwable $e) {
+            Log::error('Beds24 bookings push failed', ['account_id' => $account->id, 'message' => $e->getMessage()]);
+            $errors[] = 'bookings_push: '.$e->getMessage();
+            $bookingsPushed = 0;
+        }
+
+        try {
             $calendar = $this->syncCalendar($account);
         } catch (\Throwable $e) {
             Log::error('Beds24 calendar sync failed', ['account_id' => $account->id, 'message' => $e->getMessage()]);
@@ -61,6 +71,7 @@ class Beds24SyncService
                     'properties' => $catalog['properties'],
                     'rooms' => $catalog['rooms'],
                     'bookings' => $bookings,
+                    'bookings_pushed' => $bookingsPushed,
                     'overrides' => $calendar['overrides'],
                     'blocks' => $calendar['blocks'],
                 ],
@@ -71,10 +82,71 @@ class Beds24SyncService
             'properties' => $catalog['properties'],
             'rooms' => $catalog['rooms'],
             'bookings' => $bookings,
+            'bookings_pushed' => $bookingsPushed,
             'overrides' => $calendar['overrides'],
             'blocks' => $calendar['blocks'],
             'errors' => $errors,
         ];
+    }
+
+    /**
+     * Push local bookings that haven't been synced to Beds24 yet.
+     *
+     * Finds confirmed reservations in rooms mapped to this account that
+     * either lack an external_booking_id (never pushed) or have a
+     * pending/failed sync_status, and batch-posts them via the publisher.
+     *
+     * Also pushes cancellations for previously-synced bookings that were
+     * cancelled locally but whose cancellation hasn't reached Beds24.
+     *
+     * @return int number of bookings successfully pushed
+     */
+    public function pushPendingBookings(ChannelAccount $account): int
+    {
+        $mappedRoomIds = ChannelMapping::query()
+            ->where('channel_account_id', $account->id)
+            ->where('provider', 'beds24')
+            ->whereNotNull('external_room_id')
+            ->pluck('room_id')
+            ->all();
+
+        if ($mappedRoomIds === []) {
+            return 0;
+        }
+
+        $reservations = Reservation::query()
+            ->with(['room', 'guest', 'guests'])
+            ->whereIn('room_id', $mappedRoomIds)
+            ->where(function ($query) {
+                $query->where(function ($q) {
+                    $q->whereNull('external_booking_id')
+                        ->where('status', '!=', 'cancelled');
+                })->orWhere(function ($q) {
+                    $q->whereNotNull('external_booking_id')
+                        ->where('status', 'cancelled')
+                        ->where('sync_status', '!=', 'synced');
+                });
+            })
+            ->limit(50)
+            ->get();
+
+        if ($reservations->isEmpty()) {
+            return 0;
+        }
+
+        $results = $this->publisher->postBookings($reservations);
+
+        $published = count(array_filter($results, static fn (array $result): bool => $result['success']));
+
+        if ($published > 0) {
+            Log::info('Beds24 bookings pushed during sync', [
+                'account_id' => $account->id,
+                'pushed' => $published,
+                'total' => $reservations->count(),
+            ]);
+        }
+
+        return $published;
     }
 
     /**
