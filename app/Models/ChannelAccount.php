@@ -33,6 +33,18 @@ class ChannelAccount extends Model
         'credentials',
     ];
 
+    /**
+     * Keep diagnostic error messages bounded. Channel sync errors can carry
+     * the full failing SQL (which embeds previous errors), so cap them to a
+     * readable length rather than letting them grow unbounded.
+     */
+    public function setLastErrorAttribute(?string $value): void
+    {
+        $this->attributes['last_error'] = $value === null
+            ? null
+            : mb_substr($value, 0, 5000);
+    }
+
     public function mappings(): HasMany
     {
         return $this->hasMany(ChannelMapping::class);
