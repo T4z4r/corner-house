@@ -127,11 +127,11 @@ class SettingsSeeder extends Seeder
     public static function defaultInsideSpaces(): array
     {
         return [
-            ['name' => 'The kitchen', 'where' => 'Ground floor', 'description' => 'At 25 feet, the kitchen is the hub of the house, and its size is the reason the house works so well for a full party. There is room for everyone to congregate in one place.', 'label' => 'The kitchen photo', 'feature' => '1'],
+            ['name' => 'The kitchen', 'where' => 'Ground floor', 'description' => 'At 25 feet, the kitchen is the hub of the house, and its size is the reason the house works so well for a full gathering. There is room for everyone to congregate in one place.', 'label' => 'The kitchen photo', 'feature' => '1'],
             ['name' => 'Orangery', 'where' => 'Ground floor', 'description' => 'The orangery, converted into a dining room that seats ten at a handmade farmhouse table and chairs, overlooking the patio.', 'label' => 'Orangery photo'],
-            ['name' => 'Lounge', 'where' => 'Ground floor', 'description' => 'Gather around the cosy log fireplace, with sofas to sink into. The lounge runs conveniently off the kitchen, so the party stays together.', 'label' => 'Lounge photo'],
+            ['name' => 'Lounge', 'where' => 'Ground floor', 'description' => 'Gather around the cosy log fireplace, with sofas to sink into. The lounge runs conveniently off the kitchen, so the gathering stays together.', 'label' => 'Lounge photo'],
             ['name' => 'Games room', 'where' => 'Ground floor', 'description' => 'A pool table that converts to air hockey and table tennis, plus a dart board and a walk-in cupboard full of toys to entertain children of all ages.', 'label' => 'Games room photo'],
-            ['name' => 'Cinema room', 'where' => 'The converted cellar', 'description' => 'The cellar has been converted into a cinema room, with a projector screen and comfortable seating for the whole party.', 'label' => 'Cinema room photo'],
+            ['name' => 'Cinema room', 'where' => 'The converted cellar', 'description' => 'The cellar has been converted into a cinema room, with a projector screen and comfortable seating for the whole gathering.', 'label' => 'Cinema room photo'],
         ];
     }
 
@@ -322,7 +322,7 @@ class SettingsSeeder extends Seeder
                 'title' => 'Gym',
                 'items' => [
                     'A gym waiver is displayed on the gym door and left on the table with the keys. Please read it before anyone uses the equipment.',
-                    'The lead guest accepts the waiver on behalf of the party as part of the booking, and is responsible for making sure everyone has read it.',
+                    'The lead guest accepts the waiver on behalf of the gathering as part of the booking, and is responsible for making sure everyone has read it.',
                     'Over-16s only. Children must not enter the gym at any time.',
                     'Use the equipment at your own risk, and never alone: always have someone else present.',
                     'Do not use the gym after drinking alcohol.',

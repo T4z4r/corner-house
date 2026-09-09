@@ -38,7 +38,7 @@ class AmenitySeeder extends Seeder
             // Headline features shown on the home page and in the house sections.
             ['name' => 'Five ensuite bedrooms', 'icon' => 'bi-door-open', 'category' => 'The house', 'description' => 'Five large bedrooms, every one with its own ensuite.', 'is_active' => true],
             ['name' => 'Hot tub on the patio', 'icon' => 'bi-water', 'category' => 'Outside', 'description' => 'A hot tub on the entertaining patio, available from 8:00am to 11:00pm.', 'is_active' => true],
-            ['name' => 'Cinema room in the cellar', 'icon' => 'bi-film', 'category' => 'The house', 'description' => 'A converted cellar cinema room with a projector and seating for the whole party.', 'is_active' => true],
+            ['name' => 'Cinema room in the cellar', 'icon' => 'bi-film', 'category' => 'The house', 'description' => 'A converted cellar cinema room with a projector and seating for the whole gathering.', 'is_active' => true],
             ['name' => 'Games room', 'icon' => 'bi-controller', 'category' => 'The house', 'description' => 'Pool table, darts, board games and a console.', 'is_active' => true],
             ['name' => 'Garden bar and Kadai BBQ', 'icon' => 'bi-cup-straw', 'category' => 'Outside', 'description' => 'A garden bar and Kadai fire-pit barbecue beside the entertaining patio.', 'is_active' => true],
             ['name' => 'Fully equipped gym', 'icon' => 'bi-dumbbell', 'category' => 'Outside', 'description' => 'A private gym in the grounds with cardio, weights and racks. Over-16s only.', 'is_active' => true],
