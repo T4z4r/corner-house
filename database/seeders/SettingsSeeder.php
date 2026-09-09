@@ -127,7 +127,7 @@ class SettingsSeeder extends Seeder
     public static function defaultInsideSpaces(): array
     {
         return [
-            ['name' => 'The kitchen', 'where' => 'Ground floor', 'description' => 'At 25 feet, the kitchen is the hub of the house, and its size is the reason the house works so well for a full gathering. There is room for everyone to congregate in one place.', 'label' => 'The kitchen photo', 'feature' => '1'],
+            ['name' => 'The kitchen', 'where' => 'Ground floor', 'description' => 'At 25 feet, the kitchen is the hub of the house, and its size is the reason the house works so well for a full gathering. There is room for everyone to congregate in one place.', 'label' => 'The kitchen photo', 'feature' => '1', 'photo' => 'images/kitchen.png'],
             ['name' => 'Orangery', 'where' => 'Ground floor', 'description' => 'The orangery, converted into a dining room that seats ten at a handmade farmhouse table and chairs, overlooking the patio.', 'label' => 'Orangery photo'],
             ['name' => 'Lounge', 'where' => 'Ground floor', 'description' => 'Gather around the cosy log fireplace, with sofas to sink into. The lounge runs conveniently off the kitchen, so the gathering stays together.', 'label' => 'Lounge photo'],
             ['name' => 'Games room', 'where' => 'Ground floor', 'description' => 'A pool table that converts to air hockey and table tennis, plus a dart board and a walk-in cupboard full of toys to entertain children of all ages.', 'label' => 'Games room photo'],

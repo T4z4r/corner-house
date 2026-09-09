@@ -16,6 +16,7 @@
                 @forelse ($site['rooms'] as $index => $room)
                     @php
                         $image = $room->primaryImage();
+                        $defaultImage = $room->defaultImage();
                         $features = is_array($room->features) ? $room->features : [];
                     @endphp
                     <li class="room">
@@ -34,6 +35,8 @@
                         <div class="photo">
                             @if($image)
                                 <img src="{{ asset('storage/'.$image->path) }}" alt="{{ $room->name }}">
+                            @elseif($defaultImage)
+                                <img src="{{ asset($defaultImage) }}" alt="{{ $room->name }}">
                             @else
                                 {{ $room->name }} photo
                             @endif
@@ -54,7 +57,7 @@
             <ul class="spaces">
                 @foreach ($site['spacesInside'] as $space)
                     <li class="{{ isset($space['feature']) ? 'space feature' : 'space' }}">
-                        <div class="photo">{{ $space['label'] }}</div>
+                        <div class="photo">@if(!empty($space['photo']))<img src="{{ asset($space['photo']) }}" alt="{{ $space['name'] }}">@else{{ $space['label'] }}@endif</div>
                         <h3>{{ $space['name'] }}</h3>
                         <p class="where">{{ $space['where'] }}</p>
                         <p>{{ $space['description'] }}</p>

@@ -417,6 +417,49 @@ class PublicWebsiteTest extends TestCase
             ->assertSee('King or twin', false);
     }
 
+    public function test_home_rooms_page_shows_bundled_kitchen_and_bedroom_photos_as_defaults(): void
+    {
+        $property = Property::factory()->create(['name' => 'Corner House', 'slug' => 'corner-house', 'status' => 'active']);
+        $this->seed(RoomSeeder::class);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('http://localhost:8000/images/kitchen.png', false)
+            ->assertSee('http://localhost:8000/images/bedroom-lion.png', false)
+            ->assertSee('http://localhost:8000/images/bedroom-elephant.png', false)
+            ->assertSee('http://localhost:8000/images/bedroom-buffalo.png', false)
+            ->assertSee('http://localhost:8000/images/bedroom-rhino.png', false)
+            ->assertSee('http://localhost:8000/images/bedroom-leopard.png', false)
+            ->assertDontSee('The kitchen photo', false);
+    }
+
+    public function test_uploaded_room_image_and_custom_space_photo_override_bundled_defaults(): void
+    {
+        $property = Property::factory()->create(['name' => 'Corner House', 'slug' => 'corner-house', 'status' => 'active']);
+        $this->seed(RoomSeeder::class);
+
+        $lion = Room::where('slug', 'lion-suite')->firstOrFail();
+        $lion->images()->create(['path' => 'rooms/lion-upload.png', 'alt' => 'Lion suite', 'sort_order' => 1, 'is_primary' => true]);
+
+        Setting::query()->create([
+            'group' => 'website',
+            'key' => 'website_spaces_inside',
+            'value' => json_encode([
+                ['name' => 'The kitchen', 'where' => 'Ground floor', 'description' => 'Custom kitchen copy.', 'label' => 'Kitchen photo', 'feature' => '1', 'photo' => 'storage/website/kitchen-upload.png'],
+            ]),
+            'cast' => 'json',
+        ]);
+        cache()->forget('settings.all');
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('http://localhost:8000/storage/rooms/lion-upload.png', false)
+            ->assertDontSee('http://localhost:8000/images/bedroom-lion.png', false)
+            ->assertSee('http://localhost:8000/images/bedroom-elephant.png', false)
+            ->assertSee('http://localhost:8000/storage/website/kitchen-upload.png', false)
+            ->assertDontSee('http://localhost:8000/images/kitchen.png', false);
+    }
+
     public function test_home_page_template_copy_matches(): void
     {
         $property = Property::factory()->create(['name' => 'Corner House', 'slug' => 'corner-house', 'status' => 'active', 'description' => null]);

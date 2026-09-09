@@ -57,6 +57,22 @@ class Room extends Model
         return $this->images()->where('is_primary', true)->first() ?? $this->images()->first();
     }
 
+    /**
+     * Bundled fallback photo used when the room has no uploaded images.
+     */
+    public function defaultImage(): ?string
+    {
+        $defaults = [
+            'lion-suite' => 'images/bedroom-lion.png',
+            'elephant-room' => 'images/bedroom-elephant.png',
+            'buffalo-room' => 'images/bedroom-buffalo.png',
+            'rhino-room' => 'images/bedroom-rhino.png',
+            'leopard-room' => 'images/bedroom-leopard.png',
+        ];
+
+        return $defaults[$this->slug] ?? null;
+    }
+
     public function isActive(): bool
     {
         return $this->status === 'active';
