@@ -9,7 +9,7 @@ class MailConfigurationService
 {
     public function apply(): void
     {
-        if (! Schema::hasTable('settings')) {
+        if (! Schema::hasTable('settings') || ! class_exists(Setting::class)) {
             return;
         }
 
