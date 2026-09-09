@@ -85,7 +85,7 @@ class SettingsTest extends TestCase
     public function test_json_setting_saved_from_generic_settings_page_is_not_double_encoded(): void
     {
         $rules = json_encode([
-            ['title' => 'Pricing and payment', 'items' => ['The whole house is let to one party at a time.']],
+            ['title' => 'Pricing and payment', 'items' => ['The whole house is let to one full gathering at a time.']],
         ]);
 
         $setting = Setting::create([
