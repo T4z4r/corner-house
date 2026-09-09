@@ -43,7 +43,11 @@
                         @endforeach
                     </ul>
                 </div>
-                <div class="photo tall">Kitchen photo</div>
+                @php
+                    $kitchen = collect($site['spacesInside'])->first(fn ($space) => is_array($space) && isset($space['name']) && str_contains(strtolower($space['name']), 'kitchen'));
+                    $kitchenPhoto = ! empty($kitchen['photo']) ? $kitchen['photo'] : 'images/kitchen.png';
+                @endphp
+                <div class="photo tall">@if($kitchenPhoto)<img src="{{ asset($kitchenPhoto) }}" alt="The 25-foot kitchen">@else Kitchen photo @endif</div>
             </div>
         </div>
     </div>

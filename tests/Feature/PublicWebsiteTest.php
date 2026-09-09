@@ -460,6 +460,48 @@ class PublicWebsiteTest extends TestCase
             ->assertDontSee('http://localhost:8000/images/kitchen.png', false);
     }
 
+    public function test_home_kitchen_photo_follows_custom_space_photo(): void
+    {
+        Property::factory()->create(['name' => 'Corner House', 'slug' => 'corner-house', 'status' => 'active']);
+
+        Setting::query()->create([
+            'group' => 'website',
+            'key' => 'website_spaces_inside',
+            'value' => json_encode([
+                ['name' => 'Kitchen', 'where' => 'Ground floor', 'description' => 'The 25-foot centrepiece.', 'label' => 'Kitchen photo', 'feature' => '1', 'photo' => 'storage/website/kitchen-upload.png'],
+            ]),
+            'cast' => 'json',
+        ]);
+        cache()->forget('settings.all');
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('http://localhost:8000/storage/website/kitchen-upload.png', false)
+            ->assertDontSee('<div class="photo tall">Kitchen photo', false);
+    }
+
+    public function test_rooms_page_kitchen_photo_falls_back_to_bundled_image_when_space_has_no_photo(): void
+    {
+        Property::factory()->create(['name' => 'Corner House', 'slug' => 'corner-house', 'status' => 'active']);
+
+        Setting::query()->create([
+            'group' => 'website',
+            'key' => 'website_spaces_inside',
+            'value' => json_encode([
+                ['name' => 'Kitchen', 'where' => 'Ground floor', 'description' => 'The kitchen.', 'label' => 'The kitchen photo', 'feature' => '1'],
+                ['name' => 'Lounge', 'where' => 'Ground floor', 'description' => 'The lounge.', 'label' => 'Lounge photo'],
+            ]),
+            'cast' => 'json',
+        ]);
+        cache()->forget('settings.all');
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('http://localhost:8000/images/kitchen.png', false)
+            ->assertDontSee('The kitchen photo', false)
+            ->assertSee('Lounge photo', false);
+    }
+
     public function test_home_page_template_copy_matches(): void
     {
         $property = Property::factory()->create(['name' => 'Corner House', 'slug' => 'corner-house', 'status' => 'active', 'description' => null]);

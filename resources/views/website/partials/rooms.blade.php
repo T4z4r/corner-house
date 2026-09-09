@@ -57,7 +57,7 @@
             <ul class="spaces">
                 @foreach ($site['spacesInside'] as $space)
                     <li class="{{ isset($space['feature']) ? 'space feature' : 'space' }}">
-                        <div class="photo">@if(!empty($space['photo']))<img src="{{ asset($space['photo']) }}" alt="{{ $space['name'] }}">@else{{ $space['label'] }}@endif</div>
+                        <div class="photo">@if(!empty($space['photo']))<img src="{{ asset($space['photo']) }}" alt="{{ $space['name'] }}">@elseif(str_contains(strtolower($space['name'] ?? ''), 'kitchen'))<img src="{{ asset('images/kitchen.png') }}" alt="{{ $space['name'] }}">@else{{ $space['label'] }}@endif</div>
                         <h3>{{ $space['name'] }}</h3>
                         <p class="where">{{ $space['where'] }}</p>
                         <p>{{ $space['description'] }}</p>
