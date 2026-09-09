@@ -19,7 +19,7 @@
     <div class="section stone">
         <div class="wrap">
             <div class="grid-2">
-                <div class="photo">Braunston Marina and historic boats</div>
+                <div class="photo"><img src="{{ asset('images/marina.jpg') }}" alt="Braunston Marina and historic boats"></div>
                 <div>
                     <h2>About Braunston</h2>
                     <p>Braunston is a canal-side village on the Northamptonshire–Warwickshire border, right at the centre of the Midlands and often called the Heart of the Waterways. It is a village with deep roots in English history: recorded in the Domesday Book of 1086, and close to the intrigue of nearby Ashby St Ledgers, home of the Catesby family and the Gunpowder Plot of 1605.</p>
