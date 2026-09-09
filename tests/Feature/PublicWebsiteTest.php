@@ -426,6 +426,9 @@ class PublicWebsiteTest extends TestCase
             ->assertOk()
             ->assertSee('http://localhost:8000/images/kitchen.png', false)
             ->assertSee('http://localhost:8000/images/lounge.png', false)
+            ->assertSee('http://localhost:8000/images/cinema.webp', false)
+            ->assertSee('http://localhost:8000/images/gym.png', false)
+            ->assertSee('http://localhost:8000/images/garden.png', false)
             ->assertSee('http://localhost:8000/images/bedroom-lion.png', false)
             ->assertSee('http://localhost:8000/images/bedroom-elephant.png', false)
             ->assertSee('http://localhost:8000/images/bedroom-buffalo.png', false)
@@ -491,6 +494,16 @@ class PublicWebsiteTest extends TestCase
             'value' => json_encode([
                 ['name' => 'Kitchen', 'where' => 'Ground floor', 'description' => 'The kitchen.', 'label' => 'The kitchen photo', 'feature' => '1'],
                 ['name' => 'Lounge', 'where' => 'Ground floor', 'description' => 'The lounge.', 'label' => 'Lounge photo'],
+                ['name' => 'Cinema room', 'where' => 'The converted cellar', 'description' => 'The cinema.', 'label' => 'Cinema room photo'],
+            ]),
+            'cast' => 'json',
+        ]);
+        Setting::query()->create([
+            'group' => 'website',
+            'key' => 'website_spaces_outside',
+            'value' => json_encode([
+                ['name' => 'Garden bar', 'where' => 'The garden', 'description' => 'The bar.', 'label' => 'Garden bar photo'],
+                ['name' => 'Gym', 'where' => 'The grounds', 'description' => 'The gym.', 'label' => 'Gym photo'],
             ]),
             'cast' => 'json',
         ]);
@@ -501,7 +514,13 @@ class PublicWebsiteTest extends TestCase
             ->assertSee('http://localhost:8000/images/kitchen.png', false)
             ->assertDontSee('The kitchen photo', false)
             ->assertSee('http://localhost:8000/images/lounge.png', false)
-            ->assertDontSee('Lounge photo', false);
+            ->assertDontSee('Lounge photo', false)
+            ->assertSee('http://localhost:8000/images/cinema.webp', false)
+            ->assertDontSee('Cinema room photo', false)
+            ->assertSee('http://localhost:8000/images/gym.png', false)
+            ->assertDontSee('Gym photo', false)
+            ->assertSee('http://localhost:8000/images/garden.png', false)
+            ->assertDontSee('Garden bar photo', false);
     }
 
     public function test_home_page_template_copy_matches(): void

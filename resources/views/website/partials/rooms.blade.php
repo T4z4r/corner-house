@@ -59,6 +59,9 @@
                     $bundledSpacePhotos = [
                         'kitchen' => 'images/kitchen.png',
                         'lounge' => 'images/lounge.png',
+                        'cinema' => 'images/cinema.webp',
+                        'gym' => 'images/gym.png',
+                        'garden bar' => 'images/garden.png',
                     ];
                 @endphp
                 @foreach ($site['spacesInside'] as $space)
@@ -86,8 +89,19 @@
             <p>The garden is laid out for a full house: somewhere to cook, somewhere to drink, somewhere to train and somewhere to work.</p>
             <ul class="spaces">
                 @foreach ($site['spacesOutside'] as $space)
+                    @php
+                        $spacePhoto = $space['photo'] ?? null;
+                        if (empty($spacePhoto)) {
+                            foreach ($bundledSpacePhotos as $keyword => $path) {
+                                if (str_contains(strtolower($space['name'] ?? ''), $keyword)) {
+                                    $spacePhoto = $path;
+                                    break;
+                                }
+                            }
+                        }
+                    @endphp
                     <li class="{{ isset($space['feature']) ? 'space feature' : 'space' }}">
-                        <div class="photo">{{ $space['label'] }}</div>
+                        <div class="photo">@if($spacePhoto)<img src="{{ asset($spacePhoto) }}" alt="{{ $space['name'] }}">@else{{ $space['label'] }}@endif</div>
                         <h3>{{ $space['name'] }}</h3>
                         <p class="where">{{ $space['where'] }}</p>
                         <p>{{ $space['description'] }}</p>
