@@ -86,6 +86,55 @@ class PublicWebsiteTest extends TestCase
             ->assertDontSee('images/logo.png', false);
     }
 
+    public function test_logo_is_used_as_favicon_when_no_favicon_set(): void
+    {
+        Property::factory()->create(['name' => 'Corner House']);
+
+        Setting::query()->create([
+            'group' => 'website',
+            'key' => 'website_logo',
+            'value' => 'website/custom.png',
+            'type' => 'image',
+            'label' => 'Logo',
+            'cast' => 'string',
+        ]);
+
+        cache()->forget('settings.all');
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('rel="icon" href="http://localhost:8000/storage/website/custom.png"', false);
+    }
+
+    public function test_explicit_favicon_overrides_logo(): void
+    {
+        Property::factory()->create(['name' => 'Corner House']);
+
+        Setting::query()->create([
+            'group' => 'website',
+            'key' => 'website_logo',
+            'value' => 'website/custom.png',
+            'type' => 'image',
+            'label' => 'Logo',
+            'cast' => 'string',
+        ]);
+        Setting::query()->create([
+            'group' => 'website',
+            'key' => 'website_favicon',
+            'value' => 'website/favicon.png',
+            'type' => 'image',
+            'label' => 'Small icon',
+            'cast' => 'string',
+        ]);
+
+        cache()->forget('settings.all');
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('rel="icon" href="http://localhost:8000/storage/website/favicon.png"', false)
+            ->assertDontSee('rel="icon" href="http://localhost:8000/storage/website/custom.png"', false);
+    }
+
     public function test_property_and_booking_pages_render(): void
     {
         $property = Property::factory()->create();

@@ -8,8 +8,8 @@
             <ol class="clauses">
                 <li>
                     <h2>Parties and the agreement</h2>
-                    <p>&ldquo;We&rdquo;, &ldquo;us&rdquo; and &ldquo;the owner&rdquo; means the owner of Corner House, Braunston. &ldquo;You&rdquo; and &ldquo;the lead guest&rdquo; means the person who makes the booking. &ldquo;The party&rdquo; means everyone staying at the property under the booking.</p>
-                    <p>The agreement between us is formed when we confirm your booking in writing and your first payment has cleared. The lead guest is responsible for the whole party and is personally liable under this agreement, including for payment, for the conduct of every member of the party and for any damage caused.</p>
+                    <p>&ldquo;We&rdquo;, &ldquo;us&rdquo; and &ldquo;the owner&rdquo; means the owner of Corner House, Braunston. &ldquo;You&rdquo; and &ldquo;the lead guest&rdquo; means the person who makes the booking. &ldquo;The gathering&rdquo; means everyone staying at the property under the booking.</p>
+                    <p>The agreement between us is formed when we confirm your booking in writing and your first payment has cleared. The lead guest is responsible for the whole gathering and is personally liable under this agreement, including for payment, for the conduct of every member of the gathering and for any damage caused.</p>
                     <p>This is a holiday letting. It does not create a tenancy or any right to remain at the property beyond the booked dates.</p>
                 </li>
                 <li>
@@ -28,7 +28,7 @@
                     <h2>Occupancy</h2>
                     <p>Overnight occupancy is limited to 12 adults and 2 children. This limit arises from our insurance and fire risk assessment and may not be exceeded in any circumstances. Additional guests may attend during the day, by prior arrangement, but may not stay overnight.</p>
                     <p>The lead guest must be at least 21 years old and must stay at the property throughout the booking. We may ask for a full guest list before arrival, and we may decline any booking where the information given proves to be inaccurate.</p>
-                    <p>If we find that the party exceeds the permitted number, or differs materially from the guest list provided, we may require the additional guests to leave or may end the booking immediately under clause 9.</p>
+                    <p>If we find that the gathering exceeds the permitted number, or differs materially from the guest list provided, we may require the additional guests to leave or may end the booking immediately under clause 9.</p>
                 </li>
                 <li>
                     <h2>Identification</h2>
@@ -42,19 +42,19 @@
                 </li>
                 <li>
                     <h2>Your obligations</h2>
-                    <p>You agree, on behalf of the whole party, to: keep the property, its contents, garden and grounds in the condition in which you found them; observe the house rules published on this website, which form part of this agreement; not smoke or vape indoors; not cause a nuisance or annoyance to neighbours; permit us or our contractors reasonable access in an emergency or to carry out necessary repairs; and report any damage, breakage or fault promptly during the stay.</p>
+                    <p>You agree, on behalf of the whole gathering, to: keep the property, its contents, garden and grounds in the condition in which you found them; observe the house rules published on this website, which form part of this agreement; not smoke or vape indoors; not cause a nuisance or annoyance to neighbours; permit us or our contractors reasonable access in an emergency or to carry out necessary repairs; and report any damage, breakage or fault promptly during the stay.</p>
                     <p>Events, functions and amplified music are permitted, subject to the quiet hours in the house rules. Music and noise audible outside the property must cease by 11:00pm and may not resume before 8:00am. Where you intend to hold an event, you must tell us the expected numbers before the booking is confirmed.</p>
-                    <p>The garage and outbuildings are private working areas and are excluded from the let. No member of the party may enter them at any time.</p>
+                    <p>The garage and outbuildings are private working areas and are excluded from the let. No member of the gathering may enter them at any time.</p>
                 </li>
                 <li>
                     <h2>Gym, hot tub and facilities</h2>
                     <p>The gym, hot tub, games room, cinema room, barbecue and garden equipment are provided for your enjoyment and are used entirely at your own risk.</p>
-                    <p>A gym waiver is displayed at the gym and provided with the keys. By making the booking, the lead guest accepts that waiver on behalf of the whole party and is responsible for bringing it to the attention of everyone staying. The gym is not available to anyone under 16. Facilities must not be used by anyone under the influence of alcohol. Children must be supervised by an adult at all times, in particular around the hot tub, the patio and the barbecue.</p>
+                    <p>A gym waiver is displayed at the gym and provided with the keys. By making the booking, the lead guest accepts that waiver on behalf of the whole gathering and is responsible for bringing it to the attention of everyone staying. The gym is not available to anyone under 16. Facilities must not be used by anyone under the influence of alcohol. Children must be supervised by an adult at all times, in particular around the hot tub, the patio and the barbecue.</p>
                     <p>Nothing in these terms excludes or limits our liability for death or personal injury caused by our negligence, for fraud, or for any other liability that cannot lawfully be excluded.</p>
                 </li>
                 <li>
                     <h2>Cancellation by us and ending a stay early</h2>
-                    <p>We may end a booking immediately, and require the party to leave without refund, where: the overnight occupancy limit is exceeded; the quiet hours are breached after a warning; there is serious or repeated breach of the house rules; there is damage, threatening behaviour or illegal activity; or a neighbour complaint is upheld and the behaviour continues after a warning.</p>
+                    <p>We may end a booking immediately, and require the gathering to leave without refund, where: the overnight occupancy limit is exceeded; the quiet hours are breached after a warning; there is serious or repeated breach of the house rules; there is damage, threatening behaviour or illegal activity; or a neighbour complaint is upheld and the behaviour continues after a warning.</p>
                     <p>We may cancel a booking before arrival if the property becomes unavailable through damage, essential repair, or an event outside our reasonable control. In that case we will refund all monies paid, including the booking fee. Our liability in these circumstances is limited to that refund and we are not responsible for consequential costs such as travel or other bookings.</p>
                 </li>
                 <li>

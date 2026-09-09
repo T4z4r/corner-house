@@ -22,7 +22,7 @@
                 </div>
                 <div class="spirit-card">
                     <h3>Custom bottles for the occasion</h3>
-                    <p>A birthday, an anniversary, a wedding party or a hen weekend: we will make a bottle with your own label and message. Please allow us two weeks&rsquo; notice before your stay so we have time to make them.</p>
+                    <p>A birthday, an anniversary, a wedding or a hen weekend: we will make a bottle with your own label and message. Please allow us two weeks&rsquo; notice before your stay so we have time to make them.</p>
                     <a class="btn btn-outline" href="https://www.serengetispirits.com/products/custom-bottle-whitelabel" target="_blank" rel="noopener">Order a custom bottle</a>
                 </div>
                 <div class="spirit-card">

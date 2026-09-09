@@ -47,7 +47,7 @@ class WebsiteContentService
             'reviews' => $this->reviews(),
             'logo' => Setting::getValue('website_logo'),
             'footer_logo' => Setting::getValue('website_footer_logo') ?: Setting::getValue('website_logo'),
-            'favicon' => Setting::getValue('website_favicon'),
+            'favicon' => Setting::getValue('website_favicon') ?: Setting::getValue('website_logo'),
             'og_image' => Setting::getValue('website_og_image'),
             'footer_address' => Setting::getValue('website_address', 'Braunston, Northamptonshire'),
             'footer_capacity_note' => Setting::getValue('website_footer_capacity', 'Sleeps 12 adults and 2 children in five ensuite bedrooms.'),
@@ -216,7 +216,7 @@ class WebsiteContentService
     private function defaultInside(): array
     {
         return [
-            ['name' => 'The kitchen', 'where' => 'Ground floor', 'description' => 'At 25 feet, the kitchen is the hub of the house, and its size is the reason the house works so well for a full party. There is room for everyone to congregate in one place.', 'label' => 'The kitchen photo', 'feature' => '1'],
+            ['name' => 'The kitchen', 'where' => 'Ground floor', 'description' => 'At 25 feet, the kitchen is the hub of the house, and its size is the reason the house works so well for a full gathering. There is room for everyone to congregate in one place.', 'label' => 'The kitchen photo', 'feature' => '1'],
             ['name' => 'Orangery', 'where' => 'Ground floor', 'description' => 'The orangery, converted into a dining room that seats ten at a handmade farmhouse table and chairs, overlooking the patio.', 'label' => 'Orangery photo'],
             ['name' => 'Lounge', 'where' => 'Ground floor', 'description' => 'Gather around the cosy log fireplace, with sofas to sink into. The lounge runs conveniently off the kitchen, so the party stays together.', 'label' => 'Lounge photo'],
             ['name' => 'Games room', 'where' => 'Ground floor', 'description' => 'A pool table that converts to air hockey and table tennis, plus a dart board and a walk-in cupboard full of toys to entertain children of all ages.', 'label' => 'Games room photo'],

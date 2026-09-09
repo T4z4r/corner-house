@@ -2,7 +2,7 @@
     <div class="section">
         <div class="wrap">
             <h1 style="font-size:clamp(2.4rem,5vw,4rem)">Make a booking</h1>
-            <p class="lede">Corner House is let as a whole house, to one party at a time, for a minimum of two nights. Book through Airbnb, Booking.com or Vrbo, or directly with us at 10% less.</p>
+            <p class="lede">Corner House is let as a whole house, to one full gathering at a time, for a minimum of two nights. Book through Airbnb, Booking.com or Vrbo, or directly with us at 10% less.</p>
             <nav class="jump" aria-label="On this page">
                 <a href="#platforms">Where to book</a>
                 <a href="#availability">Availability</a>
@@ -117,7 +117,7 @@
     <div class="section">
         <div class="wrap">
             <h2 id="house-rules" class="band" style="margin-top:0;border-top:none;padding-top:0">House rules</h2>
-            <p>These apply to every booking, however you book. They are here to keep the house, our neighbours and you in good order. Signing the rental agreement, or booking through a platform, means you accept them on behalf of your whole party.</p>
+            <p>These apply to every booking, however you book. They are here to keep the house, our neighbours and you in good order. Signing the rental agreement, or booking through a platform, means you accept them on behalf of your whole gathering.</p>
 
             <div class="rules-grid">
                 @foreach ($site['houseRules'] as $rule)
