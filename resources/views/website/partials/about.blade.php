@@ -11,7 +11,7 @@
                     <a class="btn btn-outline" href="#rooms">Room by room</a>
                 </div>
                 @php $aboutImage = \App\Models\Setting::getValue('website_about_image'); @endphp
-                <div class="photo tall">@if($aboutImage)<img src="{{ asset('storage/'.$aboutImage) }}" alt="House exterior, ivy in full leaf">@else<span>House exterior, ivy in full leaf</span>@endif</div>
+                <div class="photo tall">@if($aboutImage)<img src="{{ asset('storage/'.$aboutImage) }}" alt="House exterior, ivy in full leaf">@else<img src="{{ asset('images/front_enhanced.png') }}" alt="House exterior, ivy in full leaf">@endif</div>
             </div>
         </div>
     </div>
