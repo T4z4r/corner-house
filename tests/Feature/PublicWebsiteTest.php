@@ -425,6 +425,7 @@ class PublicWebsiteTest extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertSee('http://localhost:8000/images/kitchen.png', false)
+            ->assertSee('http://localhost:8000/images/lounge.png', false)
             ->assertSee('http://localhost:8000/images/bedroom-lion.png', false)
             ->assertSee('http://localhost:8000/images/bedroom-elephant.png', false)
             ->assertSee('http://localhost:8000/images/bedroom-buffalo.png', false)
@@ -480,7 +481,7 @@ class PublicWebsiteTest extends TestCase
             ->assertDontSee('<div class="photo tall">Kitchen photo', false);
     }
 
-    public function test_rooms_page_kitchen_photo_falls_back_to_bundled_image_when_space_has_no_photo(): void
+    public function test_rooms_page_spaces_fall_back_to_bundled_images_when_no_photo(): void
     {
         Property::factory()->create(['name' => 'Corner House', 'slug' => 'corner-house', 'status' => 'active']);
 
@@ -499,7 +500,8 @@ class PublicWebsiteTest extends TestCase
             ->assertOk()
             ->assertSee('http://localhost:8000/images/kitchen.png', false)
             ->assertDontSee('The kitchen photo', false)
-            ->assertSee('Lounge photo', false);
+            ->assertSee('http://localhost:8000/images/lounge.png', false)
+            ->assertDontSee('Lounge photo', false);
     }
 
     public function test_home_page_template_copy_matches(): void

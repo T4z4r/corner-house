@@ -55,9 +55,26 @@
             <h2 id="inside" class="band">Inside</h2>
             <p>The living space beyond the bedrooms, arranged around the kitchen on the ground floor with the cinema room below.</p>
             <ul class="spaces">
+                @php
+                    $bundledSpacePhotos = [
+                        'kitchen' => 'images/kitchen.png',
+                        'lounge' => 'images/lounge.png',
+                    ];
+                @endphp
                 @foreach ($site['spacesInside'] as $space)
+                    @php
+                        $spacePhoto = $space['photo'] ?? null;
+                        if (empty($spacePhoto)) {
+                            foreach ($bundledSpacePhotos as $keyword => $path) {
+                                if (str_contains(strtolower($space['name'] ?? ''), $keyword)) {
+                                    $spacePhoto = $path;
+                                    break;
+                                }
+                            }
+                        }
+                    @endphp
                     <li class="{{ isset($space['feature']) ? 'space feature' : 'space' }}">
-                        <div class="photo">@if(!empty($space['photo']))<img src="{{ asset($space['photo']) }}" alt="{{ $space['name'] }}">@elseif(str_contains(strtolower($space['name'] ?? ''), 'kitchen'))<img src="{{ asset('images/kitchen.png') }}" alt="{{ $space['name'] }}">@else{{ $space['label'] }}@endif</div>
+                        <div class="photo">@if($spacePhoto)<img src="{{ asset($spacePhoto) }}" alt="{{ $space['name'] }}">@else{{ $space['label'] }}@endif</div>
                         <h3>{{ $space['name'] }}</h3>
                         <p class="where">{{ $space['where'] }}</p>
                         <p>{{ $space['description'] }}</p>
