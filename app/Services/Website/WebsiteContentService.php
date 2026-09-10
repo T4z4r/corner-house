@@ -51,7 +51,7 @@ class WebsiteContentService
             'og_image' => Setting::getValue('website_og_image'),
             'footer_address' => Setting::getValue('website_address', 'Braunston, Northamptonshire'),
             'footer_capacity_note' => Setting::getValue('website_footer_capacity', 'Sleeps 12 adults and 2 children in five ensuite bedrooms.'),
-            'contact_email' => Setting::getValue('website_contact_email', 'bookings@example.com'),
+            'contact_email' => Setting::getValue('website_contact_email', 'hello@cornerhousebraunston.uk'),
             'platforms' => $this->platforms(),
             'spirits_website' => Setting::getValue('spirits_website', 'https://www.serengetispirits.com'),
             'video_url' => Setting::getValue('website_video_url'),
@@ -71,7 +71,7 @@ class WebsiteContentService
         $availability = Setting::getValue('website_blocked_dates', []) ?: [];
 
         return [
-            'enquiryEmail' => Setting::getValue('website_contact_email', 'bookings@example.com'),
+            'enquiryEmail' => Setting::getValue('website_contact_email', 'hello@cornerhousebraunston.uk'),
             // Relative paths keep the browser on the site's own origin, whatever
             // host/scheme it is served over (APP_URL is only ever a fallback).
             'bookingEndpoint' => Route::has('booking.enquiry') ? route('booking.enquiry', [], false) : '',

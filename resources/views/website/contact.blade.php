@@ -13,7 +13,7 @@
                     <div class="ch-contact-icon"><i class="bi bi-envelope"></i></div>
                     <div>
                         <div class="ch-contact-label">Email</div>
-                        <div>{{ $property?->email ?? config('mail.from.address', 'hello@cornerhouse.test') }}</div>
+                        <div>{{ $property?->email ?? 'hello@cornerhousebraunston.uk' }}</div>
                     </div>
                 </div>
                 @if ($property?->phone)
