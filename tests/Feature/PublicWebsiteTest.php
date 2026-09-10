@@ -539,6 +539,16 @@ class PublicWebsiteTest extends TestCase
             ->assertDontSee('Office photo', false);
     }
 
+    public function test_home_page_shows_serengeti_bottle_photo(): void
+    {
+        Property::factory()->create(['name' => 'Corner House']);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('http://localhost:8000/images/serengeti-bottle.png', false)
+            ->assertDontSee('Serengeti Spirits bottle photo', false);
+    }
+
     public function test_home_page_template_copy_matches(): void
     {
         $property = Property::factory()->create(['name' => 'Corner House', 'slug' => 'corner-house', 'status' => 'active', 'description' => null]);
