@@ -38,6 +38,9 @@
                                     @if ($property->is_primary)
                                         <span class="ch-badge ch-badge-primary ms-2"><i class="bi bi-star-fill me-1"></i>Primary</span>
                                     @endif
+                                    @if ($property->linkedProperty)
+                                        <span class="ch-badge ch-badge-muted ms-2"><i class="bi bi-link-45deg me-1"></i>Linked</span>
+                                    @endif
                                 </td>
                                 <td>{{ $property->city }}, {{ $property->country }}</td>
                                 <td>

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -28,6 +29,7 @@ class Property extends Model
         'bathrooms',
         'status',
         'is_primary',
+        'linked_property_id',
         'currency',
         'smoking_allowed',
         'children_allowed',
@@ -86,5 +88,10 @@ class Property extends Model
     public function primaryImage(): ?PropertyImage
     {
         return $this->images()->where('is_primary', true)->first() ?? $this->images()->first();
+    }
+
+    public function linkedProperty(): BelongsTo
+    {
+        return $this->belongsTo(Property::class, 'linked_property_id');
     }
 }

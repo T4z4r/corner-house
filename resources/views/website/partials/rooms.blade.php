@@ -58,11 +58,13 @@
                 @php
                     $bundledSpacePhotos = [
                         'kitchen' => 'images/kitchen.png',
-                        'lounge' => 'images/lounge.png',
-                        'cinema' => 'images/cinema.webp',
-                        'gym' => 'images/gym.png',
+'lounge' => 'images/lounge.png',
+                    'cinema' => 'images/cinema.webp',
+                    'games' => 'images/games.png',
+                    'gym' => 'images/gym.png',
                     'garden bar' => 'images/garden.png',
                     'hot tub' => 'images/hot-tub.png',
+                    'balcony' => 'images/balcony.png',
                     'office' => 'images/office.png',
                 ];
                 @endphp

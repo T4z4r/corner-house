@@ -427,9 +427,11 @@ class PublicWebsiteTest extends TestCase
             ->assertSee('http://localhost:8000/images/kitchen.png', false)
             ->assertSee('http://localhost:8000/images/lounge.png', false)
             ->assertSee('http://localhost:8000/images/cinema.webp', false)
+            ->assertSee('http://localhost:8000/images/games.png', false)
             ->assertSee('http://localhost:8000/images/gym.png', false)
             ->assertSee('http://localhost:8000/images/garden.png', false)
             ->assertSee('http://localhost:8000/images/hot-tub.png', false)
+            ->assertSee('http://localhost:8000/images/balcony.png', false)
             ->assertSee('http://localhost:8000/images/office.png', false)
             ->assertSee('http://localhost:8000/images/bedroom-lion.png', false)
             ->assertSee('http://localhost:8000/images/bedroom-elephant.png', false)
@@ -497,6 +499,7 @@ class PublicWebsiteTest extends TestCase
                 ['name' => 'Kitchen', 'where' => 'Ground floor', 'description' => 'The kitchen.', 'label' => 'The kitchen photo', 'feature' => '1'],
                 ['name' => 'Lounge', 'where' => 'Ground floor', 'description' => 'The lounge.', 'label' => 'Lounge photo'],
                 ['name' => 'Cinema room', 'where' => 'The converted cellar', 'description' => 'The cinema.', 'label' => 'Cinema room photo'],
+                ['name' => 'Games room', 'where' => 'Ground floor', 'description' => 'The games.', 'label' => 'Games room photo'],
             ]),
             'cast' => 'json',
         ]);
@@ -507,6 +510,7 @@ class PublicWebsiteTest extends TestCase
                 ['name' => 'Garden bar', 'where' => 'The garden', 'description' => 'The bar.', 'label' => 'Garden bar photo'],
                 ['name' => 'Gym', 'where' => 'The grounds', 'description' => 'The gym.', 'label' => 'Gym photo'],
                 ['name' => 'Hot tub', 'where' => 'On the patio', 'description' => 'The tub.', 'label' => 'Hot tub photo'],
+                ['name' => 'Balcony', 'where' => 'Off the Lion suite', 'description' => 'The balcony.', 'label' => 'Balcony photo'],
                 ['name' => 'Office', 'where' => 'The grounds', 'description' => 'The office.', 'label' => 'Office photo'],
             ]),
             'cast' => 'json',
@@ -521,12 +525,16 @@ class PublicWebsiteTest extends TestCase
             ->assertDontSee('Lounge photo', false)
             ->assertSee('http://localhost:8000/images/cinema.webp', false)
             ->assertDontSee('Cinema room photo', false)
+            ->assertSee('http://localhost:8000/images/games.png', false)
+            ->assertDontSee('Games room photo', false)
             ->assertSee('http://localhost:8000/images/gym.png', false)
             ->assertDontSee('Gym photo', false)
             ->assertSee('http://localhost:8000/images/garden.png', false)
             ->assertDontSee('Garden bar photo', false)
             ->assertSee('http://localhost:8000/images/hot-tub.png', false)
             ->assertDontSee('Hot tub photo', false)
+            ->assertSee('http://localhost:8000/images/balcony.png', false)
+            ->assertDontSee('Balcony photo', false)
             ->assertSee('http://localhost:8000/images/office.png', false)
             ->assertDontSee('Office photo', false);
     }

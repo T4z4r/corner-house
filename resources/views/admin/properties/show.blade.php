@@ -81,6 +81,22 @@
                             </span>
                         </div>
                         <div class="col-md-4">
+                            <div class="ch-label">Primary</div>
+                            <span class="ch-badge ch-badge-{{ $property->is_primary ? 'primary' : 'muted' }}">
+                                {{ $property->is_primary ? 'Yes' : 'No' }}
+                            </span>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="ch-label">Linked property</div>
+                            @if ($property->linkedProperty)
+                                <a href="{{ route('admin.properties.show', $property->linkedProperty) }}" class="fw-semibold text-decoration-none">
+                                    {{ $property->linkedProperty->name }}
+                                </a>
+                            @else
+                                <span class="text-muted">None</span>
+                            @endif
+                        </div>
+                        <div class="col-md-4">
                             <div class="ch-label">Capacity</div>
                             <div class="fw-semibold">{{ $property->capacity ?? '-' }} guests</div>
                         </div>

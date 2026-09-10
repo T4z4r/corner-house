@@ -219,7 +219,7 @@ class WebsiteContentService
             ['name' => 'The kitchen', 'where' => 'Ground floor', 'description' => 'At 25 feet, the kitchen is the hub of the house, and its size is the reason the house works so well for a full gathering. There is room for everyone to congregate in one place.', 'label' => 'The kitchen photo', 'feature' => '1', 'photo' => 'images/kitchen.png'],
             ['name' => 'Orangery', 'where' => 'Ground floor', 'description' => 'The orangery, converted into a dining room that seats ten at a handmade farmhouse table and chairs, overlooking the patio.', 'label' => 'Orangery photo'],
             ['name' => 'Lounge', 'where' => 'Ground floor', 'description' => 'Gather around the cosy log fireplace, with sofas to sink into. The lounge runs conveniently off the kitchen, so the gathering stays together.', 'label' => 'Lounge photo', 'photo' => 'images/lounge.png'],
-            ['name' => 'Games room', 'where' => 'Ground floor', 'description' => 'A pool table that converts to air hockey and table tennis, plus a dart board and a walk-in cupboard full of toys to entertain children of all ages.', 'label' => 'Games room photo'],
+            ['name' => 'Games room', 'where' => 'Ground floor', 'description' => 'A pool table that converts to air hockey and table tennis, plus a dart board and a walk-in cupboard full of toys to entertain children of all ages.', 'label' => 'Games room photo', 'photo' => 'images/games.png'],
             ['name' => 'Cinema room', 'where' => 'The converted cellar', 'description' => 'The cellar has been converted into a cinema room, with a projector screen and comfortable seating for the whole gathering.', 'label' => 'Cinema room photo', 'photo' => 'images/cinema.webp'],
         ];
     }
@@ -232,7 +232,7 @@ class WebsiteContentService
         return [
             ['name' => 'Entertaining patio and garden bar', 'where' => 'The garden', 'description' => 'The patio is where the house spills out on a warm evening: the garden bar, the Kadai fire-pit barbecue and the hot tub, with the landscaped garden beyond.', 'label' => 'Entertaining patio and garden bar photo', 'feature' => '1', 'photo' => 'images/garden.png'],
             ['name' => 'Hot tub', 'where' => 'On the patio', 'description' => 'Seats four to six. Sits on the patio, a few steps from the garden bar.', 'label' => 'Hot tub photo', 'photo' => 'images/hot-tub.png'],
-            ['name' => 'Balcony', 'where' => 'First floor, off the Lion suite', 'description' => 'A large balcony over the garden and the entertaining patio, reached through the double doors in the Lion suite. Good for a first coffee of the day.', 'label' => 'Balcony photo'],
+            ['name' => 'Balcony', 'where' => 'First floor, off the Lion suite', 'description' => 'A large balcony over the garden and the entertaining patio, reached through the double doors in the Lion suite. Good for a first coffee of the day.', 'label' => 'Balcony photo', 'photo' => 'images/balcony.png'],
             ['name' => 'Gym', 'where' => 'The grounds', 'description' => 'Fully equipped in its own building in the grounds, with cardio, weights and racks. Over-16s only.', 'label' => 'Gym photo', 'photo' => 'images/gym.png'],
             ['name' => 'Office', 'where' => 'The grounds', 'description' => 'A purpose-built, hard-wired office in the grounds. Add the desk setup and broadband speed — this is the detail that wins remote-working bookings.', 'label' => 'Office photo', 'photo' => 'images/office.png'],
         ];

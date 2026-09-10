@@ -22,6 +22,7 @@ class PropertyController extends Controller
     {
         $properties = Property::query()
             ->withCount('rooms')
+            ->with('linkedProperty:id,name')
             ->orderByRaw('is_primary DESC, name ASC')
             ->paginate(15);
 
@@ -30,13 +31,16 @@ class PropertyController extends Controller
 
     public function create(): View
     {
-        return view('admin.properties.create', ['amenities' => Amenity::where('is_active', true)->orderBy('name')->get()]);
+        return view('admin.properties.create', [
+            'amenities' => Amenity::where('is_active', true)->orderBy('name')->get(),
+            'linkedProperties' => Property::query()->whereKeyNot(0)->orderBy('name')->get(),
+        ]);
     }
 
     public function show(Property $property): View
     {
         return view('admin.properties.show', [
-            'property' => $property->load(['rooms.images', 'amenities', 'policies', 'images']),
+            'property' => $property->load(['rooms.images', 'amenities', 'policies', 'images', 'linkedProperty']),
         ]);
     }
 
@@ -46,9 +50,8 @@ class PropertyController extends Controller
 
         $property = Property::create($data);
 
-        if ($property->is_primary) {
-            Property::whereKeyNot($property->id)->update(['is_primary' => false]);
-        }
+        $this->applyPrimaryFlag($property);
+        $this->applyLink($property, $data['linked_property_id'] ?? null);
 
         if ($request->has('amenity_ids')) {
             $property->amenities()->sync($request->input('amenity_ids'));
@@ -62,8 +65,9 @@ class PropertyController extends Controller
     public function edit(Property $property): View
     {
         return view('admin.properties.edit', [
-            'property' => $property->load(['amenities', 'policies', 'rooms']),
+            'property' => $property->load(['amenities', 'policies', 'rooms', 'linkedProperty']),
             'amenities' => Amenity::where('is_active', true)->orderBy('name')->get(),
+            'linkedProperties' => Property::query()->whereKeyNot($property->id)->orderBy('name')->get(),
         ]);
     }
 
@@ -74,11 +78,11 @@ class PropertyController extends Controller
         ]);
 
         $data = $this->validated($request, $property);
+        $previousLink = $property->linked_property_id;
         $property->update($data);
 
-        if ($property->is_primary) {
-            Property::whereKeyNot($property->id)->update(['is_primary' => false]);
-        }
+        $this->applyPrimaryFlag($property);
+        $this->applyLink($property, $data['linked_property_id'] ?? null, $previousLink);
 
         if ($request->has('amenity_ids')) {
             $property->amenities()->sync($request->input('amenity_ids'));
@@ -155,6 +159,7 @@ class PropertyController extends Controller
             'bathrooms' => ['nullable', 'integer', 'min:0'],
             'status' => ['required', 'in:active,inactive,maintenance'],
             'is_primary' => ['nullable', 'boolean'],
+            'linked_property_id' => ['nullable', 'integer', 'exists:properties,id'],
             'smoking_allowed' => ['nullable', 'boolean'],
             'children_allowed' => ['nullable', 'boolean'],
             'parties_allowed' => ['nullable', 'boolean'],
@@ -171,6 +176,56 @@ class PropertyController extends Controller
         return array_merge($data, [
             'slug' => $existingSlug ?? Str::slug($request->input('name')),
             'is_primary' => $request->boolean('is_primary'),
+            'linked_property_id' => $request->input('linked_property_id') ?: null,
         ]);
+    }
+
+    /**
+     * Ensure only one property in the whole system carries the primary flag.
+     */
+    private function applyPrimaryFlag(Property $property): void
+    {
+        if ($property->is_primary) {
+            Property::whereKeyNot($property->id)->update(['is_primary' => false]);
+        }
+    }
+
+    /**
+     * Keep the link between two properties symmetric: linking A to B also
+     * links B to A, and unlinking one side releases the other.
+     */
+    private function applyLink(Property $property, ?int $linkedPropertyId, ?int $previous = null): void
+    {
+        $previous = $previous ?? $property->linked_property_id;
+
+        if ($linkedPropertyId === null || $linkedPropertyId === $property->id) {
+            if ($previous !== null) {
+                Property::whereKey($previous)->where('linked_property_id', $property->id)->update(['linked_property_id' => null]);
+            }
+
+            $property->update(['linked_property_id' => null]);
+
+            return;
+        }
+
+        if ($previous === $linkedPropertyId) {
+            return;
+        }
+
+        if ($previous !== null) {
+            Property::whereKey($previous)->where('linked_property_id', $property->id)->update(['linked_property_id' => null]);
+        }
+
+        $partner = Property::find($linkedPropertyId);
+        if (! $partner instanceof Property) {
+            return;
+        }
+
+        if ($partner->linked_property_id !== null && $partner->linked_property_id !== $property->id) {
+            Property::whereKey($partner->linked_property_id)->where('linked_property_id', $partner->id)->update(['linked_property_id' => null]);
+        }
+
+        $partner->update(['linked_property_id' => $property->id]);
+        $property->update(['linked_property_id' => $partner->id]);
     }
 }

@@ -1088,6 +1088,84 @@ class AdminResourcesTest extends TestCase
             ->assertSee('Primary');
     }
 
+    public function test_property_can_be_linked_to_another_property_and_link_is_two_way(): void
+    {
+        $first = Property::factory()->create(['name' => 'Maple Cottage']);
+        $second = Property::factory()->create(['name' => 'Willow Lodge']);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->put(route('admin.properties.update', $first), [
+                'name' => 'Maple Cottage',
+                'status' => 'active',
+                'city' => 'York',
+                'currency' => 'GBP',
+                'linked_property_id' => (string) $second->id,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('properties', ['id' => $first->id, 'linked_property_id' => $second->id]);
+        $this->assertDatabaseHas('properties', ['id' => $second->id, 'linked_property_id' => $first->id]);
+    }
+
+    public function test_unlinking_a_property_releases_the_partner_too(): void
+    {
+        $first = Property::factory()->create(['name' => 'Maple Cottage']);
+        $second = Property::factory()->create(['name' => 'Willow Lodge']);
+
+        $first->update(['linked_property_id' => $second->id]);
+        $second->update(['linked_property_id' => $first->id]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->put(route('admin.properties.update', $first), [
+                'name' => 'Maple Cottage',
+                'status' => 'active',
+                'city' => 'York',
+                'currency' => 'GBP',
+                'linked_property_id' => '',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('properties', ['id' => $first->id, 'linked_property_id' => null]);
+        $this->assertDatabaseHas('properties', ['id' => $second->id, 'linked_property_id' => null]);
+    }
+
+    public function test_linking_reassigns_a_partner_that_was_linked_elsewhere(): void
+    {
+        $first = Property::factory()->create(['name' => 'Maple Cottage']);
+        $second = Property::factory()->create(['name' => 'Willow Lodge']);
+        $third = Property::factory()->create(['name' => 'Ash House']);
+
+        $second->update(['linked_property_id' => $third->id]);
+        $third->update(['linked_property_id' => $second->id]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->put(route('admin.properties.update', $first), [
+                'name' => 'Maple Cottage',
+                'status' => 'active',
+                'city' => 'York',
+                'currency' => 'GBP',
+                'linked_property_id' => (string) $second->id,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('properties', ['id' => $first->id, 'linked_property_id' => $second->id]);
+        $this->assertDatabaseHas('properties', ['id' => $second->id, 'linked_property_id' => $first->id]);
+        $this->assertDatabaseHas('properties', ['id' => $third->id, 'linked_property_id' => null]);
+    }
+
+    public function test_linked_property_shows_badge_on_index(): void
+    {
+        $first = Property::factory()->create(['name' => 'Maple Cottage']);
+        $second = Property::factory()->create(['name' => 'Willow Lodge']);
+        $first->update(['linked_property_id' => $second->id]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.properties.index'))
+            ->assertOk()
+            ->assertSee('Maple Cottage')
+            ->assertSee('Linked');
+    }
+
     public function test_super_admin_can_delete_property_and_null_orphaned_related_records(): void
     {
         $property = Property::factory()->create(['name' => 'Maple Cottage']);

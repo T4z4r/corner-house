@@ -27,6 +27,19 @@
             <div class="form-text">The primary property is highlighted first across the admin and website. Only one property can be primary.</div>
         </div>
     </div>
+    <div class="col-md-6">
+        <label class="form-label" for="linked_property_id">Linked property</label>
+        <select class="form-select" id="linked_property_id" name="linked_property_id">
+            <option value="">— None —</option>
+            @foreach ($linkedProperties as $candidate)
+                <option value="{{ $candidate->id }}"
+                        @selected((int) old('linked_property_id', $property?->linked_property_id ?? '') === $candidate->id)>
+                    {{ $candidate->name }}@if ($candidate->is_primary) (Primary)@endif
+                </option>
+            @endforeach
+        </select>
+        <div class="form-text">Link this property to another so the pair is managed together. Linking is two-way: the other property will list this one as its link too.</div>
+    </div>
     <div class="col-12">
         <label class="form-label" for="short_description">Short description</label>
         <input type="text" class="form-control" id="short_description" name="short_description" maxlength="500"
