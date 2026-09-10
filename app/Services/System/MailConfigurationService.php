@@ -19,7 +19,7 @@ class MailConfigurationService
             'mail.mailers.smtp.port' => $this->resolve('mail_port', config('mail.mailers.smtp.port')),
             'mail.mailers.smtp.username' => $this->resolve('mail_username', config('mail.mailers.smtp.username')),
             'mail.mailers.smtp.password' => $this->resolve('mail_password', config('mail.mailers.smtp.password')),
-            'mail.mailers.smtp.scheme' => $this->resolve('mail_encryption', config('mail.mailers.smtp.scheme')),
+            'mail.mailers.smtp.scheme' => $this->resolveScheme(config('mail.mailers.smtp.scheme')),
             'mail.mailers.smtp.stream' => [
                 'ssl' => [
                     'verify_peer' => filter_var($this->resolve('mail_ssl_verify_peer', true), FILTER_VALIDATE_BOOLEAN),
@@ -48,5 +48,23 @@ class MailConfigurationService
         }
 
         return $value;
+    }
+
+    /**
+     * Normalise the stored encryption value into a Symfony Mailer scheme.
+     *
+     * Symfony only knows "smtp" and "smtps" as SMTP schemes. The admin uses
+     * the legacy "ssl"/"tls" wording: "ssl" is implicit TLS (port 465) and
+     * maps to "smtps"; "tls" is STARTTLS (port 587) and maps to "smtp".
+     */
+    private function resolveScheme(mixed $default): string
+    {
+        $value = strtolower((string) $this->resolve('mail_encryption', $default));
+
+        return match ($value) {
+            'ssl', 'smtps' => 'smtps',
+            'tls', 'smtp' => 'smtp',
+            default => (string) ($default === null ? 'smtp' : $default),
+        };
     }
 }

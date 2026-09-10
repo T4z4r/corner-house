@@ -217,7 +217,7 @@ class SettingsTest extends TestCase
         $this->assertSame(587, config('mail.mailers.smtp.port'));
         $this->assertSame('mailer-user', config('mail.mailers.smtp.username'));
         $this->assertSame('secret-pass', config('mail.mailers.smtp.password'));
-        $this->assertSame('tls', config('mail.mailers.smtp.scheme'));
+        $this->assertSame('smtp', config('mail.mailers.smtp.scheme'));
         $this->assertSame('custom-mail', config('mail.mailers.log.channel'));
         $this->assertSame('stays@example.test', config('mail.from.address'));
         $this->assertSame('Corner House Mail', config('mail.from.name'));
@@ -239,6 +239,19 @@ class SettingsTest extends TestCase
         // clobber the configured SMTP credentials.
         $this->assertSame('env-pass', config('mail.mailers.smtp.password'));
         $this->assertSame('/etc/ssl/cafile.pem', config('mail.mailers.smtp.stream.ssl.cafile'));
+    }
+
+    public function test_legacy_ssl_encryption_is_normalised_to_smtps_scheme(): void
+    {
+        $this->seed(SettingsSeeder::class);
+
+        config(['mail.mailers.smtp.scheme' => 'smtp']);
+
+        app(MailConfigurationService::class)->apply();
+
+        // The seeder stores "ssl" (legacy wording for implicit TLS on port
+        // 465); Symfony Mailer only accepts "smtp"/"smtps" as schemes.
+        $this->assertSame('smtps', config('mail.mailers.smtp.scheme'));
     }
 
     public function test_booking_email_notifications_can_be_disabled_globally(): void
