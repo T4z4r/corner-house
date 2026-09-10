@@ -6,9 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', $propertyName) | Corner House, Braunston</title>
     <meta name="description" content="Corner House is a 175-year-old ivy-clad country house in Braunston, the Heart of the Waterways. Five ensuite bedrooms, a 25-foot kitchen, hot tub, cinema room and gym. Sleeps 12 adults and 2 children.">
-    @if ($site['favicon'])
-        <link rel="icon" href="{{ asset('storage/'.$site['favicon']) }}">
-    @endif
+    <link rel="icon" type="image/svg+xml" href="{{ asset('images/logo.svg') }}">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="{{ $propertyName }}">
     <meta property="og:title" content="{{ $propertyName }}, Braunston">

@@ -86,7 +86,7 @@ class PublicWebsiteTest extends TestCase
             ->assertDontSee('images/logo.png', false);
     }
 
-    public function test_logo_is_used_as_favicon_when_no_favicon_set(): void
+    public function test_favicon_uses_bundled_svg_regardless_of_logo_upload(): void
     {
         Property::factory()->create(['name' => 'Corner House']);
 
@@ -103,10 +103,10 @@ class PublicWebsiteTest extends TestCase
 
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee('rel="icon" href="http://localhost:8000/storage/website/custom.png"', false);
+            ->assertSee('rel="icon" type="image/svg+xml" href="http://localhost:8000/images/logo.svg"', false);
     }
 
-    public function test_explicit_favicon_overrides_logo(): void
+    public function test_favicon_uses_bundled_svg_even_when_favicon_setting_uploaded(): void
     {
         Property::factory()->create(['name' => 'Corner House']);
 
@@ -131,8 +131,8 @@ class PublicWebsiteTest extends TestCase
 
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee('rel="icon" href="http://localhost:8000/storage/website/favicon.png"', false)
-            ->assertDontSee('rel="icon" href="http://localhost:8000/storage/website/custom.png"', false);
+            ->assertSee('rel="icon" type="image/svg+xml" href="http://localhost:8000/images/logo.svg"', false)
+            ->assertDontSee('storage/website/favicon.png', false);
     }
 
     public function test_property_and_booking_pages_render(): void
