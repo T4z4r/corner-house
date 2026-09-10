@@ -15,7 +15,7 @@
                     $main = \App\Models\Setting::getValue('website_hero_gallery_main');
                     $small = \App\Models\Setting::getValue('website_hero_gallery_small');
                 @endphp
-                <figure>@if($main)<img src="{{ asset('storage/'.$main) }}" alt="The ivy-covered front of Corner House from Old Road">@else<img src="{{ asset('images/hero-front.jpg') }}" alt="The ivy-covered front of Corner House from Old Road">@endif<figcaption>The front</figcaption></figure>
+                <figure>@if($main)<img src="{{ asset('storage/'.$main) }}" alt="The ivy-covered front of Corner House from Old Road">@else<img src="{{ asset('images/front_enhanced.png') }}" alt="The ivy-covered front of Corner House from Old Road">@endif<figcaption>The front</figcaption></figure>
                 <figure>@if($small)<img src="{{ asset('storage/'.$small) }}" alt="The rear of Corner House with the raised patio and landscaped garden">@else<img src="{{ asset('images/hero-garden.jpg') }}" alt="The rear of Corner House with the raised patio and landscaped garden">@endif<figcaption>The garden</figcaption></figure>
             </div>
             </div>

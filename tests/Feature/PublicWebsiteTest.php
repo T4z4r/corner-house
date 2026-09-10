@@ -251,7 +251,7 @@ class PublicWebsiteTest extends TestCase
             ->assertOk()
             ->assertSee('The front', false)
             ->assertSee('The garden', false)
-            ->assertSee('hero-front.jpg', false)
+            ->assertSee('front_enhanced.png', false)
             ->assertSee('hero-garden.jpg', false);
     }
 
