@@ -11,7 +11,7 @@
                     <p class="lede">Our African-inspired gins and spirits are made here at Corner House. Order before you arrive and they can be waiting in the kitchen when you get here.</p>
                     <p>Serengeti Spirits runs entirely on solar power and gives five per cent of its profits to the Wright Foundation, which supports children's homes and wildlife conservation in Tanzania. Every bottle bought during your stay contributes.</p>
                 </div>
-                <div class="photo"><img src="{{ asset('images/serengeti-bottle.png') }}" alt="Serengeti Spirits bottle"></div>
+                <div class="photo wide"><img src="{{ asset('images/serengeti-bottle.png') }}" alt="Serengeti Spirits bottle"></div>
             </div>
 
             <div class="spirit-cards">

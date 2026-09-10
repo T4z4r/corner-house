@@ -57,8 +57,9 @@
             <ul class="spaces">
                 @php
                     $bundledSpacePhotos = [
-                        'kitchen' => 'images/kitchen.png',
-'lounge' => 'images/lounge.png',
+'kitchen' => 'images/kitchen.png',
+                        'orangery' => 'images/orangery.png',
+                        'lounge' => 'images/lounge.png',
                     'cinema' => 'images/cinema.webp',
                     'games' => 'images/games.png',
                     'gym' => 'images/gym.png',

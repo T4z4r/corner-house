@@ -425,6 +425,7 @@ class PublicWebsiteTest extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertSee('http://localhost:8000/images/kitchen.png', false)
+            ->assertSee('http://localhost:8000/images/orangery.png', false)
             ->assertSee('http://localhost:8000/images/lounge.png', false)
             ->assertSee('http://localhost:8000/images/cinema.webp', false)
             ->assertSee('http://localhost:8000/images/games.png', false)
@@ -497,6 +498,7 @@ class PublicWebsiteTest extends TestCase
             'key' => 'website_spaces_inside',
             'value' => json_encode([
                 ['name' => 'Kitchen', 'where' => 'Ground floor', 'description' => 'The kitchen.', 'label' => 'The kitchen photo', 'feature' => '1'],
+                ['name' => 'Orangery', 'where' => 'Ground floor', 'description' => 'The orangery.', 'label' => 'Orangery photo'],
                 ['name' => 'Lounge', 'where' => 'Ground floor', 'description' => 'The lounge.', 'label' => 'Lounge photo'],
                 ['name' => 'Cinema room', 'where' => 'The converted cellar', 'description' => 'The cinema.', 'label' => 'Cinema room photo'],
                 ['name' => 'Games room', 'where' => 'Ground floor', 'description' => 'The games.', 'label' => 'Games room photo'],
@@ -521,6 +523,8 @@ class PublicWebsiteTest extends TestCase
             ->assertOk()
             ->assertSee('http://localhost:8000/images/kitchen.png', false)
             ->assertDontSee('The kitchen photo', false)
+            ->assertSee('http://localhost:8000/images/orangery.png', false)
+            ->assertDontSee('Orangery photo', false)
             ->assertSee('http://localhost:8000/images/lounge.png', false)
             ->assertDontSee('Lounge photo', false)
             ->assertSee('http://localhost:8000/images/cinema.webp', false)
