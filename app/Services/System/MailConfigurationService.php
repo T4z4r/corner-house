@@ -20,11 +20,15 @@ class MailConfigurationService
             'mail.mailers.smtp.username' => $this->resolve('mail_username', config('mail.mailers.smtp.username')),
             'mail.mailers.smtp.password' => $this->resolve('mail_password', config('mail.mailers.smtp.password')),
             'mail.mailers.smtp.scheme' => $this->resolveScheme(config('mail.mailers.smtp.scheme')),
+            // Top-level DSN option — Symfony Mailer reads this directly. The
+            // legacy nested "stream" block below is kept for compatibility with
+            // older transports, but this flat key is what controls verification.
+            'mail.mailers.smtp.verify_peer' => $this->resolveBool('mail_ssl_verify_peer', true),
             'mail.mailers.smtp.stream' => [
                 'ssl' => [
-                    'verify_peer' => filter_var($this->resolve('mail_ssl_verify_peer', true), FILTER_VALIDATE_BOOLEAN),
-                    'verify_peer_name' => filter_var($this->resolve('mail_ssl_verify_peer_name', true), FILTER_VALIDATE_BOOLEAN),
-                    'allow_self_signed' => filter_var($this->resolve('mail_ssl_allow_self_signed', false), FILTER_VALIDATE_BOOLEAN),
+                    'verify_peer' => $this->resolveBool('mail_ssl_verify_peer', true),
+                    'verify_peer_name' => $this->resolveBool('mail_ssl_verify_peer_name', true),
+                    'allow_self_signed' => $this->resolveBool('mail_ssl_allow_self_signed', false),
                     'cafile' => $this->resolve('mail_ssl_cafile', config('mail.mailers.smtp.stream.ssl.cafile')),
                 ],
             ],
@@ -32,6 +36,13 @@ class MailConfigurationService
             'mail.from.address' => $this->resolve('mail_from_address', config('mail.from.address')),
             'mail.from.name' => $this->resolve('mail_from_name', config('mail.from.name')),
         ]);
+    }
+
+    private function resolveBool(string $key, bool $default): bool
+    {
+        $value = $this->resolve($key, $default);
+
+        return is_string($value) ? filter_var($value, FILTER_VALIDATE_BOOLEAN) : (bool) $value;
     }
 
     /**

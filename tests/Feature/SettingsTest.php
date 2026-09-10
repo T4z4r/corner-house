@@ -254,6 +254,20 @@ class SettingsTest extends TestCase
         $this->assertSame('smtps', config('mail.mailers.smtp.scheme'));
     }
 
+    public function test_verify_peer_setting_controls_top_level_smtp_option(): void
+    {
+        $this->seed(SettingsSeeder::class);
+
+        app(MailConfigurationService::class)->apply();
+        $this->assertTrue(config('mail.mailers.smtp.verify_peer'));
+
+        Setting::query()->where('key', 'mail_ssl_verify_peer')->update(['value' => '0']);
+        cache()->forget('settings.all');
+
+        app(MailConfigurationService::class)->apply();
+        $this->assertFalse(config('mail.mailers.smtp.verify_peer'));
+    }
+
     public function test_booking_email_notifications_can_be_disabled_globally(): void
     {
         $this->seed([SettingsSeeder::class, CommunicationTemplateSeeder::class]);
