@@ -109,7 +109,8 @@
         <div class="reviews-head">
             <div>
                 <h2>What guests say</h2>
-                <p><span class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span> {{ $site['heroFacts'][5]['label'] ?? 'All 5 star reviews from more than 30 Airbnb guests within the first year of listing' }}</p>
+                <p class="stars" style="margin-bottom:.25rem">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
+                <p>{{ $site['heroFacts'][5]['label'] ?? 'All 5 star reviews from more than 30 Airbnb guests within the first year of listing' }}</p>
             </div>
         </div>
         <div class="marquee">
