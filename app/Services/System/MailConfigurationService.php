@@ -14,23 +14,39 @@ class MailConfigurationService
         }
 
         config([
-            'mail.default' => Setting::getValue('mail_mailer', config('mail.default')),
-            'mail.mailers.smtp.host' => Setting::getValue('mail_host', config('mail.mailers.smtp.host')),
-            'mail.mailers.smtp.port' => Setting::getValue('mail_port', config('mail.mailers.smtp.port')),
-            'mail.mailers.smtp.username' => Setting::getValue('mail_username', config('mail.mailers.smtp.username')),
-            'mail.mailers.smtp.password' => Setting::getValue('mail_password', config('mail.mailers.smtp.password')),
-            'mail.mailers.smtp.scheme' => Setting::getValue('mail_encryption', config('mail.mailers.smtp.scheme')),
+            'mail.default' => $this->resolve('mail_mailer', config('mail.default')),
+            'mail.mailers.smtp.host' => $this->resolve('mail_host', config('mail.mailers.smtp.host')),
+            'mail.mailers.smtp.port' => $this->resolve('mail_port', config('mail.mailers.smtp.port')),
+            'mail.mailers.smtp.username' => $this->resolve('mail_username', config('mail.mailers.smtp.username')),
+            'mail.mailers.smtp.password' => $this->resolve('mail_password', config('mail.mailers.smtp.password')),
+            'mail.mailers.smtp.scheme' => $this->resolve('mail_encryption', config('mail.mailers.smtp.scheme')),
             'mail.mailers.smtp.stream' => [
                 'ssl' => [
-                    'verify_peer' => filter_var(Setting::getValue('mail_ssl_verify_peer', true), FILTER_VALIDATE_BOOLEAN),
-                    'verify_peer_name' => filter_var(Setting::getValue('mail_ssl_verify_peer_name', true), FILTER_VALIDATE_BOOLEAN),
-                    'allow_self_signed' => filter_var(Setting::getValue('mail_ssl_allow_self_signed', false), FILTER_VALIDATE_BOOLEAN),
-                    'cafile' => Setting::getValue('mail_ssl_cafile', null),
+                    'verify_peer' => filter_var($this->resolve('mail_ssl_verify_peer', true), FILTER_VALIDATE_BOOLEAN),
+                    'verify_peer_name' => filter_var($this->resolve('mail_ssl_verify_peer_name', true), FILTER_VALIDATE_BOOLEAN),
+                    'allow_self_signed' => filter_var($this->resolve('mail_ssl_allow_self_signed', false), FILTER_VALIDATE_BOOLEAN),
+                    'cafile' => $this->resolve('mail_ssl_cafile', config('mail.mailers.smtp.stream.ssl.cafile')),
                 ],
             ],
-            'mail.mailers.log.channel' => Setting::getValue('mail_log_channel', config('mail.mailers.log.channel')),
-            'mail.from.address' => Setting::getValue('mail_from_address', config('mail.from.address')),
-            'mail.from.name' => Setting::getValue('mail_from_name', config('mail.from.name')),
+            'mail.mailers.log.channel' => $this->resolve('mail_log_channel', config('mail.mailers.log.channel')),
+            'mail.from.address' => $this->resolve('mail_from_address', config('mail.from.address')),
+            'mail.from.name' => $this->resolve('mail_from_name', config('mail.from.name')),
         ]);
+    }
+
+    /**
+     * A blank (or whitespace-only) stored value means "inherit the default" —
+     * these settings fall back to the given default instead of clobbering the
+     * environment configuration with an empty string.
+     */
+    private function resolve(string $key, mixed $default): mixed
+    {
+        $value = Setting::getValue($key, $default);
+
+        if (is_string($value) && trim($value) === '') {
+            return $default;
+        }
+
+        return $value;
     }
 }

@@ -223,6 +223,24 @@ class SettingsTest extends TestCase
         $this->assertSame('Corner House Mail', config('mail.from.name'));
     }
 
+    public function test_blank_password_and_cafile_fall_back_to_existing_config(): void
+    {
+        $this->seed(SettingsSeeder::class);
+
+        config([
+            'mail.mailers.smtp.password' => 'env-pass',
+            'mail.mailers.smtp.stream.ssl.cafile' => '/etc/ssl/cafile.pem',
+        ]);
+
+        app(MailConfigurationService::class)->apply();
+
+        // The seeder deliberately stores an empty password/cafile meaning
+        // "use the environment configuration" — a blank value must not
+        // clobber the configured SMTP credentials.
+        $this->assertSame('env-pass', config('mail.mailers.smtp.password'));
+        $this->assertSame('/etc/ssl/cafile.pem', config('mail.mailers.smtp.stream.ssl.cafile'));
+    }
+
     public function test_booking_email_notifications_can_be_disabled_globally(): void
     {
         $this->seed([SettingsSeeder::class, CommunicationTemplateSeeder::class]);
