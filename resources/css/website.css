@@ -341,3 +341,15 @@ form.enquiry .check input{width:auto;margin-top:.25rem}
 .chat-form .btn{padding:.55rem .9rem;font-size:.9rem}
 .chat-message-form{flex-direction:column;gap:.5rem}
 .chat-message-form textarea{resize:vertical}
+
+/* ---------- Image loading shimmer ---------- */
+img.img-shimmer{
+  background:linear-gradient(100deg,var(--stone) 30%,var(--stone-light) 50%,var(--stone) 70%);
+  background-size:200% 100%;
+  animation:img-shimmer 1.4s ease-in-out infinite;
+}
+img.img-shimmer.loaded{background:transparent;animation:none}
+@keyframes img-shimmer{
+  0%{background-position:140% 0}
+  100%{background-position:-60% 0}
+}

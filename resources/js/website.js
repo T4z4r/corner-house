@@ -41,6 +41,17 @@ document.querySelectorAll(".rev-date").forEach(el=>el.textContent = new Date().t
 document.getElementById("footer-email").href = "mailto:"+CONFIG.enquiryEmail;
 document.getElementById("footer-email").textContent = CONFIG.enquiryEmail;
 
+/* ---------- Image loading shimmer ---------- */
+document.querySelectorAll("img:not(.no-shimmer)").forEach(img=>{
+  if(img.dataset.shimmer) return;
+  img.dataset.shimmer = "1";
+  img.classList.add("img-shimmer");
+  if(img.complete){ img.classList.add("loaded"); return; }
+  const done = ()=>img.classList.add("loaded");
+  img.addEventListener("load", done, {once:true});
+  img.addEventListener("error", done, {once:true});
+});
+
 /* ---------- Places tabs ---------- */
 document.querySelectorAll(".tab").forEach(btn=>{
   btn.addEventListener("click", ()=>{
