@@ -61,8 +61,10 @@
                         'lounge' => 'images/lounge.png',
                         'cinema' => 'images/cinema.webp',
                         'gym' => 'images/gym.png',
-                        'garden bar' => 'images/garden.png',
-                    ];
+                    'garden bar' => 'images/garden.png',
+                    'hot tub' => 'images/hot-tub.png',
+                    'office' => 'images/office.png',
+                ];
                 @endphp
                 @foreach ($site['spacesInside'] as $space)
                     @php

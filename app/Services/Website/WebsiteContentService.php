@@ -231,10 +231,10 @@ class WebsiteContentService
     {
         return [
             ['name' => 'Entertaining patio and garden bar', 'where' => 'The garden', 'description' => 'The patio is where the house spills out on a warm evening: the garden bar, the Kadai fire-pit barbecue and the hot tub, with the landscaped garden beyond.', 'label' => 'Entertaining patio and garden bar photo', 'feature' => '1', 'photo' => 'images/garden.png'],
-            ['name' => 'Hot tub', 'where' => 'On the patio', 'description' => 'Seats four to six. Sits on the patio, a few steps from the garden bar.', 'label' => 'Hot tub photo'],
+            ['name' => 'Hot tub', 'where' => 'On the patio', 'description' => 'Seats four to six. Sits on the patio, a few steps from the garden bar.', 'label' => 'Hot tub photo', 'photo' => 'images/hot-tub.png'],
             ['name' => 'Balcony', 'where' => 'First floor, off the Lion suite', 'description' => 'A large balcony over the garden and the entertaining patio, reached through the double doors in the Lion suite. Good for a first coffee of the day.', 'label' => 'Balcony photo'],
             ['name' => 'Gym', 'where' => 'The grounds', 'description' => 'Fully equipped in its own building in the grounds, with cardio, weights and racks. Over-16s only.', 'label' => 'Gym photo', 'photo' => 'images/gym.png'],
-            ['name' => 'Office', 'where' => 'The grounds', 'description' => 'A purpose-built, hard-wired office in the grounds. Add the desk setup and broadband speed — this is the detail that wins remote-working bookings.', 'label' => 'Office photo'],
+            ['name' => 'Office', 'where' => 'The grounds', 'description' => 'A purpose-built, hard-wired office in the grounds. Add the desk setup and broadband speed — this is the detail that wins remote-working bookings.', 'label' => 'Office photo', 'photo' => 'images/office.png'],
         ];
     }
 
