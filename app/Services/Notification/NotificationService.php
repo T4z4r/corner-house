@@ -2,18 +2,16 @@
 
 namespace App\Services\Notification;
 
-use App\Mail\GuestCommunicationMail;
 use App\Models\Communication;
 use App\Models\CommunicationTemplate;
 use App\Models\Reservation;
 use App\Models\Setting;
-use App\Services\System\MailConfigurationService;
+use App\Services\Mail\MailDispatchService;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class NotificationService
 {
-    public function __construct(private readonly MailConfigurationService $mailConfiguration) {}
+    public function __construct(private readonly MailDispatchService $mailer) {}
 
     public function sendForEvent(string $event, Reservation $reservation): ?Communication
     {
@@ -73,7 +71,7 @@ class NotificationService
             'status' => 'pending',
         ]);
 
-        return $this->dispatch($communication);
+        return $this->mailer->send($communication);
     }
 
     public function sendManual(array $data): Communication
@@ -92,64 +90,7 @@ class NotificationService
             'metadata' => $data['metadata'] ?? null,
         ]);
 
-        return $this->dispatch($communication);
-    }
-
-    public function dispatch(Communication $communication): Communication
-    {
-        try {
-            if ($communication->channel === 'email') {
-                $this->mailConfiguration->apply();
-
-                Mail::to($communication->recipient)->send(new GuestCommunicationMail(
-                    $communication->subject ?: 'Corner House',
-                    $communication->body,
-                ));
-            } else {
-                // Only email delivery is currently wired up. Mark unsupported
-                // channels as failed with an explicit reason rather than falsely
-                // reporting them as sent.
-                throw new \DomainException("Unsupported communication channel: {$communication->channel}");
-            }
-
-            $communication->update([
-                'status' => 'sent',
-                'sent_at' => now(),
-            ]);
-        } catch (\Throwable $e) {
-            $communication->update([
-                'status' => 'failed',
-                'error_message' => $e->getMessage(),
-            ]);
-
-            Log::error('Failed to send communication', [
-                'id' => $communication->id,
-                'message' => $e->getMessage(),
-            ]);
-        }
-
-        return $communication->fresh();
-    }
-
-    /**
-     * Re-attempt delivery of a previously failed communication.
-     *
-     * The failed row is preserved (history is kept) — only its status and the
-     * last error are reset before dispatching again. Successful retries mark
-     * it sent; another failure records the new error in place.
-     */
-    public function retry(Communication $communication): Communication
-    {
-        if ($communication->status !== 'failed') {
-            return $communication->fresh();
-        }
-
-        $communication->update([
-            'status' => 'pending',
-            'error_message' => null,
-        ]);
-
-        return $this->dispatch($communication->fresh());
+        return $this->mailer->send($communication);
     }
 
     /**

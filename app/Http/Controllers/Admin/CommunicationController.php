@@ -7,6 +7,7 @@ use App\Models\Communication;
 use App\Models\CommunicationTemplate;
 use App\Models\Guest;
 use App\Services\Audit\AuditLogger;
+use App\Services\Mail\MailDispatchService;
 use App\Services\Notification\NotificationService;
 use App\Services\Notification\SystemNotificationService;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +19,7 @@ class CommunicationController extends Controller
 {
     public function __construct(
         private readonly NotificationService $notifications,
+        private readonly MailDispatchService $mailer,
         private readonly AuditLogger $auditLogger,
         private readonly SystemNotificationService $systemNotifications,
     ) {}
@@ -76,7 +78,7 @@ class CommunicationController extends Controller
             return back()->with('status', 'Only failed messages can be retried.');
         }
 
-        $communication = $this->notifications->retry($communication);
+        $communication = $this->mailer->retry($communication);
         $this->systemNotifications->communicationRetried($communication, auth()->id());
         $this->auditLogger->log('communications.retried', 'communications', 'communication', (string) $communication->id);
 

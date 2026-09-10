@@ -9,6 +9,7 @@ use App\Models\Guest;
 use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Setting;
+use App\Services\Mail\MailDispatchService;
 use App\Services\Notification\NotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -108,7 +109,7 @@ class NotificationServiceTest extends TestCase
             'error_message' => 'Connection refused',
         ]);
 
-        $retried = app(NotificationService::class)->retry($communication);
+        $retried = app(MailDispatchService::class)->retry($communication);
 
         $this->assertSame('sent', $retried->status);
         $this->assertNull($retried->error_message);
@@ -126,7 +127,7 @@ class NotificationServiceTest extends TestCase
 
         Mail::shouldReceive('to')->andThrow(new \RuntimeException('smtp down again'));
 
-        $retried = app(NotificationService::class)->retry($communication);
+        $retried = app(MailDispatchService::class)->retry($communication);
 
         $this->assertSame('failed', $retried->status);
         $this->assertSame('smtp down again', $retried->error_message);
@@ -142,7 +143,7 @@ class NotificationServiceTest extends TestCase
             'sent_at' => now()->subHour(),
         ]);
 
-        $retried = app(NotificationService::class)->retry($communication);
+        $retried = app(MailDispatchService::class)->retry($communication);
 
         $this->assertSame('sent', $retried->status);
         $this->assertDatabaseCount('communications', 1);
