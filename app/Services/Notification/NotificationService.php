@@ -132,6 +132,27 @@ class NotificationService
     }
 
     /**
+     * Re-attempt delivery of a previously failed communication.
+     *
+     * The failed row is preserved (history is kept) — only its status and the
+     * last error are reset before dispatching again. Successful retries mark
+     * it sent; another failure records the new error in place.
+     */
+    public function retry(Communication $communication): Communication
+    {
+        if ($communication->status !== 'failed') {
+            return $communication->fresh();
+        }
+
+        $communication->update([
+            'status' => 'pending',
+            'error_message' => null,
+        ]);
+
+        return $this->dispatch($communication->fresh());
+    }
+
+    /**
      * @return array<string, string>
      */
     private function replacements(Reservation $reservation): array

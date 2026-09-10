@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Mail\GuestCommunicationMail;
+use App\Models\Communication;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Services\Notification\SystemNotificationService;
@@ -105,6 +107,81 @@ class AdminNotificationsTest extends TestCase
         $this->assertDatabaseHas('notifications', [
             'notifiable_id' => $recipient->id,
             'type' => 'App\\Notifications\\SystemNotification',
+        ]);
+    }
+
+    public function test_retrying_a_failed_communication_marks_it_sent(): void
+    {
+        Mail::fake();
+
+        $actor = $this->adminUser('Sender');
+        $recipient = $this->adminUser('Receiver');
+
+        $communication = Communication::factory()->create([
+            'channel' => 'email',
+            'status' => 'failed',
+            'error_message' => 'Connection refused',
+            'recipient' => 'guest@example.test',
+            'subject' => 'Guest update',
+            'body' => 'Your stay has been updated.',
+        ]);
+
+        $this->actingAs($actor)
+            ->post(route('admin.communications.retry', $communication))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('communications', [
+            'id' => $communication->id,
+            'status' => 'sent',
+            'error_message' => null,
+        ]);
+        Mail::assertSent(GuestCommunicationMail::class, 1);
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_id' => $recipient->id,
+            'type' => 'App\\Notifications\\SystemNotification',
+        ]);
+    }
+
+    public function test_retry_is_rejected_for_a_successfully_sent_communication(): void
+    {
+        Mail::fake();
+
+        $actor = $this->adminUser('Sender');
+
+        $communication = Communication::factory()->create([
+            'channel' => 'email',
+            'status' => 'sent',
+            'recipient' => 'guest@example.test',
+            'subject' => 'Guest update',
+            'body' => 'Already delivered.',
+        ]);
+
+        $this->actingAs($actor)
+            ->post(route('admin.communications.retry', $communication))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Only failed messages can be retried.');
+
+        $this->assertDatabaseHas('communications', [
+            'id' => $communication->id,
+            'status' => 'sent',
+        ]);
+        Mail::assertNothingSent();
+    }
+
+    public function test_retrying_without_send_permission_is_forbidden(): void
+    {
+        $communication = Communication::factory()->create([
+            'channel' => 'email',
+            'status' => 'failed',
+        ]);
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('admin.communications.retry', $communication))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('communications', [
+            'id' => $communication->id,
+            'status' => 'failed',
         ]);
     }
 

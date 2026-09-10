@@ -97,4 +97,55 @@ class NotificationServiceTest extends TestCase
         $this->assertSame('failed', $communication->status);
         $this->assertStringContainsString('Unsupported communication channel', (string) $communication->error_message);
     }
+
+    public function test_failed_communication_can_be_retried_and_marks_sent(): void
+    {
+        Mail::fake();
+
+        $communication = Communication::factory()->create([
+            'channel' => 'email',
+            'status' => 'failed',
+            'error_message' => 'Connection refused',
+        ]);
+
+        $retried = app(NotificationService::class)->retry($communication);
+
+        $this->assertSame('sent', $retried->status);
+        $this->assertNull($retried->error_message);
+        $this->assertNotNull($retried->sent_at);
+        Mail::assertSent(GuestCommunicationMail::class, 1);
+    }
+
+    public function test_retry_failure_records_the_new_error(): void
+    {
+        $communication = Communication::factory()->create([
+            'channel' => 'email',
+            'status' => 'failed',
+            'error_message' => 'Old error',
+        ]);
+
+        Mail::shouldReceive('to')->andThrow(new \RuntimeException('smtp down again'));
+
+        $retried = app(NotificationService::class)->retry($communication);
+
+        $this->assertSame('failed', $retried->status);
+        $this->assertSame('smtp down again', $retried->error_message);
+    }
+
+    public function test_retry_is_a_noop_for_non_failed_communications(): void
+    {
+        Mail::fake();
+
+        $communication = Communication::factory()->create([
+            'channel' => 'email',
+            'status' => 'sent',
+            'sent_at' => now()->subHour(),
+        ]);
+
+        $retried = app(NotificationService::class)->retry($communication);
+
+        $this->assertSame('sent', $retried->status);
+        $this->assertDatabaseCount('communications', 1);
+        Mail::assertNothingSent();
+    }
 }

@@ -70,6 +70,22 @@ class CommunicationController extends Controller
         return back()->with('status', 'Message queued.');
     }
 
+    public function retry(Communication $communication): RedirectResponse
+    {
+        if ($communication->status !== 'failed') {
+            return back()->with('status', 'Only failed messages can be retried.');
+        }
+
+        $communication = $this->notifications->retry($communication);
+        $this->systemNotifications->communicationRetried($communication, auth()->id());
+        $this->auditLogger->log('communications.retried', 'communications', 'communication', (string) $communication->id);
+
+        return back()->with(
+            'status',
+            $communication->status === 'sent' ? 'Message sent.' : 'Message failed again — check the error below.',
+        );
+    }
+
     public function updateTemplate(Request $request, CommunicationTemplate $template): RedirectResponse
     {
         $data = $request->validate([

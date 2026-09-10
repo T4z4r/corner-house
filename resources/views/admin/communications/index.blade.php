@@ -66,18 +66,33 @@
             <div class="card-header bg-white">History</div>
             <div class="table-responsive">
                 <table class="table mb-0">
-                    <thead><tr><th>Direction</th><th>To / From</th><th>Subject</th><th>Status</th><th>Sent</th></tr></thead>
+                    <thead><tr><th>Direction</th><th>To / From</th><th>Subject</th><th>Status</th><th>Sent</th><th></th></tr></thead>
                     <tbody>
                         @forelse ($communications as $communication)
                             <tr>
                                 <td>{{ ucfirst($communication->direction ?? 'outbound') }}</td>
                                 <td>{{ $communication->sender_name ? $communication->sender_name.' · ' : '' }}{{ $communication->recipient }}</td>
                                 <td>{{ $communication->subject }}</td>
-                                <td>{{ $communication->status }}</td>
+                                <td>
+                                    <span class="badge {{ $communication->status === 'sent' ? 'bg-success' : ($communication->status === 'failed' ? 'bg-danger' : 'bg-secondary') }}">{{ $communication->status }}</span>
+                                    @if ($communication->status === 'failed' && $communication->error_message)
+                                        <div class="small text-danger text-truncate mt-1" style="max-width:220px;" title="{{ $communication->error_message }}">{{ $communication->error_message }}</div>
+                                    @endif
+                                </td>
                                 <td>{{ $communication->sent_at?->diffForHumans() ?? '-' }}</td>
+                                <td class="text-end">
+                                    @if ($communication->status === 'failed' && $communication->channel === 'email')
+                                        @can('communications.send')
+                                            <form method="POST" action="{{ route('admin.communications.retry', $communication) }}" class="d-inline">
+                                                @csrf
+                                                <button class="btn btn-outline-secondary btn-sm" title="Retry sending this message"><i class="bi bi-arrow-repeat me-1"></i>Retry</button>
+                                            </form>
+                                        @endcan
+                                    @endif
+                                </td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="text-muted">No messages yet.</td></tr>
+                            <tr><td colspan="6" class="text-muted">No messages yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

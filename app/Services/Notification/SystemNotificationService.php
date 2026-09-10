@@ -183,6 +183,27 @@ class SystemNotificationService
         );
     }
 
+    public function communicationRetried(Communication $communication, ?int $actorId = null): void
+    {
+        $this->broadcast(
+            title: $communication->status === 'sent' ? 'Message sent' : 'Message retry failed',
+            message: sprintf(
+                'A failed %s message to %s was retried%s.',
+                Str::lower($communication->channel),
+                $communication->recipient,
+                $communication->status === 'sent' ? ' and sent successfully' : '',
+            ),
+            url: route('admin.communications.index', [], false),
+            level: $communication->status === 'sent' ? 'success' : 'warning',
+            icon: 'bi-arrow-repeat',
+            actorId: $actorId,
+            metadata: [
+                'communication_id' => $communication->id,
+                'channel' => $communication->channel,
+            ],
+        );
+    }
+
     /**
      * @return Collection<int, User>
      */
