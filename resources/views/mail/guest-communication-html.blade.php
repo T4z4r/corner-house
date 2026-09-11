@@ -27,7 +27,7 @@
                             <tr>
                                 <td align="center" style="padding:36px 40px 10px 40px;">
                                     <a href="{{ $brandUrl }}" style="text-decoration:none;">
-                                        <img src="{{ $message->embed(public_path('images/brand/logo-email.png')) }}" alt="{{ $brandName }}, Braunston" width="300" height="200" style="display:block; width:300px; height:auto; border:0; outline:none; text-decoration:none;">
+                                        <img src="{{ $message->embed(public_path('images/brand/logo-email.png')) }}" alt="{{ $brandName }}, Braunston" width="180" height="120" style="display:block; width:180px; height:auto; border:0; outline:none; text-decoration:none;">
                                     </a>
                                 </td>
                             </tr>
