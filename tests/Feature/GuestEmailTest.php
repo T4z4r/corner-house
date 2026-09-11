@@ -6,6 +6,7 @@ use App\Mail\GuestCommunicationMail;
 use App\Models\Guest;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
+use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Spatie\Permission\Models\Role;
@@ -104,5 +105,23 @@ class GuestEmailTest extends TestCase
             'body' => 'Your stay is confirmed.',
             'status' => 'sent',
         ]);
+    }
+
+    public function test_email_renders_with_brand_and_embedded_logo(): void
+    {
+        $this->seed(SettingsSeeder::class);
+
+        $mail = new GuestCommunicationMail('Subject line', "Hello guest,\nEnjoy your stay.");
+        $html = $mail->render();
+
+        $this->assertStringContainsString('Corner House', $html);
+        $this->assertStringContainsString('https://cornerhousebraunston.uk', $html);
+        $this->assertStringContainsString('hello@cornerhousebraunston.uk', $html);
+        $this->assertStringContainsString('Main Street, Braunston', $html);
+        $this->assertStringContainsString('NN7 7ND', $html);
+        $this->assertStringContainsString('#1f6f43', $html);
+        $this->assertStringContainsString('#c9a227', $html);
+        $this->assertStringContainsString('data:image/png;base64,', $html);
+        $this->assertStringContainsString('Enjoy your stay.', $html);
     }
 }

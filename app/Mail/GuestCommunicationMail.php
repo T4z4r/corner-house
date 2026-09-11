@@ -24,6 +24,10 @@ class GuestCommunicationMail extends Mailable
 
     public function content(): Content
     {
-        return new Content(markdown: 'mail.guest-communication');
+        return new Content(
+            view: 'mail.guest-communication-html',
+            text: 'mail.guest-communication-text',
+            with: ['emailBody' => $this->emailBody],
+        );
     }
 }
