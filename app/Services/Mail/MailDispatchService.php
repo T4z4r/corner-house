@@ -72,4 +72,24 @@ class MailDispatchService
 
         return $this->send($communication->fresh());
     }
+
+    /**
+     * Re-deliver a communication as a brand-new record.
+     *
+     * Unlike a retry, which re-sends the same failed row in place, a resend
+     * duplicates the message into a fresh row so the original delivery history
+     * is preserved. Only email delivery is supported.
+     */
+    public function resend(Communication $communication): Communication
+    {
+        $copy = $communication->replicate();
+        $copy->status = 'pending';
+        $copy->error_message = null;
+        $copy->provider_message_id = null;
+        $copy->sent_at = null;
+        $copy->metadata = null;
+        $copy->save();
+
+        return $this->send($copy);
+    }
 }

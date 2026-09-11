@@ -323,6 +323,9 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         });
 
         Route::post('/communications/send', [CommunicationController::class, 'send'])->name('communications.send')->middleware('can:communications.send');
+        Route::put('/communications/{communication}', [CommunicationController::class, 'update'])->name('communications.update')->middleware('can:communications.send');
+        Route::delete('/communications/{communication}', [CommunicationController::class, 'destroy'])->name('communications.destroy')->middleware('can:communications.send');
+        Route::post('/communications/{communication}/resend', [CommunicationController::class, 'resend'])->name('communications.resend')->middleware('can:communications.send');
         Route::post('/communications/{communication}/retry', [CommunicationController::class, 'retry'])->name('communications.retry')->middleware('can:communications.send');
     });
 

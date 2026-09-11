@@ -72,6 +72,49 @@ class CommunicationController extends Controller
         return back()->with('status', 'Message queued.');
     }
 
+    public function update(Request $request, Communication $communication): RedirectResponse
+    {
+        if ($communication->channel !== 'email' || $communication->status === 'sent') {
+            return back()->with('status', 'Only undelivered email messages can be edited.');
+        }
+
+        $data = $request->validate([
+            'recipient' => ['required', 'email'],
+            'subject' => ['nullable', 'string', 'max:255'],
+            'body' => ['required', 'string'],
+            'channel' => ['required', 'in:email'],
+        ]);
+
+        $communication->update($data);
+        $this->auditLogger->log('communications.updated', 'communications', 'communication', (string) $communication->id);
+
+        return back()->with('status', 'Message updated.');
+    }
+
+    public function destroy(Communication $communication): RedirectResponse
+    {
+        $communication->delete();
+        $this->auditLogger->log('communications.deleted', 'communications', 'communication', (string) $communication->id);
+
+        return redirect()->route('admin.communications.index')->with('status', 'Message deleted.');
+    }
+
+    public function resend(Communication $communication): RedirectResponse
+    {
+        if ($communication->channel !== 'email' || $communication->status !== 'sent') {
+            return back()->with('status', 'Only sent email messages can be resent.');
+        }
+
+        $resent = $this->mailer->resend($communication);
+        $this->systemNotifications->communicationResent($resent, auth()->id());
+        $this->auditLogger->log('communications.resent', 'communications', 'communication', (string) $communication->id);
+
+        return back()->with(
+            'status',
+            $resent->status === 'sent' ? 'Message resent.' : 'Resend failed — check the error below.',
+        );
+    }
+
     public function retry(Communication $communication): RedirectResponse
     {
         if ($communication->status !== 'failed') {

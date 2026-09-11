@@ -81,14 +81,26 @@
                                 </td>
                                 <td>{{ $communication->sent_at?->diffForHumans() ?? '-' }}</td>
                                 <td class="text-end">
-                                    @if ($communication->status === 'failed' && $communication->channel === 'email')
-                                        @can('communications.send')
-                                            <form method="POST" action="{{ route('admin.communications.retry', $communication) }}" class="d-inline">
-                                                @csrf
-                                                <button class="btn btn-outline-secondary btn-sm" title="Retry sending this message"><i class="bi bi-arrow-repeat me-1"></i>Retry</button>
-                                            </form>
-                                        @endcan
-                                    @endif
+                                    @can('communications.send')
+                                        @if ($communication->channel === 'email')
+                                            @if ($communication->status === 'failed')
+                                                <form method="POST" action="{{ route('admin.communications.retry', $communication) }}" class="d-inline">
+                                                    @csrf
+                                                    <button class="btn btn-outline-secondary btn-sm" title="Retry sending this message"><i class="bi bi-arrow-repeat"></i> Retry</button>
+                                                </form>
+                                            @endif
+                                            @if ($communication->status === 'sent')
+                                                <form method="POST" action="{{ route('admin.communications.resend', $communication) }}" class="d-inline">
+                                                    @csrf
+                                                    <button class="btn btn-outline-secondary btn-sm" title="Resend this message"><i class="bi bi-send"></i> Resend</button>
+                                                </form>
+                                            @endif
+                                            @if ($communication->status !== 'sent')
+                                                <button class="btn btn-outline-secondary btn-sm" title="Edit message" data-bs-toggle="modal" data-bs-target="#editCommunication{{ $communication->id }}"><i class="bi bi-pencil"></i> Edit</button>
+                                            @endif
+                                            <button class="btn btn-outline-danger btn-sm" title="Delete message" data-bs-toggle="modal" data-bs-target="#deleteCommunication{{ $communication->id }}"><i class="bi bi-trash"></i></button>
+                                        @endif
+                                    @endcan
                                 </td>
                             </tr>
                         @empty
@@ -260,4 +272,67 @@
 </div>
 @endcan
 @endforeach
+
+@can('communications.send')
+@foreach ($communications as $communication)
+    @if ($communication->channel === 'email' && $communication->status !== 'sent')
+    <div class="modal fade" id="editCommunication{{ $communication->id }}" tabindex="-1" aria-labelledby="editCommunicationLabel{{ $communication->id }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="POST" action="{{ route('admin.communications.update', $communication) }}">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="channel" value="email">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editCommunicationLabel{{ $communication->id }}">Edit message</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Recipient email *</label>
+                            <input type="email" name="recipient" class="form-control" value="{{ old('recipient', $communication->recipient) }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Subject</label>
+                            <input type="text" name="subject" class="form-control" value="{{ old('subject', $communication->subject) }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Body *</label>
+                            <textarea name="body" class="form-control" rows="6" required>{{ old('body', $communication->body) }}</textarea>
+                        </div>
+                        <div class="small text-muted">Updating keeps the message unsent — use <strong>Retry</strong> afterwards to deliver it.</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-ch-primary">Save changes</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
+
+    <div class="modal fade" id="deleteCommunication{{ $communication->id }}" tabindex="-1" aria-labelledby="deleteCommunicationLabel{{ $communication->id }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="POST" action="{{ route('admin.communications.destroy', $communication) }}">
+                @csrf
+                @method('DELETE')
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteCommunicationLabel{{ $communication->id }}">Delete message</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        Are you sure you want to delete this message to <strong>{{ $communication->recipient }}</strong>@if ($communication->subject) (<em>{{ $communication->subject }}</em>)@endif? This cannot be undone.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+@endforeach
+@endcan
 @endsection

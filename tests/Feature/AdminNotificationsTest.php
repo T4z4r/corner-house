@@ -185,6 +185,167 @@ class AdminNotificationsTest extends TestCase
         ]);
     }
 
+    public function test_editing_a_failed_communication_updates_its_fields(): void
+    {
+        Mail::fake();
+
+        $actor = $this->adminUser('Sender');
+
+        $communication = Communication::factory()->create([
+            'channel' => 'email',
+            'status' => 'failed',
+            'error_message' => 'Connection refused',
+            'recipient' => 'guest@example.test',
+            'subject' => 'Original subject',
+            'body' => 'Original body.',
+        ]);
+
+        $this->actingAs($actor)
+            ->put(route('admin.communications.update', $communication), [
+                'recipient' => 'new@example.test',
+                'subject' => 'Updated subject',
+                'body' => 'Updated body.',
+                'channel' => 'email',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('communications', [
+            'id' => $communication->id,
+            'recipient' => 'new@example.test',
+            'subject' => 'Updated subject',
+            'body' => 'Updated body.',
+            'status' => 'failed',
+        ]);
+        Mail::assertNothingSent();
+    }
+
+    public function test_editing_a_sent_communication_is_rejected(): void
+    {
+        $actor = $this->adminUser('Sender');
+
+        $communication = Communication::factory()->create([
+            'channel' => 'email',
+            'status' => 'sent',
+            'recipient' => 'guest@example.test',
+            'subject' => 'Sent subject',
+            'body' => 'Sent body.',
+        ]);
+
+        $this->actingAs($actor)
+            ->put(route('admin.communications.update', $communication), [
+                'recipient' => 'new@example.test',
+                'subject' => 'Changed subject',
+                'body' => 'Changed body.',
+                'channel' => 'email',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Only undelivered email messages can be edited.');
+
+        $this->assertDatabaseHas('communications', [
+            'id' => $communication->id,
+            'subject' => 'Sent subject',
+        ]);
+    }
+
+    public function test_resending_a_sent_communication_creates_a_new_delivery(): void
+    {
+        Mail::fake();
+
+        $actor = $this->adminUser('Sender');
+        $recipient = $this->adminUser('Receiver');
+
+        $original = Communication::factory()->create([
+            'channel' => 'email',
+            'status' => 'sent',
+            'recipient' => 'guest@example.test',
+            'subject' => 'Guest update',
+            'body' => 'Your stay has been updated.',
+            'sent_at' => now()->subDay(),
+        ]);
+
+        $this->actingAs($actor)
+            ->post(route('admin.communications.resend', $original))
+            ->assertRedirect();
+
+        $this->assertDatabaseCount('communications', 2);
+        $resend = Communication::query()->whereKeyNot($original->id)->firstOrFail();
+        $this->assertSame('sent', $resend->status);
+        $this->assertSame('guest@example.test', $resend->recipient);
+        $this->assertSame('Guest update', $resend->subject);
+        $this->assertSame('Your stay has been updated.', $resend->body);
+        Mail::assertSent(GuestCommunicationMail::class, 1);
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_id' => $recipient->id,
+            'type' => 'App\\Notifications\\SystemNotification',
+        ]);
+    }
+
+    public function test_resending_a_failed_communication_is_rejected(): void
+    {
+        Mail::fake();
+
+        $actor = $this->adminUser('Sender');
+
+        $communication = Communication::factory()->create([
+            'channel' => 'email',
+            'status' => 'failed',
+            'error_message' => 'Connection refused',
+        ]);
+
+        $this->actingAs($actor)
+            ->post(route('admin.communications.resend', $communication))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Only sent email messages can be resent.');
+
+        $this->assertDatabaseCount('communications', 1);
+        Mail::assertNothingSent();
+    }
+
+    public function test_deleting_a_communication_removes_it_from_history(): void
+    {
+        $actor = $this->adminUser('Sender');
+
+        $communication = Communication::factory()->create([
+            'channel' => 'email',
+            'status' => 'sent',
+            'recipient' => 'guest@example.test',
+            'subject' => 'Guest update',
+        ]);
+
+        $this->actingAs($actor)
+            ->delete(route('admin.communications.destroy', $communication))
+            ->assertRedirect(route('admin.communications.index'));
+
+        $this->assertDatabaseMissing('communications', ['id' => $communication->id]);
+    }
+
+    public function test_communication_actions_without_send_permission_are_forbidden(): void
+    {
+        $communication = Communication::factory()->create([
+            'channel' => 'email',
+            'status' => 'sent',
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->put(route('admin.communications.update', $communication), [
+                'recipient' => 'new@example.test',
+                'subject' => 'Changed subject',
+                'body' => 'Changed body.',
+                'channel' => 'email',
+            ])
+            ->assertForbidden();
+        $this->actingAs($user)
+            ->post(route('admin.communications.resend', $communication))
+            ->assertForbidden();
+        $this->actingAs($user)
+            ->delete(route('admin.communications.destroy', $communication))
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('communications', 1);
+    }
+
     private function adminUser(string $name = 'Admin'): User
     {
         $user = User::factory()->create(['name' => $name]);

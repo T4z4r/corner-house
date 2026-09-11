@@ -204,6 +204,27 @@ class SystemNotificationService
         );
     }
 
+    public function communicationResent(Communication $communication, ?int $actorId = null): void
+    {
+        $this->broadcast(
+            title: $communication->status === 'sent' ? 'Message resent' : 'Resend failed',
+            message: sprintf(
+                'A %s message to %s was resent%s.',
+                Str::lower($communication->channel),
+                $communication->recipient,
+                $communication->status === 'sent' ? ' and delivered' : ' but failed again',
+            ),
+            url: route('admin.communications.index', [], false),
+            level: $communication->status === 'sent' ? 'success' : 'warning',
+            icon: 'bi-send',
+            actorId: $actorId,
+            metadata: [
+                'communication_id' => $communication->id,
+                'channel' => $communication->channel,
+            ],
+        );
+    }
+
     /**
      * @return Collection<int, User>
      */
