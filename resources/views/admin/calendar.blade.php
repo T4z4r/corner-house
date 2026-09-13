@@ -1021,26 +1021,28 @@
                 if (! editingBlockId) {
                     return;
                 }
-                if (! confirm('Delete this block?')) {
-                    return;
-                }
-                fetch(blockDestroyTemplate.replace('__ID__', editingBlockId), {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json',
-                    },
-                })
-                    .then((response) => response.json())
-                    .then((data) => {
-                        if (data.ok) {
-                            bootstrap.Modal.getInstance(document.getElementById('blockModal')).hide();
-                            blockForm.reset();
-                            toggleFields();
-                            setModalMode(false);
-                            reloadAll();
-                        }
-                    });
+                sweetConfirm('Delete this block?').then((ok) => {
+                    if (!ok) {
+                        return;
+                    }
+                    fetch(blockDestroyTemplate.replace('__ID__', editingBlockId), {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        },
+                    })
+                        .then((response) => response.json())
+                        .then((data) => {
+                            if (data.ok) {
+                                bootstrap.Modal.getInstance(document.getElementById('blockModal')).hide();
+                                blockForm.reset();
+                                toggleFields();
+                                setModalMode(false);
+                                reloadAll();
+                            }
+                        });
+                });
             });
         }
 

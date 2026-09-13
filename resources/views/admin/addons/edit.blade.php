@@ -11,7 +11,7 @@
         </div>
         @can('addons.delete')
             <form method="POST" action="{{ route('admin.addons.destroy', $item) }}"
-                  onsubmit="return confirm('Delete this add-on?');">
+                  data-confirm="Delete this add-on?">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Delete</button>

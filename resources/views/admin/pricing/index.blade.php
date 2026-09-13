@@ -107,7 +107,7 @@
                                                 <i class="bi bi-pencil"></i>
                                             </button>
                                             <form method="POST" action="{{ route('admin.pricing.rules.destroy', $rule) }}" class="d-inline"
-                                                  onsubmit="return confirm('Delete this rule?');">
+                                                  data-confirm="Delete this rule?">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
@@ -240,7 +240,7 @@
                                         <td>{{ $override->minimum_stay ?? '-' }}</td>
                                         <td class="text-end">
                                             <form method="POST" action="{{ route('admin.pricing.overrides.destroy', $override) }}" class="d-inline"
-                                                  onsubmit="return confirm('Delete this override?');">
+                                                  data-confirm="Delete this override?">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>

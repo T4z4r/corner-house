@@ -23,7 +23,7 @@
             @endcan
             @can('guests.delete')
                 <form method="POST" action="{{ route('admin.guests.destroy', $guest) }}"
-                      onsubmit="return confirm('Delete this guest?');">
+                      data-confirm="Delete this guest?">
                     @csrf
                     @method('DELETE')
                     <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Delete</button>

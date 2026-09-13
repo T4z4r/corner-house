@@ -107,7 +107,7 @@
                                         <a href="{{ route('admin.rooms.edit', $room) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
                                     @endcan
                                     @can('rooms.delete')
-                                        <form method="POST" action="{{ route('admin.rooms.destroy', $room) }}" class="d-inline" onsubmit="return confirm('Delete this room?');">
+                                        <form method="POST" action="{{ route('admin.rooms.destroy', $room) }}" class="d-inline" data-confirm="Delete this room?">
                                             @csrf
                                             @method('DELETE')
                                             <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>

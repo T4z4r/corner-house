@@ -11,7 +11,7 @@
         </div>
         @can('reviews.delete')
             <form method="POST" action="{{ route('admin.reviews.destroy', $item) }}"
-                  onsubmit="return confirm('Delete this review?');">
+                  data-confirm="Delete this review?">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Delete</button>

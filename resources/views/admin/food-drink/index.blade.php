@@ -106,7 +106,7 @@
                                         <a href="{{ route('admin.food-drink.edit', $item) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
                                     @endcan
                                     @can('food-drink.delete')
-                                        <form method="POST" action="{{ route('admin.food-drink.destroy', $item) }}" class="d-inline" onsubmit="return confirm('Delete this item?')">
+                                        <form method="POST" action="{{ route('admin.food-drink.destroy', $item) }}" class="d-inline" data-confirm="Delete this item?">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>

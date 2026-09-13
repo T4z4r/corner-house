@@ -109,7 +109,7 @@
                                         @endif
                                     @endcan
                                     @can('enquiries.delete')
-                                        <form method="POST" action="{{ route('admin.enquiries.destroy', $item) }}" class="d-inline" onsubmit="return confirm('Delete this enquiry?')">
+                                        <form method="POST" action="{{ route('admin.enquiries.destroy', $item) }}" class="d-inline" data-confirm="Delete this enquiry?">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>

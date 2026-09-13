@@ -68,7 +68,7 @@
                 <div class="card-header bg-white">Danger zone</div>
                 <div class="card-body">
                     <p class="text-muted mb-3">Deleting this account will remove all associated mappings and sync logs. This action cannot be undone.</p>
-                    <form method="POST" action="{{ route('admin.channels.destroy', $account) }}" onsubmit="return confirm('Are you sure you want to delete this channel account? This cannot be undone.')">
+                    <form method="POST" action="{{ route('admin.channels.destroy', $account) }}" data-confirm="Are you sure you want to delete this channel account? This cannot be undone.">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash me-1"></i>Delete account</button>

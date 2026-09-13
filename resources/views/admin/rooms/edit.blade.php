@@ -18,7 +18,7 @@
         </div>
         @can('rooms.delete')
             <form method="POST" action="{{ route('admin.rooms.destroy', $room) }}"
-                  onsubmit="return confirm('Delete this room?');">
+                  data-confirm="Delete this room?">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Delete</button>
@@ -136,22 +136,24 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.dz-delete-existing').forEach(function (btn) {
         btn.addEventListener('click', function () {
             const imageId = this.dataset.imageId;
-            if (!confirm('Remove this image?')) return;
-            fetch(deleteUrl, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({ image_id: imageId }),
-            }).then(r => r.json()).then(data => {
-                if (data.ok) {
-                    const el = document.getElementById('img-' + imageId);
-                    if (el) el.remove();
-                    const sidebarEl = document.getElementById('sidebar-img-' + imageId);
-                    if (sidebarEl) sidebarEl.remove();
-                }
+            sweetConfirm('Remove this image?').then((ok) => {
+                if (!ok) return;
+                fetch(deleteUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ image_id: imageId }),
+                }).then(r => r.json()).then(data => {
+                    if (data.ok) {
+                        const el = document.getElementById('img-' + imageId);
+                        if (el) el.remove();
+                        const sidebarEl = document.getElementById('sidebar-img-' + imageId);
+                        if (sidebarEl) sidebarEl.remove();
+                    }
+                });
             });
         });
     });

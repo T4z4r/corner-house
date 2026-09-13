@@ -63,7 +63,7 @@
                                     @endcan
                                     @can('properties.delete')
                                         <form method="POST" action="{{ route('admin.properties.destroy', $property) }}" class="d-inline"
-                                              onsubmit="return confirm('Delete "{{ $property->name }}" and all its rooms, images, and policies? This cannot be undone.');">
+                                              data-confirm="Delete &quot;{{ $property->name }}&quot; and all its rooms, images, and policies? This cannot be undone.">
                                             @csrf
                                             @method('DELETE')
                                             <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>

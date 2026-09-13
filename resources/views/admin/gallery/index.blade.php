@@ -74,7 +74,7 @@
                     {{-- Delete --}}
                     <div class="flex-shrink-0">
                         <form method="POST" action="{{ route('admin.gallery.destroy', $image) }}"
-                              onsubmit="return confirm('Delete this image?')">
+                              data-confirm="Delete this image?">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             </div>
                         </div>
                         <div class="flex-shrink-0">
-                            <form method="POST" action="/admin/gallery/${response.id}" onsubmit="return confirm('Delete this image?')">
+                            <form method="POST" action="/admin/gallery/${response.id}" data-confirm="Delete this image?">
                                 <input type="hidden" name="_token" value="${csrfToken}">
                                 <input type="hidden" name="_method" value="DELETE">
                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">

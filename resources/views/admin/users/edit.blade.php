@@ -4,7 +4,7 @@
 <div class="ch-page-header d-flex justify-content-between">
     <h4>Edit user</h4>
     @can('users.delete')
-        <form method="POST" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('Delete this user?')">
+        <form method="POST" action="{{ route('admin.users.destroy', $user) }}" data-confirm="Delete this user?">
             @csrf @method('DELETE')
             <button class="btn btn-danger">Delete</button>
         </form>

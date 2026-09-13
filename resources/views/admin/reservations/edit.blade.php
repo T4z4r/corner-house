@@ -12,7 +12,7 @@
         <div class="d-flex gap-2">
             <a href="{{ route('admin.reservations.show', $reservation) }}" class="btn btn-light"><i class="bi bi-eye me-1"></i>View</a>
             @can('reservations.delete')
-                <form method="POST" action="{{ route('admin.reservations.destroy', $reservation) }}" onsubmit="return confirm('Delete this booking permanently?');">
+                <form method="POST" action="{{ route('admin.reservations.destroy', $reservation) }}" data-confirm="Delete this booking permanently?">
                     @csrf
                     @method('DELETE')
                     <button class="btn btn-outline-danger"><i class="bi bi-trash me-1"></i>Delete</button>

@@ -97,7 +97,7 @@
                                         <a href="{{ route('admin.amenities.edit', $amenity) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
                                     @endcan
                                     @can('amenities.delete')
-                                        <form method="POST" action="{{ route('admin.amenities.destroy', $amenity) }}" class="d-inline" onsubmit="return confirm('Delete this amenity?')">
+                                        <form method="POST" action="{{ route('admin.amenities.destroy', $amenity) }}" class="d-inline" data-confirm="Delete this amenity?">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>

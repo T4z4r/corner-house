@@ -143,7 +143,7 @@
                                         <span class="small">{{ $account->last_synced_at?->diffForHumans() ?? 'Never synced' }}</span>
                                         @can('channels.configure')
                                             <a href="{{ route('admin.channels.edit', $account) }}" class="btn btn-sm btn-outline-primary" title="Edit account"><i class="bi bi-pencil"></i></a>
-                                            <form method="POST" action="{{ route('admin.channels.destroy', $account) }}" class="d-inline" onsubmit="return confirm('Delete this account and all its mappings?')">
+                                            <form method="POST" action="{{ route('admin.channels.destroy', $account) }}" class="d-inline" data-confirm="Delete this account and all its mappings?">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete account"><i class="bi bi-trash"></i></button>

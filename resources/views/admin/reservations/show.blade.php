@@ -54,7 +54,7 @@
                 @endcan
             @endif
             @can('reservations.delete')
-                <form method="POST" action="{{ route('admin.reservations.destroy', $reservation) }}" onsubmit="return confirm('Delete this booking permanently?');">
+                <form method="POST" action="{{ route('admin.reservations.destroy', $reservation) }}" data-confirm="Delete this booking permanently?">
                     @csrf
                     @method('DELETE')
                     <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Delete</button>

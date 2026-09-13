@@ -22,7 +22,7 @@
             @endcan
             @can('properties.delete')
                 <form method="POST" action="{{ route('admin.properties.destroy', $property) }}"
-                      onsubmit="return confirm('Delete "{{ $property->name }}" and all its rooms, images, and policies? This cannot be undone.');">
+                      data-confirm="Delete &quot;{{ $property->name }}&quot; and all its rooms, images, and policies? This cannot be undone.">
                     @csrf
                     @method('DELETE')
                     <button class="btn btn-outline-danger"><i class="bi bi-trash me-1"></i>Delete</button>
@@ -360,15 +360,17 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!btn) return;
         btn.addEventListener('click', function () {
             const imageId = this.dataset.imageId;
-            if (!confirm('Delete this image?')) return;
-            fetch(deleteUrl.replace(':id', imageId), {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                },
-            }).then(r => r.json()).then(data => {
-                if (data.ok) this.closest('.col-6, .col-md-4, .col-lg-3').remove();
+            sweetConfirm('Delete this image?').then((ok) => {
+                if (!ok) return;
+                fetch(deleteUrl.replace(':id', imageId), {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                    },
+                }).then(r => r.json()).then(data => {
+                    if (data.ok) this.closest('.col-6, .col-md-4, .col-lg-3').remove();
+                });
             });
         });
     }

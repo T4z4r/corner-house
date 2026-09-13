@@ -137,7 +137,7 @@
                                         <a href="{{ route('admin.reviews.edit', $item) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
                                     @endcan
                                     @can('reviews.delete')
-                                        <form method="POST" action="{{ route('admin.reviews.destroy', $item) }}" class="d-inline" onsubmit="return confirm('Delete this review?')">
+                                        <form method="POST" action="{{ route('admin.reviews.destroy', $item) }}" class="d-inline" data-confirm="Delete this review?">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
