@@ -76,6 +76,28 @@ class WebsitePricingDisplayTest extends TestCase
             ->assertSee('Direct-booking discount (10%)', false);
     }
 
+    public function test_booking_details_breaks_down_each_night_rate(): void
+    {
+        $property = Property::factory()->create(['status' => 'active']);
+        $room = $this->makeActiveRoom($property);
+
+        $checkIn = Carbon::parse('next monday')->startOfDay();
+        $checkOut = $checkIn->copy()->addDays(3);
+
+        $response = $this->get(route('booking.details', [
+            'room' => $room,
+            'check_in' => $checkIn->toDateString(),
+            'check_out' => $checkOut->toDateString(),
+            'guests' => 1,
+        ]))->assertOk();
+
+        for ($i = 0; $i < 3; $i++) {
+            $response->assertSee($checkIn->copy()->addDays($i)->format('D j M Y'), false);
+        }
+
+        $response->assertSee('Nightly rate', false)->assertSee('£550.00', false);
+    }
+
     public function test_booking_details_shows_direct_discount_line(): void
     {
         $property = Property::factory()->create(['status' => 'active']);

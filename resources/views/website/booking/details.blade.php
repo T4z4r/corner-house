@@ -68,6 +68,14 @@
                 <p class="ch-suite-meta mb-1">{{ $checkIn->format('d M Y') }} → {{ $checkOut->format('d M Y') }}</p>
                 <p class="ch-suite-meta">{{ $quote['nights'] }} night(s) · {{ $guests }} guest(s)</p>
                 <hr>
+                <h6 class="mb-2" style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;">Nightly rate</h6>
+                @foreach ($quote['per_night'] as $date => $rate)
+                    <div class="d-flex justify-content-between small">
+                        <span>{{ \Carbon\Carbon::parse($date)->format('D j M Y') }}</span>
+                        <span>£{{ number_format($rate, 2) }}</span>
+                    </div>
+                @endforeach
+                <hr class="my-2">
                 <div class="d-flex justify-content-between"><span>Stay</span><span>£{{ number_format($quote['base_amount'], 2) }}</span></div>
                 @if ($quote['discount_amount'] > 0)
                     <div class="d-flex justify-content-between"><span>Direct-booking discount ({{ \App\Models\Setting::getValue('direct_booking_discount', 10) }}%)</span><span class="text-success">-£{{ number_format($quote['discount_amount'], 2) }}</span></div>
