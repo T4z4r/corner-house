@@ -124,6 +124,13 @@ class Beds24SyncReliabilityTest extends TestCase
         $this->assertSame('ok', $account->settings['last_sync_health']);
     }
 
+    public function test_beds24_cron_jobs_use_the_synchronous_queue_connection(): void
+    {
+        $this->assertSame('sync', (new SyncBeds24BookingsJob())->connection);
+        $this->assertSame('sync', (new SyncBeds24MessagesJob())->connection);
+        $this->assertSame('sync', (new PushBeds24RatesJob())->connection);
+    }
+
     public function test_scheduled_sync_skips_accounts_without_credentials(): void
     {
         ChannelAccount::factory()->create([

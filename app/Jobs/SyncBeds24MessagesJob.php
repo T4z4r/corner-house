@@ -12,6 +12,8 @@ class SyncBeds24MessagesJob implements ShouldQueue
 {
     use Queueable, TracksCronRun;
 
+    public string $connection = 'sync';
+
     public int $tries = 3;
 
     public function handle(Beds24MessageService $sync): void
