@@ -41,6 +41,7 @@
                         @foreach ($site['amenities'] as $amenity)
                             <li>{{ $amenity }}</li>
                         @endforeach
+                        <li>Countryside location</li>
                     </ul>
                 </div>
                 @php
