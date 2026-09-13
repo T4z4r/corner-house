@@ -2659,6 +2659,52 @@ class Beds24IntegrationTest extends TestCase
             && (string) ($request->data()['page'] ?? '') === '2');
     }
 
+    public function test_sync_bookings_imports_bookings_from_a_body_wrapped_response(): void
+    {
+        $account = $this->beds24Account();
+        $property = Property::factory()->create();
+        $room = Room::factory()->create([
+            'property_id' => $property->id,
+            'status' => 'active',
+        ]);
+
+        ChannelMapping::create([
+            'channel_account_id' => $account->id,
+            'provider' => 'beds24',
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'external_property_id' => '2001',
+            'external_room_id' => '77',
+            'status' => 'active',
+        ]);
+
+        Http::fake([
+            '*bookings*' => Http::response([
+                'body' => [
+                    'data' => [[
+                        'id' => 9010,
+                        'roomId' => 77,
+                        'arrival' => now()->addDays(10)->toDateString(),
+                        'departure' => now()->addDays(13)->toDateString(),
+                        'numAdult' => 2,
+                        'status' => 'confirmed',
+                    ]],
+                    'pages' => ['nextPageExists' => false],
+                ],
+            ], 200),
+        ]);
+
+        $imported = app(ChannelManager::class)->syncBookings($account);
+
+        $this->assertSame(1, $imported);
+        $this->assertDatabaseHas('reservations', [
+            'external_channel' => 'beds24',
+            'external_booking_id' => '9010',
+            'room_id' => $room->id,
+            'status' => 'confirmed',
+        ]);
+    }
+
     public function test_booking_com_mapping_xml_can_be_pasted_and_stored()
     {
         $account = $this->beds24Account();

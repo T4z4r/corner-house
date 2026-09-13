@@ -53,6 +53,11 @@ class Beds24ChannelProvider implements ChannelProviderInterface
 
         do {
             $payload = $this->client->get($account, 'bookings', ['page' => $page] + $params);
+
+            if (isset($payload['body']) && is_array($payload['body'])) {
+                $payload = $payload['body'];
+            }
+
             $pageBookings = $payload['data'] ?? $payload['bookings'] ?? $payload['booking'] ?? $payload;
 
             if (isset($pageBookings['id']) || isset($pageBookings['bookId'])) {
