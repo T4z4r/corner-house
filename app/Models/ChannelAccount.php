@@ -64,4 +64,23 @@ class ChannelAccount extends Model
     {
         return $this->status === 'active';
     }
+
+    /**
+     * Whether this account can be picked up by the scheduled syncs. Eligibility
+     * depends on having usable tokens, not on the current status — an account
+     * left in 'error' after a transient API/auth failure must still be retried
+     * on the next run so the integration can self-heal without manual re-activation.
+     */
+    public function isSyncEligible(): bool
+    {
+        $credentials = $this->credentials ?? [];
+
+        if (! empty($credentials['refresh_token']) || ! empty($credentials['access_token'])) {
+            return true;
+        }
+
+        $fallback = config('services.beds24.refresh_token');
+
+        return is_string($fallback) && $fallback !== '';
+    }
 }

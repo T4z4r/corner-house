@@ -29,7 +29,7 @@ class PushBeds24RatesJob implements ShouldQueue
                 $account = $mapping->account;
                 $room = $mapping->room;
 
-                if (! $account || $account->status !== 'active' || ! $room instanceof Room) {
+                if (! $account || ! $account->isSyncEligible() || ! $room instanceof Room) {
                     return;
                 }
 

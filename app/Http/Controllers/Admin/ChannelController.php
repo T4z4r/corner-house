@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\PushBeds24RatesJob;
 use App\Jobs\SyncBeds24BookingsJob;
+use App\Jobs\SyncBeds24MessagesJob;
 use App\Models\ChannelAccount;
 use App\Models\ChannelMapping;
 use App\Models\ChannelPricingSnapshot;
@@ -932,9 +934,11 @@ class ChannelController extends Controller
     public function sync(): RedirectResponse
     {
         SyncBeds24BookingsJob::dispatch();
+        SyncBeds24MessagesJob::dispatch();
+        PushBeds24RatesJob::dispatch();
         $this->auditLogger->log('channels.sync', 'channels');
 
-        return back()->with('status', 'Beds24 sync queued. Properties, rooms, bookings and calendar will be aligned.');
+        return back()->with('status', 'Beds24 sync queued. Properties, rooms, bookings, calendar, messages and rates will be aligned.');
     }
 
     private function publishReservation(

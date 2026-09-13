@@ -64,9 +64,10 @@ class Beds24SyncService
         $account->update([
             'last_synced_at' => now(),
             'last_error' => $errors !== [] ? implode('; ', $errors) : null,
-            'status' => $errors !== [] ? 'partial' : 'active',
+            'status' => $errors !== [] ? 'error' : 'active',
             'settings' => array_merge($account->settings ?? [], [
                 'last_full_sync_at' => now()->toIso8601String(),
+                'last_sync_health' => $errors !== [] ? 'partial' : 'ok',
                 'last_sync_counts' => [
                     'properties' => $catalog['properties'],
                     'rooms' => $catalog['rooms'],

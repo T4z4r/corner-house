@@ -107,6 +107,10 @@ class ChannelManager
             'last_synced_at' => now(),
             'last_error' => $failed !== [] ? count($failed).' booking(s) failed to import' : null,
             'status' => 'active',
+            'settings' => array_merge($account->settings ?? [], [
+                'last_sync_skipped' => count($skipped),
+                'last_sync_skip_reasons' => array_values(array_unique(array_column($skipped, 'reason'))),
+            ]),
         ]);
 
         if ($skipped !== [] || $failed !== []) {

@@ -26,7 +26,8 @@ class Beds24MessageService
 
         ChannelAccount::query()
             ->where('provider', 'beds24')
-            ->where('status', 'active')
+            ->get()
+            ->filter(fn (ChannelAccount $account): bool => $account->isSyncEligible())
             ->each(function (ChannelAccount $account) use (&$summary): void {
                 $accountSummary = $this->syncAccount($account);
                 foreach ($accountSummary as $key => $value) {
@@ -222,7 +223,7 @@ class Beds24MessageService
     {
         return ChannelAccount::query()
             ->where('provider', 'beds24')
-            ->where('status', 'active')
-            ->first();
+            ->get()
+            ->first(fn (ChannelAccount $account): bool => $account->isSyncEligible());
     }
 }

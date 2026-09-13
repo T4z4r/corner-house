@@ -74,7 +74,7 @@ Common paths:
 If your project is at `/home/john/corner-house`:
 
 ```bash
-cd /home/john/corner-house && php artisan schedule:run >> /dev/null 2>&1
+cd /home/cornzbzi/cornerhouse.com && php artisan schedule:run >> /dev/null 2>&1
 ```
 
 ## Step 5: Verify the Cron Job
@@ -164,7 +164,7 @@ For high-traffic setups, you can run the scheduler more frequently:
 
 ```bash
 * * * * * cd /path/to/corner-house && php artisan schedule:run >> /dev/null 2>&1
-* * * * * sleep 30 && cd /path/to/corner-house && php artisan schedule:run >> /dev/null 2>&1
+* * * * * sleep 30 && cd /home/cornzbzi/cornerhouse.com && php artisan schedule:run >> /dev/null 2>&1
 ```
 
 This runs the scheduler every 30 seconds instead of every minute.

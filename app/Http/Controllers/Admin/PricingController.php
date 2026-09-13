@@ -46,7 +46,7 @@ class PricingController extends Controller
     /**
      * Resolve the daily price preview rows for the requested room and range.
      *
-     * @return array{previewRoom: \App\Models\Room|null, preview: array, previewSummary: array, previewFrom: string, previewTo: string}
+     * @return array{previewRoom: Room|null, preview: array, previewSummary: array, previewFrom: string, previewTo: string}
      */
     private function buildPreview(Request $request): array
     {

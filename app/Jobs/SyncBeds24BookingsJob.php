@@ -18,8 +18,11 @@ class SyncBeds24BookingsJob implements ShouldQueue
     {
         ChannelAccount::query()
             ->where('provider', 'beds24')
-            ->where('status', 'active')
             ->each(function (ChannelAccount $account) use ($sync): void {
+                if (! $account->isSyncEligible()) {
+                    return;
+                }
+
                 try {
                     $sync->synchronize($account);
                 } catch (\Throwable $e) {
