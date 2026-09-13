@@ -164,8 +164,19 @@ class ChannelManager
             return ['status' => 'skipped', 'reason' => 'mapping_exists_but_room_id_null (mapping_id='.$mapping->id.', external_room_id='.$mapping->external_room_id.')'];
         }
 
-        $checkIn = $booking['arrival'] ?? $booking['checkIn'] ?? $booking['firstNight'] ?? $booking['from'] ?? null;
-        $departure = $booking['departure'] ?? $booking['checkOut'] ?? $booking['lastNight'] ?? $booking['to'] ?? null;
+        $checkIn = $booking['arrival']
+            ?? $booking['checkIn']
+            ?? $booking['checkInDate']
+            ?? $booking['firstNight']
+            ?? $booking['from']
+            ?? $booking['startDate']
+            ?? null;
+        $departure = $booking['departure']
+            ?? $booking['checkOut']
+            ?? $booking['checkOutDate']
+            ?? $booking['to']
+            ?? $booking['endDate']
+            ?? null;
         $lastNight = $booking['lastNight'] ?? null;
 
         if (! $checkIn || (! $departure && ! $lastNight)) {

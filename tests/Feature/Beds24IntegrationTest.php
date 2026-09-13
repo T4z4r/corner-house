@@ -2624,8 +2624,8 @@ class Beds24IntegrationTest extends TestCase
                     'data' => [[
                         'id' => 9001,
                         'roomId' => 77,
-                        'arrival' => now()->addDays(10)->toDateString(),
-                        'departure' => now()->addDays(13)->toDateString(),
+                        'firstNight' => now()->addDays(10)->toDateString(),
+                        'lastNight' => now()->addDays(12)->toDateString(),
                         'numAdult' => 2,
                         'status' => 'confirmed',
                     ]],
