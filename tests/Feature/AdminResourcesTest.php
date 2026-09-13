@@ -458,6 +458,33 @@ class AdminResourcesTest extends TestCase
             ->assertDontSee('Post to Beds24');
     }
 
+    public function test_super_admin_can_preview_daily_prices_by_weekday_weekend_and_uplift(): void
+    {
+        Setting::updateOrCreate(['key' => 'holiday_weekend_uplift_enabled'], ['group' => 'pricing', 'value' => '1', 'label' => 'Uplift enabled', 'cast' => 'boolean']);
+        Setting::updateOrCreate(['key' => 'holiday_weekend_uplift'], ['group' => 'pricing', 'value' => '5', 'label' => 'Uplift', 'cast' => 'integer']);
+
+        $property = Property::factory()->create();
+        $room = Room::factory()->create(['property_id' => $property->id, 'base_rate' => 120]);
+
+        // One full week around the Spring bank holiday weekend (Mon 25 May 2026),
+        // so the range contains weekdays, a plain weekend day and uplift days.
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.pricing.index', [
+                'room_id' => $room->id,
+                'date_from' => '2026-05-18',
+                'date_to' => '2026-05-24',
+            ]))
+            ->assertOk()
+            ->assertSee('Daily price preview')
+            ->assertSee('Weekdays night avg')
+            ->assertSee('Weekends night avg')
+            ->assertSee('Uplift days night avg')
+            ->assertSee('Price / night')
+            ->assertSee('18 May 2026')
+            ->assertSee('Weekend', false)
+            ->assertSee('Uplift', false);
+    }
+
     public function test_super_admin_can_edit_a_pricing_rule_via_modal(): void
     {
         $property = Property::factory()->create();

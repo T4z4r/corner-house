@@ -292,6 +292,113 @@ class PricingEngine
     }
 
     /**
+     * Classify a date for the price preview: weekdays run Monday to
+     * Thursday, weekends are Friday to Sunday, and an "uplift day" is a
+     * weekend that falls inside a UK holiday or school-holiday period while
+     * the holiday/weekend uplift is enabled.
+     */
+    public function dayCategory(Carbon $date): string
+    {
+        if (! in_array($date->dayOfWeek, [Carbon::FRIDAY, Carbon::SATURDAY, Carbon::SUNDAY])) {
+            return 'weekday';
+        }
+
+        if ((bool) Setting::getValue('holiday_weekend_uplift_enabled', false) && $this->isWeekendUpliftPeriod($date)) {
+            return 'uplift';
+        }
+
+        return 'weekend';
+    }
+
+    /**
+     * Per-night breakdown for a single date: the price the booking engine
+     * would charge, the weekday/weekend/uplift classification and the source
+     * that set the price. Mirrors calculateRateForDate so the preview can
+     * explain why a date is priced the way it is.
+     *
+     * @return array{price: float, category: string, source: string, rule_type: string|null, uplift_applied: bool, min_floor: bool, min_price: float, base_rate: float}
+     */
+    public function dayPreview(Room $room, Carbon $date, ?float $occupancyPct = null): array
+    {
+        $occupancyPct ??= $this->occupancyForDate($room, $date);
+
+        $category = $this->dayCategory($date);
+
+        // 1. Manual override (highest priority)
+        $override = $this->findOverride($room, $date);
+        if ($override) {
+            return [
+                'price' => (float) $override->rate,
+                'category' => $category,
+                'source' => 'override',
+                'rule_type' => null,
+                'uplift_applied' => false,
+                'min_floor' => false,
+                'min_price' => 0.0,
+                'base_rate' => (float) $room->base_rate,
+            ];
+        }
+
+        $baseRate = (float) $room->base_rate;
+        $rate = $baseRate;
+        $winningTier = null;
+
+        // 2. Calendar price blocks set an explicit nightly rate for the date.
+        $blockRate = $this->findPriceBlockRate($room, $date);
+        if ($blockRate !== null) {
+            $rate = $blockRate;
+            $source = 'calendar_block';
+        } else {
+            // 3. Only the highest-priority applicable rule tier applies.
+            $applicable = $this->collectAdjustments($room, $date, $occupancyPct)
+                ->sortBy(fn ($a) => self::PRIORITY_ORDER[$a['type']] ?? 99)
+                ->first();
+
+            if ($applicable) {
+                $winningTier = $applicable['type'];
+                $source = 'rule';
+                $rate = $this->applyAdjustment($rate, $applicable['adjustment_type'], (float) $applicable['adjustment_value'], $applicable['competitor_avg'] ?? null);
+            } else {
+                $source = 'base_rate';
+            }
+        }
+
+        // 4. Optional weekend uplift during UK holiday periods and school
+        // holidays, skipped when a manual override, explicit calendar rate,
+        // or a fixed event/holiday rule already set the price for the date.
+        $upliftApplied = false;
+        if (
+            $blockRate === null
+            && $winningTier !== 'event'
+            && $winningTier !== 'holiday'
+            && (bool) Setting::getValue('holiday_weekend_uplift_enabled', false)
+            && $this->isWeekendUpliftPeriod($date)
+        ) {
+            $upliftPct = (float) Setting::getValue('holiday_weekend_uplift', 5);
+            $rate *= 1 + ($upliftPct / 100);
+            $upliftApplied = true;
+        }
+
+        // Enforce minimum price floors
+        $minWeekday = (float) Setting::getValue('min_price_weekday', 450);
+        $minWeekend = (float) Setting::getValue('min_price_weekend', 600);
+        $isWeekend = in_array($date->dayOfWeek, [Carbon::FRIDAY, Carbon::SATURDAY, Carbon::SUNDAY]);
+        $minPrice = $isWeekend ? $minWeekend : $minWeekday;
+        $minFloor = $rate < $minPrice;
+
+        return [
+            'price' => round(max($minPrice, $rate), 2),
+            'category' => $category,
+            'source' => $source,
+            'rule_type' => $winningTier,
+            'uplift_applied' => $upliftApplied,
+            'min_floor' => $minFloor,
+            'min_price' => round($minPrice, 2),
+            'base_rate' => $baseRate,
+        ];
+    }
+
+    /**
      * Assess competing rules for a date, returning applicable adjustments.
      */
     private function collectAdjustments(Room $room, Carbon $date, ?float $occupancyPct): Collection

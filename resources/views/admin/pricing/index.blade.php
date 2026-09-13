@@ -49,6 +49,9 @@
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="overrides-tab" data-bs-toggle="tab" data-bs-target="#overrides" type="button" role="tab">Rate overrides ({{ $overrides->total() }})</button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="preview-tab" data-bs-toggle="tab" data-bs-target="#preview" type="button" role="tab">Daily price preview</button>
+        </li>
     </ul>
 
     <div class="tab-content" id="pricingTabContent">
@@ -260,6 +263,136 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div class="tab-pane fade" id="preview" role="tabpanel">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body">
+                    <form method="GET" class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label" for="previewRoom">Room *</label>
+                            <select id="previewRoom" name="room_id" class="form-select" required>
+                                <option value="">Select a room&hellip;</option>
+                                @foreach ($rooms as $previewOption)
+                                    <option value="{{ $previewOption->id }}" @selected(isset($previewRoom) && $previewRoom->id === $previewOption->id)>
+                                        {{ $previewOption->property?->name ?? 'Unassigned' }} - {{ $previewOption->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="previewFrom">From</label>
+                            <input type="date" id="previewFrom" name="date_from" class="form-control" value="{{ $previewFrom }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="previewTo">To</label>
+                            <input type="date" id="previewTo" name="date_to" class="form-control" value="{{ $previewTo }}">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-ch-primary w-100"><i class="bi bi-search me-1"></i>Preview</button>
+                        </div>
+                    </form>
+                    <div class="text-muted small mt-2">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Weekday is Mon&ndash;Thu, weekend is Fri&ndash;Sun, and an uplift day is a weekend inside a UK bank-holiday, festive or school-holiday period with the uplift enabled. The range is capped at 120 nights.
+                    </div>
+                </div>
+            </div>
+
+            @if (isset($previewRoom) && $preview)
+                <div class="row g-3 mb-3">
+                    @php
+                        $previewCards = [
+                            'weekday' => ['Weekdays night avg', 'ch-badge-muted'],
+                            'weekend' => ['Weekends night avg', 'ch-badge-primary'],
+                            'uplift' => ['Uplift days night avg', 'ch-badge-warning'],
+                        ];
+                    @endphp
+                    @foreach ($previewCards as $category => [$label, $badge])
+                        @php $summary = $previewSummary[$category] ?? null; @endphp
+                        @if ($summary)
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="small fw-semibold text-muted">{{ $label }}</span>
+                                            <span class="ch-badge {{ $badge }}">{{ $summary['count'] }} nights</span>
+                                        </div>
+                                        <div class="fs-4 fw-bold">&pound;{{ number_format($summary['avg'], 2) }}</div>
+                                        <div class="text-muted small">&pound;{{ number_format($summary['min'], 2) }} &ndash; &pound;{{ number_format($summary['max'], 2) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Day</th>
+                                        <th>Type</th>
+                                        <th class="text-end">Price / night</th>
+                                        <th>Source</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @php
+                                        $typeBadges = [
+                                            'weekday' => 'ch-badge-muted',
+                                            'weekend' => 'ch-badge-primary',
+                                            'uplift' => 'ch-badge-warning',
+                                        ];
+                                    @endphp
+                                    @foreach ($preview as $row)
+                                        <tr>
+                                            <td>{{ $row['date']->format('d M Y') }}</td>
+                                            <td class="fw-semibold">{{ $row['date']->format('l') }}</td>
+                                            <td>
+                                                <span class="ch-badge {{ $typeBadges[$row['category']] ?? 'ch-badge-muted' }}">{{ ucfirst($row['category']) }}</span>
+                                            </td>
+                                            <td class="text-end fw-semibold">&pound;{{ number_format($row['price'], 2) }}</td>
+                                            <td class="small">
+                                                @if ($row['source'] === 'override')
+                                                    Manual override
+                                                @elseif ($row['source'] === 'calendar_block')
+                                                    Calendar rate
+                                                @elseif ($row['source'] === 'rule')
+                                                    Rule: {{ ucfirst(str_replace('_', ' ', $row['rule_type'])) }}
+                                                @else
+                                                    Base rate
+                                                @endif
+                                                @if ($row['uplift_applied'])
+                                                    <span class="badge text-bg-warning ms-1">+{{ number_format((float) \App\Models\Setting::getValue('holiday_weekend_uplift', 5), 0) }}% uplift</span>
+                                                @endif
+                                                @if ($row['min_floor'])
+                                                    <span class="badge text-bg-secondary ms-1">min floor &pound;{{ number_format($row['min_price'], 2) }}</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            @else
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3 text-muted">
+                            <i class="bi bi-calendar3 fs-3"></i>
+                            <div>
+                                <div class="fw-semibold">No preview yet</div>
+                                <div class="small">Pick a room and date range to see the nightly price per date, split across weekdays, weekends and uplift days.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 

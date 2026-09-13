@@ -8,9 +8,11 @@ use App\Models\PricingRule;
 use App\Models\Property;
 use App\Models\Room;
 use App\Services\Audit\AuditLogger;
+use App\Services\Pricing\PricingEngine;
 use App\Services\Pricing\SeasonalPricingAutomationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class PricingController extends Controller
@@ -18,6 +20,7 @@ class PricingController extends Controller
     public function __construct(
         private readonly AuditLogger $auditLogger,
         private readonly SeasonalPricingAutomationService $seasonalPricingAutomation,
+        private readonly PricingEngine $pricingEngine,
     ) {}
 
     public function index(Request $request): View
@@ -36,7 +39,69 @@ class PricingController extends Controller
             'properties' => Property::query()->where('status', 'active')->get(),
             'rooms' => Room::query()->with('property')->orderBy('name')->get(),
             'selectedPropertyId' => $propertyId,
+            ...$this->buildPreview($request),
         ]);
+    }
+
+    /**
+     * Resolve the daily price preview rows for the requested room and range.
+     *
+     * @return array{previewRoom: \App\Models\Room|null, preview: array, previewSummary: array, previewFrom: string, previewTo: string}
+     */
+    private function buildPreview(Request $request): array
+    {
+        $roomId = $request->query('room_id');
+        $room = $roomId ? Room::query()->with('property')->find($roomId) : null;
+
+        if (! $room) {
+            return [
+                'previewRoom' => null,
+                'preview' => [],
+                'previewSummary' => [],
+                'previewFrom' => now()->toDateString(),
+                'previewTo' => now()->addDays(29)->toDateString(),
+            ];
+        }
+
+        try {
+            $from = $request->query('date_from') ? Carbon::parse($request->query('date_from'))->startOfDay() : now()->startOfDay();
+            $to = $request->query('date_to') ? Carbon::parse($request->query('date_to'))->startOfDay() : $from->copy()->addDays(29);
+        } catch (\Throwable) {
+            $from = now()->startOfDay();
+            $to = $from->copy()->addDays(29);
+        }
+
+        if ($to->lt($from)) {
+            [$from, $to] = [$to, $from];
+        }
+
+        $maxTo = $from->copy()->addDays(120);
+        if ($to->gt($maxTo)) {
+            $to = $maxTo->copy();
+        }
+
+        $preview = [];
+        for ($date = $from->copy(); $date->lte($to); $date->addDay()) {
+            $preview[] = ['date' => $date->copy()] + $this->pricingEngine->dayPreview($room, $date->copy());
+        }
+
+        $previewSummary = collect($preview)
+            ->groupBy('category')
+            ->map(fn ($days) => [
+                'count' => $days->count(),
+                'avg' => round($days->avg('price'), 2),
+                'min' => $days->min('price'),
+                'max' => $days->max('price'),
+            ])
+            ->toArray();
+
+        return [
+            'previewRoom' => $room,
+            'preview' => $preview,
+            'previewSummary' => $previewSummary,
+            'previewFrom' => $from->toDateString(),
+            'previewTo' => $to->toDateString(),
+        ];
     }
 
     public function storeRule(Request $request): RedirectResponse

@@ -749,4 +749,118 @@ class PricingEngineTest extends TestCase
 
         $this->assertSame(250.0, $this->engine->calculateRateForDate($room, Carbon::parse('2026-05-23')));
     }
+
+    public function test_day_preview_classifies_weekday_weekend_and_uplift(): void
+    {
+        Setting::firstOrCreate(['key' => 'holiday_weekend_uplift_enabled'], ['value' => '1', 'group' => 'pricing', 'label' => 'Uplift enabled', 'cast' => 'boolean']);
+        Setting::firstOrCreate(['key' => 'holiday_weekend_uplift'], ['value' => '5', 'group' => 'pricing', 'label' => 'Uplift', 'cast' => 'integer']);
+
+        $room = $this->makeRoom(100);
+
+        $weekday = $this->engine->dayPreview($room, Carbon::parse('2026-09-15')); // Tuesday
+        $this->assertSame('weekday', $weekday['category']);
+        $this->assertSame(100.0, $weekday['price']);
+        $this->assertSame('base_rate', $weekday['source']);
+        $this->assertFalse($weekday['uplift_applied']);
+
+        $weekend = $this->engine->dayPreview($room, Carbon::parse('2026-09-19')); // Saturday, outside any uplift period
+        $this->assertSame('weekend', $weekend['category']);
+        $this->assertSame(100.0, $weekend['price']);
+        $this->assertFalse($weekend['uplift_applied']);
+
+        // Saturday 23 May 2026 precedes the Spring bank holiday Monday.
+        $upliftDay = $this->engine->dayPreview($room, Carbon::parse('2026-05-23'));
+        $this->assertSame('uplift', $upliftDay['category']);
+        $this->assertTrue($upliftDay['uplift_applied']);
+        $this->assertSame(105.0, $upliftDay['price']);
+    }
+
+    public function test_day_category_stays_weekend_when_uplift_is_disabled(): void
+    {
+        $room = $this->makeRoom(100);
+
+        $day = $this->engine->dayPreview($room, Carbon::parse('2026-05-23'));
+
+        $this->assertSame('weekend', $day['category']);
+        $this->assertFalse($day['uplift_applied']);
+        $this->assertSame(100.0, $day['price']);
+    }
+
+    public function test_day_preview_reports_rule_override_and_calendar_block_sources(): void
+    {
+        $room = $this->makeRoom(100);
+
+        PricingRule::create([
+            'property_id' => $room->property_id,
+            'name' => 'Summer +25',
+            'rule_type' => 'seasonal',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
+            'adjustment_type' => 'amount',
+            'adjustment_value' => 25,
+            'priority' => 4,
+        ]);
+
+        $ruleDay = $this->engine->dayPreview($room, Carbon::parse('2026-09-15'));
+        $this->assertSame('rule', $ruleDay['source']);
+        $this->assertSame('seasonal', $ruleDay['rule_type']);
+        $this->assertSame(125.0, $ruleDay['price']);
+
+        PricingOverride::create([
+            'room_id' => $room->id,
+            'start_date' => '2026-09-01',
+            'end_date' => '2026-09-30',
+            'rate' => 200,
+            'is_enabled' => true,
+        ]);
+
+        $overrideDay = $this->engine->dayPreview($room, Carbon::parse('2026-09-15'));
+        $this->assertSame('override', $overrideDay['source']);
+        $this->assertSame(200.0, $overrideDay['price']);
+        $this->assertFalse($overrideDay['uplift_applied']);
+
+        CalendarBlock::create([
+            'property_id' => $room->property_id,
+            'room_id' => $room->id,
+            'type' => 'daily_price',
+            'value' => 180,
+            'start_date' => '2026-10-01',
+            'end_date' => '2026-10-31',
+        ]);
+
+        $blockDay = $this->engine->dayPreview($room, Carbon::parse('2026-10-12'));
+        $this->assertSame('calendar_block', $blockDay['source']);
+        $this->assertSame(180.0, $blockDay['price']);
+        $this->assertFalse($blockDay['uplift_applied']);
+    }
+
+    public function test_day_preview_reports_minimum_price_floor(): void
+    {
+        Setting::updateOrCreate(['key' => 'min_price_weekday'], ['group' => 'booking', 'value' => '150', 'label' => 'Min weekday', 'cast' => 'decimal:2']);
+        Setting::updateOrCreate(['key' => 'min_price_weekend'], ['group' => 'booking', 'value' => '600', 'label' => 'Min weekend', 'cast' => 'decimal:2']);
+
+        $room = $this->makeRoom(100);
+
+        $weekday = $this->engine->dayPreview($room, Carbon::parse('2026-09-15'));
+        $this->assertSame(150.0, $weekday['price']);
+        $this->assertTrue($weekday['min_floor']);
+        $this->assertSame(150.0, $weekday['min_price']);
+
+        $weekend = $this->engine->dayPreview($room, Carbon::parse('2026-09-19'));
+        $this->assertSame(600.0, $weekend['price']);
+        $this->assertTrue($weekend['min_floor']);
+
+        // A manual override is exempt from the minimum price floor.
+        PricingOverride::create([
+            'room_id' => $room->id,
+            'start_date' => '2026-09-01',
+            'end_date' => '2026-09-30',
+            'rate' => 200,
+            'is_enabled' => true,
+        ]);
+
+        $overrideDay = $this->engine->dayPreview($room, Carbon::parse('2026-09-15'));
+        $this->assertSame(200.0, $overrideDay['price']);
+        $this->assertFalse($overrideDay['min_floor']);
+    }
 }
