@@ -1432,6 +1432,63 @@ class Beds24IntegrationTest extends TestCase
             ->assertSee('Alex Taylor');
     }
 
+    public function test_pricing_rule_posts_all_mapped_rooms_in_one_beds24_request(): void
+    {
+        $account = $this->beds24Account();
+        $property = Property::factory()->create();
+        $rooms = Room::factory()->count(2)->create([
+            'property_id' => $property->id,
+            'status' => 'active',
+            'base_rate' => 100,
+        ]);
+
+        foreach ($rooms as $index => $room) {
+            ChannelMapping::create([
+                'channel_account_id' => $account->id,
+                'provider' => 'beds24',
+                'property_id' => $property->id,
+                'room_id' => $room->id,
+                'external_property_id' => '2001',
+                'external_room_id' => (string) (77 + $index),
+                'status' => 'active',
+            ]);
+        }
+
+        $rule = PricingRule::create([
+            'property_id' => $property->id,
+            'name' => 'Bulk summer pricing',
+            'rule_type' => 'seasonal',
+            'start_date' => now()->addDays(10)->toDateString(),
+            'end_date' => now()->addDays(11)->toDateString(),
+            'priority' => 1,
+            'adjustment_type' => 'amount',
+            'adjustment_value' => 15,
+            'is_enabled' => true,
+        ]);
+
+        Http::fake([
+            '*inventory/rooms/calendar*' => Http::response([
+                'data' => [
+                    ['success' => true],
+                    ['success' => true],
+                ],
+            ], 200),
+        ]);
+
+        $this->assertTrue(app(Beds24PricingPublisher::class)->postRule($rule));
+
+        Http::assertSentCount(1);
+        Http::assertSent(function ($request): bool {
+            $payload = $request->data();
+            $roomIds = collect($payload)->pluck('roomId')->sort()->values()->all();
+
+            return str_contains($request->url(), 'inventory/rooms/calendar')
+                && $roomIds === [77, 78]
+                && count($payload[0]['calendar'] ?? []) === 2
+                && count($payload[1]['calendar'] ?? []) === 2;
+        });
+    }
+
     public function test_schema_default_string_length_is_capped_for_mysql_indexes(): void
     {
         $reflection = new \ReflectionClass(Builder::class);

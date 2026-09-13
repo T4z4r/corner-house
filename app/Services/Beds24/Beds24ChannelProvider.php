@@ -124,23 +124,17 @@ class Beds24ChannelProvider implements ChannelProviderInterface
 
     public function pushAvailability(ChannelAccount $account, array $availability): bool
     {
-        $this->client->post($account, 'inventory/rooms/calendar', $this->calendarPayload($availability));
-
-        return true;
+        return $this->postCalendar($account, $availability);
     }
 
     public function pushRates(ChannelAccount $account, array $rates): bool
     {
-        $this->client->post($account, 'inventory/rooms/calendar', $this->calendarPayload($rates));
-
-        return true;
+        return $this->postCalendar($account, $rates);
     }
 
     public function updateRestrictions(ChannelAccount $account, array $restrictions): bool
     {
-        $this->client->post($account, 'inventory/rooms/calendar', $this->calendarPayload($restrictions));
-
-        return true;
+        return $this->postCalendar($account, $restrictions);
     }
 
     public function sendMessage(ChannelAccount $account, array $message): bool
@@ -283,5 +277,31 @@ class Beds24ChannelProvider implements ChannelProviderInterface
         }
 
         return $payload;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $rows
+     */
+    private function postCalendar(ChannelAccount $account, array $rows): bool
+    {
+        $payload = $this->calendarPayload($rows);
+        if ($payload === []) {
+            return false;
+        }
+
+        $response = $this->client->post($account, 'inventory/rooms/calendar', $payload);
+        $items = $response['data'] ?? $response;
+
+        if (! is_array($items)) {
+            return false;
+        }
+
+        if (array_is_list($items)) {
+            return $items !== [] && collect($items)->every(
+                static fn (mixed $item): bool => is_array($item) && ($item['success'] ?? true) === true,
+            );
+        }
+
+        return ($items['success'] ?? true) === true;
     }
 }

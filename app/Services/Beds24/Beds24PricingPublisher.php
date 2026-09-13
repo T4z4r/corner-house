@@ -37,7 +37,7 @@ class Beds24PricingPublisher
 
         $rows = [];
         foreach ($rooms as $room) {
-            $rows = array_merge($rows, $this->rowsForRoomAndRange($room, $rule->start_date, $rule->end_date));
+            $rows = array_merge($rows, $this->rowsForRoomAndRange($account, $room, $rule->start_date, $rule->end_date));
         }
 
         if ($rows === []) {
@@ -70,7 +70,7 @@ class Beds24PricingPublisher
             return false;
         }
 
-        $rows = $this->rowsForRoomAndRange($room, $override->start_date, $override->end_date, $override);
+        $rows = $this->rowsForRoomAndRange($account, $room, $override->start_date, $override->end_date, $override);
         if ($rows === []) {
             return false;
         }
@@ -122,9 +122,9 @@ class Beds24PricingPublisher
      * @param  PricingRule|PricingOverride|null  $source
      * @return array<int, array<string, mixed>>
      */
-    private function rowsForRoomAndRange(Room $room, Carbon $start, Carbon $end, mixed $source = null): array
+    private function rowsForRoomAndRange(ChannelAccount $account, Room $room, Carbon $start, Carbon $end, mixed $source = null): array
     {
-        $externalRoomId = $this->externalRoomIdFor($room);
+        $externalRoomId = $this->externalRoomIdFor($account, $room);
         if ($externalRoomId === null) {
             return [];
         }
@@ -161,9 +161,10 @@ class Beds24PricingPublisher
         return $rows;
     }
 
-    private function externalRoomIdFor(Room $room): ?string
+    private function externalRoomIdFor(ChannelAccount $account, Room $room): ?string
     {
         return ChannelMapping::query()
+            ->where('channel_account_id', $account->id)
             ->where('provider', 'beds24')
             ->where('room_id', $room->id)
             ->whereNotNull('external_room_id')
