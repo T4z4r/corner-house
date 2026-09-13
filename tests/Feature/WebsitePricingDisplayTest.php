@@ -6,6 +6,7 @@ use App\Models\Property;
 use App\Models\Room;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class WebsitePricingDisplayTest extends TestCase
