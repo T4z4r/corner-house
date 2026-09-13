@@ -553,6 +553,35 @@ class PublicWebsiteTest extends TestCase
             ->assertDontSee('Serengeti Spirits bottle photo', false);
     }
 
+    public function test_rooms_page_survives_stored_spaces_missing_optional_fields(): void
+    {
+        Property::factory()->create(['name' => 'Corner House', 'slug' => 'corner-house', 'status' => 'active']);
+
+        Setting::query()->create([
+            'group' => 'website',
+            'key' => 'website_spaces_inside',
+            'value' => json_encode([
+                ['name' => 'Kitchen'],
+                ['name' => 'Kadai BBQ', 'description' => 'A Kadai fire-pit barbecue. Burns charcoal or wood.'],
+            ]),
+            'cast' => 'json',
+        ]);
+        Setting::query()->create([
+            'group' => 'website',
+            'key' => 'website_spaces_outside',
+            'value' => json_encode([
+                ['name' => 'Gym'],
+            ]),
+            'cast' => 'json',
+        ]);
+        cache()->forget('settings.all');
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Kitchen', false)
+            ->assertSee('A Kadai fire-pit barbecue. Burns charcoal or wood.', false);
+    }
+
     public function test_home_page_template_copy_matches(): void
     {
         $property = Property::factory()->create(['name' => 'Corner House', 'slug' => 'corner-house', 'status' => 'active', 'description' => null]);

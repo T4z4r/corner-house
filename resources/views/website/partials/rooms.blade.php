@@ -82,10 +82,10 @@
                         }
                     @endphp
                     <li class="{{ isset($space['feature']) ? 'space feature' : 'space' }}">
-                        <div class="photo">@if($spacePhoto)<img src="{{ asset($spacePhoto) }}" alt="{{ $space['name'] }}">@else{{ $space['label'] }}@endif</div>
+                        <div class="photo">@if($spacePhoto)<img src="{{ asset($spacePhoto) }}" alt="{{ $space['name'] }}">@else{{ $space['label'] ?? '' }}@endif</div>
                         <h3>{{ $space['name'] }}</h3>
-                        <p class="where">{{ $space['where'] }}</p>
-                        <p>{{ $space['description'] }}</p>
+                        <p class="where">{{ $space['where'] ?? '' }}</p>
+                        <p>{{ $space['description'] ?? '' }}</p>
                     </li>
                 @endforeach
             </ul>
@@ -106,10 +106,10 @@
                         }
                     @endphp
                     <li class="{{ isset($space['feature']) ? 'space feature' : 'space' }}">
-                        <div class="photo">@if($spacePhoto)<img src="{{ asset($spacePhoto) }}" alt="{{ $space['name'] }}">@else{{ $space['label'] }}@endif</div>
+                        <div class="photo">@if($spacePhoto)<img src="{{ asset($spacePhoto) }}" alt="{{ $space['name'] }}">@else{{ $space['label'] ?? '' }}@endif</div>
                         <h3>{{ $space['name'] }}</h3>
-                        <p class="where">{{ $space['where'] }}</p>
-                        <p>{{ $space['description'] }}</p>
+                        <p class="where">{{ $space['where'] ?? '' }}</p>
+                        <p>{{ $space['description'] ?? '' }}</p>
                     </li>
                 @endforeach
             </ul>
