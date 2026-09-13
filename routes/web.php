@@ -251,6 +251,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
     Route::middleware('can:calendar.view')->group(function (): void {
         Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar');
         Route::get('/calendar/events', [CalendarController::class, 'events'])->name('calendar.events');
+        Route::get('/calendar/prices', [CalendarController::class, 'prices'])->name('calendar.prices');
         Route::post('/calendar/blocks', [CalendarController::class, 'storeBlock'])->name('calendar.blocks.store')->middleware('can:calendar.manage');
         Route::post('/calendar/blocks/{block}', [CalendarController::class, 'updateBlock'])->name('calendar.blocks.update')->middleware('can:calendar.manage');
         Route::post('/calendar/blocks/{block}/toggle', [CalendarController::class, 'toggleBlock'])->name('calendar.blocks.toggle')->middleware('can:calendar.manage');

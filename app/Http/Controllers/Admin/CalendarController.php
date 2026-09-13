@@ -10,8 +10,10 @@ use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Services\Audit\AuditLogger;
+use App\Services\Pricing\PricingEngine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class CalendarController extends Controller
@@ -44,7 +46,10 @@ class CalendarController extends Controller
         'restrictions' => 'min_stay',
     ];
 
-    public function __construct(private readonly AuditLogger $auditLogger) {}
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+        private readonly PricingEngine $pricingEngine,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -222,6 +227,66 @@ class CalendarController extends Controller
         }
 
         return response()->json($events);
+    }
+
+    /**
+     * Per-night prices for every day in the requested range, computed with the
+     * same pricing engine used by the booking pages and the pricing preview
+     * tab. Returns one entry per active room of the selected property (linked
+     * partner properties included), or a single room when one is selected.
+     */
+    public function prices(Request $request): JsonResponse
+    {
+        $start = $request->query('start', now()->startOfMonth()->toDateString());
+        $end = $request->query('end', now()->endOfMonth()->toDateString());
+        $propertyId = $request->query('property_id');
+        $roomId = $request->query('room_id');
+
+        $propertyIds = null;
+        if ($propertyId) {
+            $property = Property::find($propertyId);
+            $propertyIds = $property?->linkedPropertyIds() ?? [(int) $propertyId];
+        }
+
+        $rooms = Room::query()
+            ->with('property')
+            ->where('status', 'active')
+            ->when($propertyIds, fn ($q) => $q->whereIn('property_id', $propertyIds))
+            ->when($roomId, fn ($q) => $q->where('id', $roomId))
+            ->orderBy('name')
+            ->get();
+
+        $from = Carbon::parse($start)->startOfDay();
+        $to = Carbon::parse($end)->startOfDay();
+
+        $roomsPayload = [];
+        $prices = [];
+
+        foreach ($rooms as $room) {
+            $roomsPayload[$room->id] = $room->name;
+
+            for ($date = $from->copy(); $date->lte($to); $date->addDay()) {
+                $preview = $this->pricingEngine->dayPreview($room, $date->copy());
+
+                $prices[$date->toDateString()][] = [
+                    'room_id' => $room->id,
+                    'room_name' => $room->name,
+                    'price' => $preview['price'],
+                    'category' => $preview['category'],
+                    'source' => $preview['source'],
+                    'rule_type' => $preview['rule_type'],
+                    'uplift_applied' => $preview['uplift_applied'],
+                    'min_floor' => $preview['min_floor'],
+                    'min_price' => $preview['min_price'],
+                    'base_rate' => $preview['base_rate'],
+                ];
+            }
+        }
+
+        return response()->json([
+            'rooms' => $roomsPayload,
+            'prices' => $prices,
+        ]);
     }
 
     public function storeBlock(Request $request): JsonResponse

@@ -127,6 +127,18 @@
         gap: 0.35rem;
     }
 
+    .calendar-day-price {
+        margin-bottom: 0.45rem;
+        color: #0f5132;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+
+    .calendar-day.is-outside .calendar-day-price {
+        color: #8a9097;
+    }
+
     .calendar-event {
         border: 0;
         border-radius: 0.7rem;
@@ -415,6 +427,7 @@
         const selectedRoomId = @json($selectedRoomId);
         const initialMonth = @json($initialMonth);
         const eventsEndpoint = @json(route('admin.calendar.events'));
+        const pricesEndpoint = @json(route('admin.calendar.prices'));
         const blocksStoreEndpoint = @json(route('admin.calendar.blocks.store'));
         const blockUpdateTemplate = @json(route('admin.calendar.blocks.update', ['block' => '__ID__']));
         const blockToggleTemplate = @json(route('admin.calendar.blocks.toggle', ['block' => '__ID__']));
@@ -431,6 +444,7 @@
         ));
         let activeRoomId = selectedRoomBelongsToProperty ? selectedRoom : '';
         let editingBlockId = null;
+        let priceData = { rooms: {}, prices: {} };
 
         const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         const monthLabelEl = document.getElementById('monthLabel');
@@ -572,6 +586,50 @@
             return event.title;
         }
 
+        function formatMoney(value) {
+            const amount = Number(value);
+            return `£${Number.isInteger(amount) ? amount.toLocaleString('en-GB') : amount.toFixed(2)}`;
+        }
+
+        function escapeAttr(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;');
+        }
+
+        function sourceLabel(preview) {
+            if (preview.source === 'override') {
+                return 'override';
+            }
+
+            if (preview.source === 'calendar_block') {
+                return 'price block';
+            }
+
+            if (preview.source === 'rule') {
+                return `${preview.rule_type || 'rule'} rule`;
+            }
+
+            return 'base rate';
+        }
+
+        function priceLine(dayPrices) {
+            if (! dayPrices.length) {
+                return '';
+            }
+
+            if (dayPrices.length === 1) {
+                const only = dayPrices[0];
+                return `<div class="calendar-day-price" title="${escapeAttr(`${only.room_name} · ${formatMoney(only.price)} per night`)}">${formatMoney(only.price)}</div>`;
+            }
+
+            const cheapest = Math.min(...dayPrices.map((item) => item.price));
+            const tooltip = dayPrices.map((item) => `${item.room_name}: ${formatMoney(item.price)}`).join('\n');
+
+            return `<div class="calendar-day-price" title="${escapeAttr(tooltip)}">from ${formatMoney(cheapest)}</div>`;
+        }
+
         function buildEventMap() {
             const map = new Map();
 
@@ -599,11 +657,32 @@
         }
 
         function renderDayDetail(dayEvents, date) {
+            const dayPrices = priceData.prices[dateKey(date)] || [];
+            const pricesSection = dayPrices.length
+                ? `
+                    <div class="mb-3">
+                        <div class="small text-muted">Nightly rate${dayPrices.length > 1 ? 's' : ''}</div>
+                        <div class="d-flex flex-column gap-1">
+                            ${dayPrices.map((item) => `
+                                <div class="d-flex justify-content-between align-items-center gap-2 border rounded-3 px-3 py-2">
+                                    <div>
+                                        <span class="fw-semibold">${escapeAttr(item.room_name)}</span>
+                                        <span class="small text-muted ms-2">${sourceLabel(item)}</span>
+                                    </div>
+                                    <span class="fw-bold ms-2">${formatMoney(item.price)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `
+                : '';
+
             if (! dayEvents.length) {
                 dayDetailEl.innerHTML = `
+                    ${pricesSection}
                     <div class="calendar-empty">
                         <div class="display-6 mb-2 text-muted"><i class="bi bi-calendar2-week"></i></div>
-                        <p class="mb-1">No events on ${formatDayLabel(date)}.</p>
+                        <p class="mb-1">No bookings or blocks on ${formatDayLabel(date)}.</p>
                         <p class="small mb-0">Use the month view to pick another day or add a block from here.</p>
                     </div>
                 `;
@@ -611,6 +690,7 @@
             }
 
             dayDetailEl.innerHTML = `
+                ${pricesSection}
                 <div class="mb-3">
                     <div class="small text-muted">Selected date</div>
                     <div class="fw-semibold">${formatDayLabel(date)}</div>
@@ -676,6 +756,7 @@
                     </button>
                 `).join('');
                 const extraCount = dayEvents.length > 3 ? `<div class="calendar-day-meta">+${dayEvents.length - 3} more</div>` : '';
+                const dayPriceMarkup = priceLine(priceData.prices[dayKey] || []);
 
                 cells.push(`
                     <div class="calendar-day ${isOutside ? 'is-outside' : ''} ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}" data-date="${dayKey}">
@@ -683,6 +764,7 @@
                             <div class="calendar-day-number">${cellDate.getDate()}</div>
                             <div class="calendar-day-meta">${isOutside ? new Intl.DateTimeFormat('en-GB', { month: 'short' }).format(cellDate) : ''}</div>
                         </div>
+                        ${dayPriceMarkup}
                         <div class="calendar-events">${dayEventsMarkup}</div>
                         ${extraCount}
                     </div>
@@ -766,11 +848,42 @@
                 });
         }
 
+        function loadPrices() {
+            const start = dateKey(startOfMonth(visibleMonth));
+            const end = dateKey(endOfMonth(visibleMonth));
+            const url = new URL(pricesEndpoint, window.location.origin);
+            url.searchParams.set('start', start);
+            url.searchParams.set('end', end);
+
+            if (activePropertyId) {
+                url.searchParams.set('property_id', activePropertyId);
+            }
+
+            if (activeRoomId) {
+                url.searchParams.set('room_id', activeRoomId);
+            }
+
+            return fetch(url.toString(), {
+                headers: { 'Accept': 'application/json' },
+            })
+                .then((response) => response.json())
+                .then((payload) => {
+                    priceData = payload && typeof payload === 'object' ? payload : { rooms: {}, prices: {} };
+                })
+                .catch(() => {
+                    priceData = { rooms: {}, prices: {} };
+                });
+        }
+
+        function reloadAll() {
+            return Promise.all([loadEvents(), loadPrices()]).then(renderMonth);
+        }
+
         function updateMonth(delta) {
             visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + delta, 1);
             selectedDate = new Date(visibleMonth);
             syncUrl();
-            loadEvents().then(renderMonth);
+            reloadAll();
         }
 
         function populateRoomOptions(selectEl, propertyId) {
@@ -789,7 +902,7 @@
             visibleMonth = startOfMonth(new Date());
             selectedDate = new Date();
             syncUrl();
-            loadEvents().then(renderMonth);
+            reloadAll();
         });
 
         const propertyFilter = document.getElementById('propertyFilter');
@@ -821,7 +934,7 @@
             }
             populateRoomOptions(document.getElementById('blockRoom'), activePropertyId);
 
-            loadEvents().then(renderMonth);
+            reloadAll();
         }
 
         if (applyFilterButton) {
@@ -925,7 +1038,7 @@
                             blockForm.reset();
                             toggleFields();
                             setModalMode(false);
-                            loadEvents().then(renderMonth);
+                            reloadAll();
                         }
                     });
             });
@@ -950,7 +1063,7 @@
                             blockForm.reset();
                             toggleFields();
                             setModalMode(false);
-                            loadEvents().then(renderMonth);
+                            reloadAll();
                         }
                     });
             });
@@ -990,7 +1103,7 @@
                             blockForm.reset();
                             toggleFields();
                             setModalMode(false);
-                            loadEvents().then(renderMonth);
+                            reloadAll();
                         } else {
                             alert('Unable to save block');
                         }
@@ -998,10 +1111,7 @@
             });
         }
 
-        loadEvents().then(() => {
-            renderMonth();
-            syncUrl();
-        });
+        reloadAll().then(syncUrl);
     });
 </script>
 @endpush
