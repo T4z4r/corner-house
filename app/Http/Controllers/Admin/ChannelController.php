@@ -31,6 +31,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -948,12 +949,17 @@ class ChannelController extends Controller
             return back()->withErrors(['error' => 'No Beds24 account is connected yet. Enter an invitation code (or refresh token) on the Integrations page before syncing.']);
         }
 
-        SyncBeds24BookingsJob::dispatch();
-        SyncBeds24MessagesJob::dispatch();
-        PushBeds24RatesJob::dispatch();
+        try {
+            Bus::dispatchSync(new SyncBeds24BookingsJob());
+            Bus::dispatchSync(new SyncBeds24MessagesJob());
+            Bus::dispatchSync(new PushBeds24RatesJob());
+        } catch (\Throwable $e) {
+            return back()->withErrors(['error' => 'Beds24 sync failed: '.$e->getMessage()]);
+        }
+
         $this->auditLogger->log('channels.sync', 'channels');
 
-        return back()->with('status', 'Beds24 sync queued. Properties, rooms, bookings, calendar, messages and rates will be aligned.');
+        return back()->with('status', 'Beds24 sync completed. Properties, rooms, bookings, calendar, messages and rates are now aligned.');
     }
 
     /**

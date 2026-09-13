@@ -17,7 +17,6 @@ use App\Services\Beds24\Beds24SyncService;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Queue;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -245,20 +244,49 @@ class Beds24SyncReliabilityTest extends TestCase
         $this->assertSame('success', $account->last_message_sync_status);
     }
 
-    public function test_manual_channel_sync_dispatches_bookings_messages_and_rate_jobs(): void
+    public function test_manual_channel_sync_runs_bookings_messages_and_rate_jobs_immediately(): void
     {
-        Queue::fake();
-        Http::fake();
+        $account = $this->beds24Account();
+        $property = Property::factory()->create();
+        $room = Room::factory()->create([
+            'property_id' => $property->id,
+            'status' => 'active',
+        ]);
+        ChannelMapping::create([
+            'channel_account_id' => $account->id,
+            'provider' => 'beds24',
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'external_property_id' => '2001',
+            'external_room_id' => '77',
+            'status' => 'active',
+        ]);
 
-        $this->beds24Account();
+        Http::fake([
+            '*properties*' => Http::response(['data' => []], 200),
+            '*bookings*' => Http::response([
+                'data' => [[
+                    'id' => 9011,
+                    'roomId' => 77,
+                    'arrival' => now()->addDays(10)->toDateString(),
+                    'departure' => now()->addDays(13)->toDateString(),
+                    'status' => 'confirmed',
+                    'numAdult' => 2,
+                ]],
+            ], 200),
+            '*inventory/rooms/calendar*' => Http::response(['data' => []], 200),
+        ]);
 
         $this->actingAs($this->superAdmin())
             ->post(route('admin.channels.sync'))
-            ->assertRedirect();
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Beds24 sync completed. Properties, rooms, bookings, calendar, messages and rates are now aligned.');
 
-        Queue::assertPushed(SyncBeds24BookingsJob::class);
-        Queue::assertPushed(SyncBeds24MessagesJob::class);
-        Queue::assertPushed(PushBeds24RatesJob::class);
+        $this->assertDatabaseHas('reservations', [
+            'external_channel' => 'beds24',
+            'external_booking_id' => '9011',
+            'room_id' => $room->id,
+        ]);
     }
 
     public function test_channel_account_eligibility_does_not_depend_on_status(): void
