@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\SyncBeds24BookingsJob;
 use App\Models\ChannelAccount;
 use App\Models\ChannelMapping;
+use App\Models\ChannelPricingSnapshot;
 use App\Models\ChannelRateMap;
 use App\Models\ChannelSyncLog;
 use App\Models\PricingOverride;
@@ -45,6 +46,11 @@ class ChannelController extends Controller
         return view('admin.channels.integrations', [
             'swaggerUrl' => 'https://beds24.com/api/v2/#/',
             'stats' => $this->buildIntegrationStats(),
+            'pricingSnapshots' => ChannelPricingSnapshot::query()
+                ->with(['account', 'room'])
+                ->latest('synced_at')
+                ->limit(20)
+                ->get(),
             ...$this->channelPageData($request),
         ]);
     }
@@ -562,6 +568,42 @@ class ChannelController extends Controller
             $result['nights'] === 1 ? '' : 's',
             $result['rooms'],
             $result['rooms'] === 1 ? '' : 's',
+        ));
+    }
+
+    public function pastePricingData(Request $request, Beds24ShowDataService $service): RedirectResponse
+    {
+        $data = $request->validate([
+            'account_id' => ['required', 'exists:channel_accounts,id'],
+            'room_id' => ['nullable', 'exists:rooms,id'],
+            'beds24_room_id' => ['required', 'string', 'max:100'],
+            'showdata' => ['required', 'string', 'max:200000'],
+        ]);
+
+        $account = ChannelAccount::query()->findOrFail($data['account_id']);
+        if ($account->provider !== 'beds24') {
+            return back()->withErrors(['error' => 'Only Beds24 accounts can store pricing snapshots.']);
+        }
+
+        $room = isset($data['room_id']) ? Room::query()->find((int) $data['room_id']) : null;
+
+        try {
+            $snapshot = $service->importPasted($account, trim($data['beds24_room_id']), $data['showdata'], $room);
+        } catch (\Throwable $e) {
+            $account->update(['last_error' => $e->getMessage()]);
+
+            return back()->with('status', 'Could not store the showdata pricing feed: '.$e->getMessage());
+        }
+
+        $this->auditLogger->log('channels.showdata_pasted', 'channels', 'channel_account', (string) $account->id);
+
+        return back()->with('status', sprintf(
+            'Stored showdata pricing for Beds24 room %s — %d open / %d closed nights (%s to %s).',
+            $snapshot->external_room_id,
+            $snapshot->open_days,
+            $snapshot->closed_days,
+            $snapshot->date_from?->toDateString() ?? '?',
+            $snapshot->date_to?->toDateString() ?? '?',
         ));
     }
 

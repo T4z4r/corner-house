@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\CalendarBlock;
 use App\Models\ChannelAccount;
 use App\Models\ChannelMapping;
+use App\Models\ChannelPricingSnapshot;
+use App\Models\PricingOverride;
 use App\Models\Property;
 use App\Models\Room;
 use App\Models\Setting;
@@ -274,5 +276,115 @@ class Beds24ShowDataImportTest extends TestCase
             ])
             ->assertRedirect()
             ->assertSessionHasErrors('error');
+    }
+
+    public function test_paste_stores_raw_feed_and_parsed_rows(): void
+    {
+        [$account, $room] = $this->setupMappedRoom();
+
+        $open = Carbon::parse('2026-09-13');
+        $closedStart = Carbon::parse('2026-09-18');
+        $closedNext = Carbon::parse('2026-09-19');
+
+        $raw = implode("\r\n", [
+            'Booking.com',
+            '726384 - Corner House - Large country house next to marina',
+            'Price Multiplier = 1',
+            "Date\tInventory\tRate code\tClosed\tPrice\tMin Stay",
+            $open->format('D j M Y')."\t1\t69033222\t\t550.00\t2",
+            $closedStart->format('D j M Y')."\t0\t69033222\tclosed\t\t",
+            $closedNext->format('D j M Y')."\t0\t69033222\tclosed\t\t",
+            '',
+            "Date\tInventory\tRate code\tClosed\tPrice\tMin Stay",
+        ]);
+
+        $this->actingAs($this->superAdmin())
+            ->post(route('admin.channels.showdata.paste'), [
+                'account_id' => $account->id,
+                'room_id' => $room->id,
+                'beds24_room_id' => '726384',
+                'showdata' => $raw,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status');
+
+        $this->assertStringContainsString('1 open / 2 closed nights', (string) session('status'));
+
+        $snapshot = ChannelPricingSnapshot::query()->firstOrFail();
+        $this->assertSame('726384', $snapshot->external_room_id);
+        $this->assertSame('69033222', $snapshot->rate_code);
+        $this->assertSame($room->id, $snapshot->room_id);
+        $this->assertSame($raw, $snapshot->raw_data);
+        $this->assertSame('2026-09-13', $snapshot->date_from->toDateString());
+        $this->assertSame('2026-09-19', $snapshot->date_to->toDateString());
+        $this->assertSame(1, $snapshot->open_days);
+        $this->assertSame(2, $snapshot->closed_days);
+        $this->assertCount(3, $snapshot->rows);
+
+        $this->assertEquals('550.00', number_format((float) $snapshot->rows[0]['price'], 2));
+        $this->assertSame(2, $snapshot->rows[0]['min_stay']);
+        $this->assertFalse($snapshot->rows[0]['closed']);
+        $this->assertSame(1, $snapshot->rows[0]['inventory']);
+        $this->assertTrue($snapshot->rows[2]['closed']);
+        $this->assertNull($snapshot->rows[2]['price']);
+
+        $this->assertSame(0, CalendarBlock::query()->count());
+        $this->assertSame(0, PricingOverride::query()->count());
+    }
+
+    public function test_paste_rejects_text_without_pricing_rows(): void
+    {
+        $account = ChannelAccount::factory()->create(['provider' => 'beds24', 'status' => 'active']);
+
+        $this->actingAs($this->superAdmin())
+            ->post(route('admin.channels.showdata.paste'), [
+                'account_id' => $account->id,
+                'beds24_room_id' => '726384',
+                'showdata' => "This is some random text\nIt is not a showdata feed.",
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status');
+
+        $this->assertStringContainsString('No pricing rows', (string) session('status'));
+        $this->assertStringContainsString('No pricing rows', (string) $account->refresh()->last_error);
+        $this->assertSame(0, ChannelPricingSnapshot::query()->count());
+    }
+
+    public function test_paste_requires_channels_configure_permission(): void
+    {
+        $account = ChannelAccount::factory()->create(['provider' => 'beds24', 'status' => 'active']);
+
+        $user = User::factory()->create();
+        $user->assignRole(Role::findByName('Finance Manager'));
+
+        $this->actingAs($user)
+            ->post(route('admin.channels.showdata.paste'), [
+                'account_id' => $account->id,
+                'beds24_room_id' => '726384',
+                'showdata' => $this->showDataBody('726384', [
+                    Carbon::today()->addDays(10)->format('D j M Y')."\t1\t69033222\t\t550.00\t2",
+                ]),
+            ])
+            ->assertForbidden();
+
+        $this->assertSame(0, ChannelPricingSnapshot::query()->count());
+    }
+
+    public function test_paste_rejects_non_beds24_account(): void
+    {
+        $account = ChannelAccount::factory()->create(['provider' => 'airbnb', 'status' => 'active']);
+
+        $this->actingAs($this->superAdmin())
+            ->post(route('admin.channels.showdata.paste'), [
+                'account_id' => $account->id,
+                'beds24_room_id' => '726384',
+                'showdata' => $this->showDataBody('726384', [
+                    Carbon::today()->addDays(10)->format('D j M Y')."\t1\t69033222\t\t550.00\t2",
+                ]),
+            ])
+            ->assertRedirect()
+            ->assertSessionHasErrors('error');
+
+        $this->assertSame(0, ChannelPricingSnapshot::query()->count());
     }
 }

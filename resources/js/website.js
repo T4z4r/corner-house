@@ -7,6 +7,9 @@ const CONFIG = Object.assign({
   bookingEndpoint: "",                        // e.g. "/booking/enquiry" - POSTs JSON
   availabilityUrl: "",                        // e.g. "/availability.json" - returns [{start:"YYYY-MM-DD", end:"YYYY-MM-DD"}] (end exclusive)
   nightlyRate: 950,                           // per night, whole house - placeholder
+  weekdayRate: 550,                           // Monday-Thursday night rate (direct base)
+  weekendRate: 625,                           // Friday-Sunday night rate (direct base)
+  directDiscount: 10,                         // direct-booking % discount applied to the estimate
   securityDeposit: 950,                       // refundable security deposit (direct bookings)
   cleaningFee: 250,                           // - placeholder
   minNights: 2,
@@ -160,10 +163,15 @@ function renderQuote(){
   const lines=document.getElementById("q-lines");
   if(checkIn && checkOut){
     const n=Math.round((checkOut-checkIn)/86400000);
-    document.getElementById("q-nights").textContent = `${n} night${n>1?"s":""} × ${gbp(CONFIG.nightlyRate)}`;
-    document.getElementById("q-accom").textContent = gbp(n*CONFIG.nightlyRate);
+    const isWeekend = d => [5,6,0].includes(d.getUTCDay());
+    let gross = 0;
+    for(let i=0;i<n;i++){ gross += isWeekend(addDays(checkIn,i)) ? CONFIG.weekendRate : CONFIG.weekdayRate; }
+    const discount = Math.round(gross * (CONFIG.directDiscount||0) / 100);
+    document.getElementById("q-nights").textContent = `${n} night${n>1?"s":""}`;
+    document.getElementById("q-accom").textContent = gbp(gross);
+    document.getElementById("q-discount").textContent = "−"+gbp(discount);
     document.getElementById("q-clean").textContent = gbp(CONFIG.cleaningFee);
-    document.getElementById("q-total").textContent = gbp(n*CONFIG.nightlyRate+CONFIG.cleaningFee);
+    document.getElementById("q-total").textContent = gbp(gross - discount + CONFIG.cleaningFee);
     document.getElementById("q-dep").textContent = gbp(CONFIG.securityDeposit);
     lines.hidden=false;
   } else lines.hidden=true;

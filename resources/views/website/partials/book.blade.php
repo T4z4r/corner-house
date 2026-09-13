@@ -67,6 +67,7 @@
                     </div>
                     <div class="lines" id="q-lines" hidden>
                         <div><span id="q-nights"></span><span id="q-accom"></span></div>
+                        <div><span>Direct-booking discount ({{ $site['config']['directDiscount'] ?? 10 }}%)</span><span id="q-discount"></span></div>
                         <div><span>Cleaning</span><span id="q-clean"></span></div>
                         <div class="total"><span>Estimated total</span><span id="q-total"></span></div>
                         <div class="dep"><span>Refundable security deposit</span><span id="q-dep"></span></div>

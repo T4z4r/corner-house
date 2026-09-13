@@ -191,6 +191,32 @@
                                                 </div>
                                             </div>
                                         </form>
+                                        <form method="POST" action="{{ route('admin.channels.showdata.paste') }}" class="mt-3 p-2 border rounded bg-body-secondary">
+                                            @csrf
+                                            <input type="hidden" name="account_id" value="{{ $account->id }}">
+                                            <div class="fw-semibold small mb-1">Paste showdata pricing feed</div>
+                                            <div class="row g-2 align-items-end">
+                                                <div class="col-6">
+                                                    <select name="room_id" class="form-select form-select-sm">
+                                                        <option value="">Corner House room (optional)</option>
+                                                        @foreach ($rooms->where('status', 'active') as $directRoom)
+                                                            <option value="{{ $directRoom->id }}">{{ $directRoom->name }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="col-6">
+                                                    <input name="beds24_room_id" class="form-control form-control-sm" placeholder="Beds24 room ID (e.g. 726384)" required>
+                                                </div>
+                                                <div class="col-12">
+                                                    <textarea name="showdata" class="form-control form-control-sm font-monospace" rows="5"
+                                                              placeholder="Paste the whole showdata.php output as-is from your Beds24 browser session…"
+                                                              required></textarea>
+                                                </div>
+                                                <div class="col-12">
+                                                    <button class="btn btn-sm btn-outline-secondary">Save pricing snapshot</button>
+                                                </div>
+                                            </div>
+                                        </form>
                                         @if (! empty($account->settings['scopes']))
                                             <div class="small text-muted mt-1">Scopes: {{ implode(', ', $account->settings['scopes']) }}</div>
                                         @endif
@@ -261,6 +287,43 @@
                             </div>
                         @empty
                             <div class="text-muted small">No mappings configured yet.</div>
+                        @endforelse
+                    </div>
+                </div>
+
+                {{-- Pasted showdata pricing snapshots --}}
+                <div class="card mt-4">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold"><i class="bi bi-cash-stack me-2"></i>Pasted showdata pricing feeds</span>
+                        <span class="small text-muted">Saved exactly as pasted from your Beds24 browser session.</span>
+                    </div>
+                    <div class="card-body p-0">
+                        @forelse ($pricingSnapshots as $snapshot)
+                            <div class="border-bottom px-3 py-2">
+                                <div class="d-flex justify-content-between gap-3 align-items-start">
+                                    <div>
+                                        <strong>Beds24 room {{ $snapshot->external_room_id }}</strong>
+                                        @if ($snapshot->rate_code)
+                                            <span class="ch-badge ch-badge-muted">rate {{ $snapshot->rate_code }}</span>
+                                        @endif
+                                        @if ($snapshot->room)
+                                            <span class="ch-badge ch-badge-muted">{{ $snapshot->room->name }}</span>
+                                        @endif
+                                        <div class="small text-muted">
+                                            {{ $snapshot->account?->name ?? 'Account' }}
+                                            · {{ $snapshot->date_from?->format('d M Y') ?? '?' }} → {{ $snapshot->date_to?->format('d M Y') ?? '?' }}
+                                            · {{ $snapshot->open_days }} open / {{ $snapshot->closed_days }} closed
+                                            · {{ $snapshot->synced_at?->diffForHumans() ?? '—' }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <details class="mt-1">
+                                    <summary class="small text-muted">View raw feed</summary>
+                                    <textarea class="form-control form-control-sm font-monospace small mt-1" readonly rows="6">{{ $snapshot->raw_data }}</textarea>
+                                </details>
+                            </div>
+                        @empty
+                            <div class="text-muted small px-3 py-3">No pasted showdata feeds yet.</div>
                         @endforelse
                     </div>
                 </div>

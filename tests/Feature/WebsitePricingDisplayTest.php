@@ -62,6 +62,20 @@ class WebsitePricingDisplayTest extends TestCase
             ->assertSee('direct-booking discount', false);
     }
 
+    public function test_booking_widget_config_carries_weekday_weekend_and_discount_values(): void
+    {
+        $property = Property::factory()->create(['status' => 'active']);
+        $this->makeActiveRoom($property);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('window.__SITE__', false)
+            ->assertSee('"weekdayRate":550', false)
+            ->assertSee('"weekendRate":625', false)
+            ->assertSee('"directDiscount":10', false)
+            ->assertSee('Direct-booking discount (10%)', false);
+    }
+
     public function test_booking_details_shows_direct_discount_line(): void
     {
         $property = Property::factory()->create(['status' => 'active']);

@@ -101,6 +101,9 @@ class WebsiteContentService
             'cleaningFee' => (int) Setting::getValue('cleaning_fee', 250),
             'minNights' => (int) Setting::getValue('min_stay_nights', 2),
             'monthsAhead' => (int) Setting::getValue('website_months_ahead', 18),
+            'weekdayRate' => (int) (Setting::getValue('min_price_weekday') ?: Setting::getValue('nightly_rate', 950)),
+            'weekendRate' => (int) (Setting::getValue('min_price_weekend') ?: Setting::getValue('nightly_rate', 950)),
+            'directDiscount' => (int) Setting::getValue('direct_booking_discount', 10),
             'sampleBlocked' => is_array($availability) ? array_values($availability) : [],
         ];
     }
