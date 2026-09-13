@@ -12,6 +12,7 @@ use App\Services\Notification\SystemNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -53,10 +54,15 @@ class ReservationController extends Controller
 
     public function fetchFromBeds24(): RedirectResponse
     {
-        FetchBeds24BookingsJob::dispatch();
+        try {
+            Bus::dispatchSync(new FetchBeds24BookingsJob());
+        } catch (\Throwable $e) {
+            return back()->withErrors(['error' => 'Beds24 bookings fetch failed: '.$e->getMessage()]);
+        }
+
         $this->auditLogger->log('channels.fetch_bookings', 'channels');
 
-        return back()->with('status', 'Beds24 bookings fetch queued. New and changed bookings will be imported.');
+        return back()->with('status', 'Beds24 bookings fetched. New and changed bookings have been imported.');
     }
 
     public function export(Request $request): StreamedResponse|View

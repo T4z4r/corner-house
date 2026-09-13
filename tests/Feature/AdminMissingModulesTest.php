@@ -161,16 +161,13 @@ class AdminMissingModulesTest extends TestCase
             ->assertSee('Fetch from Beds24');
     }
 
-    public function test_super_admin_can_queue_a_fetch_of_beds24_bookings(): void
+    public function test_super_admin_can_fetch_beds24_bookings_immediately(): void
     {
-        Queue::fake([FetchBeds24BookingsJob::class]);
-
         $this->actingAs($this->superAdmin())
             ->post(route('admin.reservations.fetch-beds24'))
             ->assertRedirect()
-            ->assertSessionHas('status', 'Beds24 bookings fetch queued. New and changed bookings will be imported.');
+            ->assertSessionHas('status', 'Beds24 bookings fetched. New and changed bookings have been imported.');
 
-        Queue::assertPushed(FetchBeds24BookingsJob::class);
         $this->assertDatabaseHas('audit_logs', ['action' => 'channels.fetch_bookings']);
     }
 
