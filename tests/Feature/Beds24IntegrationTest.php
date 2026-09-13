@@ -2540,6 +2540,32 @@ XML;
         $this->assertStringContainsString('failed', strtolower((string) $account->refresh()->last_error));
     }
 
+    public function test_booking_com_rate_mapping_reports_non_xml_body_instead_of_invalid_xml(): void
+    {
+        $account = ChannelAccount::factory()->create(['provider' => 'beds24', 'status' => 'active']);
+
+        Http::fake([
+            '*getmapping*' => Http::response('error', 200, ['content-type' => 'text/html']),
+        ]);
+
+        $this->actingAs($this->superAdmin())
+            ->post(route('admin.channels.booking-mapping.sync'), [
+                'account_id' => $account->id,
+                'propid' => '352139',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status');
+
+        $status = (string) session('status');
+
+        $this->assertStringContainsString('could not sync', strtolower($status));
+        $this->assertStringContainsString('not XML', $status);
+        $this->assertStringContainsString('error', $status);
+        $this->assertStringContainsString('unauthorised', strtolower($account->refresh()->last_error));
+
+        $this->assertDatabaseCount('channel_rate_maps', 0);
+    }
+
     public function test_booking_com_rate_mapping_page_shows_stored_rates(): void
     {
         $account = ChannelAccount::factory()->create(['provider' => 'beds24', 'status' => 'active']);
