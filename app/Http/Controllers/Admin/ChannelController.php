@@ -939,6 +939,15 @@ class ChannelController extends Controller
 
     public function sync(): RedirectResponse
     {
+        $eligible = ChannelAccount::query()
+            ->where('provider', 'beds24')
+            ->get()
+            ->contains(fn (ChannelAccount $account): bool => $account->isSyncEligible());
+
+        if (! $eligible) {
+            return back()->withErrors(['error' => 'No Beds24 account is connected yet. Enter an invitation code (or refresh token) on the Integrations page before syncing.']);
+        }
+
         SyncBeds24BookingsJob::dispatch();
         SyncBeds24MessagesJob::dispatch();
         PushBeds24RatesJob::dispatch();
@@ -982,6 +991,7 @@ class ChannelController extends Controller
             ->map(fn (ChannelAccount $account): array => [
                 'id' => $account->id,
                 'name' => $account->name,
+                'eligible' => $account->isSyncEligible(),
             ])
             ->values();
 

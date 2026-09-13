@@ -186,4 +186,47 @@ class ChannelSyncProgressTest extends TestCase
             ->getJson(route('admin.channels.sync.progress'))
             ->assertForbidden();
     }
+
+    public function test_sync_logs_a_failed_run_when_the_account_has_no_credentials(): void
+    {
+        $account = ChannelAccount::factory()->create([
+            'provider' => 'beds24',
+            'status' => 'error',
+            'credentials' => [],
+        ]);
+
+        app(SyncBeds24BookingsJob::class)->handle(
+            app(Beds24SyncService::class),
+            app(Beds24AlertService::class),
+        );
+
+        $log = ChannelSyncLog::query()->where('operation', 'full_sync')->firstOrFail();
+
+        $this->assertSame('failed', $log->status);
+        $this->assertSame($account->id, $log->channel_account_id);
+        $this->assertStringContainsString('invitation code', $log->error_message);
+        $this->assertNotNull($log->completed_at);
+
+        $this->actingAs($this->superAdmin())
+            ->getJson(route('admin.channels.sync.progress'))
+            ->assertOk()
+            ->assertJsonPath('runs.0.status', 'failed')
+            ->assertJsonPath('runs.0.error_message', $log->error_message)
+            ->assertJsonPath('accounts.0.eligible', false);
+    }
+
+    public function test_sync_endpoint_warns_when_no_account_has_credentials(): void
+    {
+        ChannelAccount::factory()->create([
+            'provider' => 'beds24',
+            'status' => 'error',
+            'credentials' => [],
+        ]);
+
+        $this->actingAs($this->superAdmin())
+            ->from(route('admin.channels.index'))
+            ->post(route('admin.channels.sync'))
+            ->assertRedirect(route('admin.channels.index'))
+            ->assertSessionHasErrors(['error' => 'No Beds24 account is connected yet. Enter an invitation code (or refresh token) on the Integrations page before syncing.']);
+    }
 }

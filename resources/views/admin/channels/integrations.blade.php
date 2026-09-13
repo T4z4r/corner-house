@@ -939,6 +939,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         ? run.steps.map(stepRow).join('')
                         : '<li class="d-flex align-items-center gap-2 py-1"><span class="spinner-border spinner-border-sm text-primary" role="status"></span><span class="fw-semibold">Starting…</span></li>')}
             </ul>
+            ${run.status === 'failed' && run.error_message
+                ? `<div class="small text-danger mt-2">${esc(run.error_message)}</div>`
+                : ''}
         </div>`;
 
     let syncPollTimer = null;
@@ -1019,6 +1022,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const queuedAccounts = expectedAccounts.filter((account) => !coveredIds.has(account.id));
 
             if (ourRuns.length === 0) {
+                const anyEligible = expectedAccounts.some((account) => account.eligible);
+                if (!anyEligible) {
+                    renderSyncError('No Beds24 account has valid credentials. Enter an invitation code (or refresh token) on the Integrations page to connect.');
+                    return;
+                }
                 if (Date.now() - syncRequestedAt > 120000) {
                     renderSyncError('No sync activity detected yet. Check that the queue worker is running and review the sync logs table.');
                 } else {

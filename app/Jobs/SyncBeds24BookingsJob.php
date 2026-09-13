@@ -24,6 +24,16 @@ class SyncBeds24BookingsJob implements ShouldQueue
                 ->where('provider', 'beds24')
                 ->each(function (ChannelAccount $account) use ($sync, $alerts): void {
                     if (! $account->isSyncEligible()) {
+                        ChannelSyncLog::create([
+                            'channel_account_id' => $account->id,
+                            'channel' => $account->provider,
+                            'operation' => 'full_sync',
+                            'status' => 'failed',
+                            'error_message' => 'This Beds24 account has no valid credentials. Enter an invitation code (or refresh token) on the Integrations page to reconnect.',
+                            'started_at' => now(),
+                            'completed_at' => now(),
+                        ]);
+
                         return;
                     }
 

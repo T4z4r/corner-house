@@ -250,6 +250,8 @@ class Beds24SyncReliabilityTest extends TestCase
         Queue::fake();
         Http::fake();
 
+        $this->beds24Account();
+
         $this->actingAs($this->superAdmin())
             ->post(route('admin.channels.sync'))
             ->assertRedirect();
