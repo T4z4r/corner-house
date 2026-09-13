@@ -106,7 +106,10 @@ class Beds24SyncReliabilityTest extends TestCase
             '*inventory/rooms/calendar*' => Http::response(['data' => []], 200),
         ]);
 
-        app(SyncBeds24BookingsJob::class)->handle(app(Beds24SyncService::class));
+        app(SyncBeds24BookingsJob::class)->handle(
+            app(Beds24SyncService::class),
+            app(\App\Services\Beds24\Beds24AlertService::class),
+        );
 
         $this->assertDatabaseHas('reservations', [
             'external_channel' => 'beds24',
