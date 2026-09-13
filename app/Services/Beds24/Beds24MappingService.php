@@ -138,13 +138,29 @@ class Beds24MappingService
 
     private function asXml(string $xml): SimpleXMLElement
     {
-        $root = @simplexml_load_string(trim($xml));
+        $body = trim($xml);
 
-        if ($root === false) {
-            throw new RuntimeException('Beds24 booking mapping returned invalid XML.');
+        $root = @simplexml_load_string($body);
+
+        if ($root instanceof SimpleXMLElement) {
+            return $root;
         }
 
-        return $root;
+        // A feed problem, not a parser problem: Beds24's getmapping endpoint
+        // answers "error" (200 OK, non-XML) to clients without a valid Beds24
+        // session cookie, and the legacy endpoint also fails on malformed XML.
+        // Surface the actual body so the admin message names the real cause.
+        if ($body === '') {
+            throw new RuntimeException('Beds24 booking mapping returned an empty response.');
+        }
+
+        $type = str_starts_with($body, '<') ? 'malformed XML' : 'not XML';
+        $snippet = ' Response ('.strlen($body).' bytes): "'.mb_substr($body, 0, 160).'"';
+        $hint = $type === 'not XML'
+            ? 'The Beds24 getmapping feed is rejecting unauthorised requests — it often returns "error" to server-side clients (browsers show the real XML because they carry a logged-in Beds24 session).'
+            : '';
+
+        throw new RuntimeException('Beds24 booking mapping returned '.$type.$snippet.'.'.$hint);
     }
 
     private function attribute(SimpleXMLElement $node, string $name): ?string
