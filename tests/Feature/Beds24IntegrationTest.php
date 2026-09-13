@@ -817,6 +817,15 @@ class Beds24IntegrationTest extends TestCase
         ]);
 
         Http::fake([
+            '*properties/rooms*' => Http::response([
+                'data' => [[
+                    'id' => 77,
+                    'propertyId' => 2001,
+                    'name' => 'Oak Suite',
+                    'maxPeople' => 3,
+                    'minStay' => 2,
+                ]],
+            ], 200),
             '*properties*' => Http::response([
                 'data' => [[
                     'id' => 1001,
@@ -1039,6 +1048,7 @@ class Beds24IntegrationTest extends TestCase
             && str_contains($request->url(), 'endDate')
             && str_contains($request->url(), 'includeNumAvail')
             && str_contains($request->url(), 'includePrices'));
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'properties/rooms'));
     }
 
     public function test_full_sync_replaces_overlapping_channel_blocks(): void

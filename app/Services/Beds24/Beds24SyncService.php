@@ -34,6 +34,8 @@ class Beds24SyncService
 
         try {
             $catalog = $this->syncCatalog($account);
+            $rooms = $this->syncRooms($account);
+            $catalog['rooms'] = max($catalog['rooms'], $rooms['rooms']);
             $this->markStep($syncLogId, $steps, 'catalog', 'completed', sprintf(
                 'Synced %d propert%s, %d room%s.',
                 $catalog['properties'],
