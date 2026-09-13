@@ -51,6 +51,8 @@ class SettingsSeeder extends Seeder
             ['group' => 'notifications', 'key' => 'email_pre_arrival_enabled', 'value' => '1', 'label' => 'Pre-arrival emails', 'cast' => 'boolean'],
             ['group' => 'notifications', 'key' => 'email_check_in_enabled', 'value' => '1', 'label' => 'Check-in emails', 'cast' => 'boolean'],
             ['group' => 'notifications', 'key' => 'email_check_out_enabled', 'value' => '1', 'label' => 'Check-out emails', 'cast' => 'boolean'],
+            ['group' => 'notifications', 'key' => 'beds24_alert_email', 'value' => 'tazarchriss@gmail.com', 'label' => 'Beds24 sync alert recipient email', 'cast' => 'string'],
+            ['group' => 'notifications', 'key' => 'beds24_alert_min_interval', 'value' => '360', 'label' => 'Minimum minutes between Beds24 sync alerts', 'cast' => 'integer'],
             ['group' => 'ai', 'key' => 'ai_provider', 'value' => 'openai', 'label' => 'AI provider', 'cast' => 'string'],
             ['group' => 'ai', 'key' => 'openai_api_key', 'value' => '', 'label' => 'OpenAI API key', 'cast' => 'secret'],
             ['group' => 'ai', 'key' => 'openai_model', 'value' => 'gpt-4o-mini', 'label' => 'OpenAI model', 'cast' => 'string'],
