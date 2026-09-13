@@ -11,6 +11,7 @@ use App\Models\Property;
 use App\Models\Room;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\Beds24\Beds24AlertService;
 use App\Services\Beds24\Beds24MessageService;
 use App\Services\Beds24\Beds24SyncService;
 use Database\Seeders\RoleAndPermissionSeeder;
@@ -108,7 +109,7 @@ class Beds24SyncReliabilityTest extends TestCase
 
         app(SyncBeds24BookingsJob::class)->handle(
             app(Beds24SyncService::class),
-            app(\App\Services\Beds24\Beds24AlertService::class),
+            app(Beds24AlertService::class),
         );
 
         $this->assertDatabaseHas('reservations', [
@@ -134,7 +135,10 @@ class Beds24SyncReliabilityTest extends TestCase
 
         Http::fake();
 
-        app(SyncBeds24BookingsJob::class)->handle(app(Beds24SyncService::class));
+        app(SyncBeds24BookingsJob::class)->handle(
+            app(Beds24SyncService::class),
+            app(Beds24AlertService::class),
+        );
 
         Http::assertNothingSent();
         $this->assertDatabaseCount('reservations', 0);
