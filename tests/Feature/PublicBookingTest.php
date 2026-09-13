@@ -61,6 +61,24 @@ class PublicBookingTest extends TestCase
         ]))->assertRedirect(route('booking.search'));
     }
 
+    public function test_details_page_total_includes_damage_deposit(): void
+    {
+        $room = Room::factory()->create(['base_rate' => 100, 'status' => 'active', 'capacity' => 2]);
+        Setting::updateOrCreate(['key' => 'damage_deposit'], ['value' => '950']);
+        $checkIn = now()->addDays(10)->toDateString();
+        $checkOut = now()->addDays(12)->toDateString();
+
+        $this->get(route('booking.details', [
+            'room' => $room,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'guests' => 1,
+        ]))
+            ->assertOk()
+            ->assertSee('Damage deposit')
+            ->assertSee('£1,150.00');
+    }
+
     public function test_check_in_on_the_checkout_day_is_rejected(): void
     {
         $room = Room::factory()->create(['base_rate' => 100, 'status' => 'active']);

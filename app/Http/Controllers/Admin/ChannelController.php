@@ -947,6 +947,47 @@ class ChannelController extends Controller
         return back()->with('status', 'Beds24 sync queued. Properties, rooms, bookings, calendar, messages and rates will be aligned.');
     }
 
+    /**
+     * Latest full-sync run per account, used by the sync progress modal.
+     */
+    public function progress(): JsonResponse
+    {
+        $runs = ChannelSyncLog::query()
+            ->where('operation', 'full_sync')
+            ->whereIn('id', function ($query) {
+                $query->selectRaw('MAX(id)')
+                    ->from('channel_sync_logs')
+                    ->where('operation', 'full_sync')
+                    ->groupBy('channel_account_id');
+            })
+            ->with('account:id,name')
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn (ChannelSyncLog $log): array => [
+                'id' => $log->id,
+                'account_id' => $log->channel_account_id,
+                'account_name' => $log->account?->name ?? 'Beds24',
+                'status' => $log->status,
+                'steps' => $log->steps ?? [],
+                'error_message' => $log->error_message,
+                'started_at' => $log->started_at?->toIso8601String(),
+                'completed_at' => $log->completed_at?->toIso8601String(),
+            ])
+            ->values();
+
+        $accounts = ChannelAccount::query()
+            ->where('provider', 'beds24')
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (ChannelAccount $account): array => [
+                'id' => $account->id,
+                'name' => $account->name,
+            ])
+            ->values();
+
+        return response()->json(['runs' => $runs, 'accounts' => $accounts]);
+    }
+
     private function publishReservation(
         Reservation $reservation,
         Beds24BookingPublisher $publisher,

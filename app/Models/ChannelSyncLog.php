@@ -14,6 +14,7 @@ class ChannelSyncLog extends Model
         'channel_account_id',
         'channel',
         'operation',
+        'steps',
         'request',
         'response',
         'status',
@@ -24,6 +25,7 @@ class ChannelSyncLog extends Model
     ];
 
     protected $casts = [
+        'steps' => 'array',
         'request' => 'array',
         'response' => 'array',
         'started_at' => 'datetime',

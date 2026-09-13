@@ -14,7 +14,6 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         then: function (): void {
             Route::middleware('api')
-                ->prefix('webhooks')
                 ->group(base_path('routes/webhooks.php'));
         },
     )

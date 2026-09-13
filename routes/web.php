@@ -318,6 +318,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::post('/channels/{account}/details', [ChannelController::class, 'details'])->name('channels.details')->middleware('can:channels.configure');
         Route::post('/channels/{account}/test', [ChannelController::class, 'test'])->name('channels.test')->middleware('can:channels.configure');
         Route::post('/channels/sync', [ChannelController::class, 'sync'])->name('channels.sync')->middleware('can:channels.sync');
+        Route::get('/channels/sync/progress', [ChannelController::class, 'progress'])->name('channels.sync.progress')->middleware('can:channels.sync');
     });
 
     Route::middleware('can:communications.view')->group(function (): void {

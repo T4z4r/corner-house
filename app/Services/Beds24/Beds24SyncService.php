@@ -5,6 +5,7 @@ namespace App\Services\Beds24;
 use App\Models\CalendarBlock;
 use App\Models\ChannelAccount;
 use App\Models\ChannelMapping;
+use App\Models\ChannelSyncLog;
 use App\Models\PricingOverride;
 use App\Models\Property;
 use App\Models\Reservation;
@@ -25,40 +26,70 @@ class Beds24SyncService
     /**
      * @return array{properties: int, rooms: int, bookings: int, bookings_pushed: int, overrides: int, blocks: int, errors: string[]}
      */
-    public function synchronize(ChannelAccount $account): array
+    public function synchronize(ChannelAccount $account, ?int $syncLogId = null): array
     {
         $errors = [];
+        $steps = $this->initialSyncSteps();
+        $this->persistSteps($syncLogId, $steps);
 
         try {
             $catalog = $this->syncCatalog($account);
+            $this->markStep($syncLogId, $steps, 'catalog', 'completed', sprintf(
+                'Synced %d propert%s, %d room%s.',
+                $catalog['properties'],
+                $catalog['properties'] === 1 ? 'y' : 'ies',
+                $catalog['rooms'],
+                $catalog['rooms'] === 1 ? '' : 's',
+            ));
         } catch (\Throwable $e) {
             Log::error('Beds24 catalog sync failed', ['account_id' => $account->id, 'message' => $e->getMessage()]);
             $errors[] = 'catalog: '.$e->getMessage();
             $catalog = ['properties' => 0, 'rooms' => 0];
+            $this->markStep($syncLogId, $steps, 'catalog', 'failed', $e->getMessage());
         }
 
         try {
             $bookings = $this->channels->syncBookings($account, true);
+            $this->markStep($syncLogId, $steps, 'bookings', 'completed', sprintf(
+                '%d booking%s imported.',
+                $bookings,
+                $bookings === 1 ? '' : 's',
+            ));
         } catch (\Throwable $e) {
             Log::error('Beds24 bookings sync failed', ['account_id' => $account->id, 'message' => $e->getMessage()]);
             $errors[] = 'bookings: '.$e->getMessage();
             $bookings = 0;
+            $this->markStep($syncLogId, $steps, 'bookings', 'failed', $e->getMessage());
         }
 
         try {
             $bookingsPushed = $this->pushPendingBookings($account);
+            $this->markStep($syncLogId, $steps, 'bookings_push', 'completed', sprintf(
+                '%d booking%s published.',
+                $bookingsPushed,
+                $bookingsPushed === 1 ? '' : 's',
+            ));
         } catch (\Throwable $e) {
             Log::error('Beds24 bookings push failed', ['account_id' => $account->id, 'message' => $e->getMessage()]);
             $errors[] = 'bookings_push: '.$e->getMessage();
             $bookingsPushed = 0;
+            $this->markStep($syncLogId, $steps, 'bookings_push', 'failed', $e->getMessage());
         }
 
         try {
             $calendar = $this->syncCalendar($account);
+            $this->markStep($syncLogId, $steps, 'calendar', 'completed', sprintf(
+                '%d price override%s, %d blocked range%s applied.',
+                $calendar['overrides'],
+                $calendar['overrides'] === 1 ? '' : 's',
+                $calendar['blocks'],
+                $calendar['blocks'] === 1 ? '' : 's',
+            ));
         } catch (\Throwable $e) {
             Log::error('Beds24 calendar sync failed', ['account_id' => $account->id, 'message' => $e->getMessage()]);
             $errors[] = 'calendar: '.$e->getMessage();
             $calendar = ['overrides' => 0, 'blocks' => 0];
+            $this->markStep($syncLogId, $steps, 'calendar', 'failed', $e->getMessage());
         }
 
         $account->update([
@@ -736,6 +767,41 @@ class Beds24SyncService
         }
 
         return $ranges;
+    }
+
+    /**
+     * @return array<int, array{step: string, label: string, status: string, detail: ?string}>
+     */
+    private function initialSyncSteps(): array
+    {
+        return [
+            ['step' => 'catalog', 'label' => 'Properties & rooms', 'status' => 'waiting', 'detail' => null],
+            ['step' => 'bookings', 'label' => 'Import bookings', 'status' => 'waiting', 'detail' => null],
+            ['step' => 'bookings_push', 'label' => 'Publish local bookings', 'status' => 'waiting', 'detail' => null],
+            ['step' => 'calendar', 'label' => 'Calendar prices & blocks', 'status' => 'waiting', 'detail' => null],
+        ];
+    }
+
+    private function persistSteps(?int $syncLogId, array $steps): void
+    {
+        if ($syncLogId === null) {
+            return;
+        }
+
+        ChannelSyncLog::query()->whereKey($syncLogId)->update(['steps' => $steps]);
+    }
+
+    private function markStep(?int $syncLogId, array &$steps, string $key, string $status, string $detail): void
+    {
+        foreach ($steps as $index => $step) {
+            if (($step['step'] ?? null) === $key) {
+                $steps[$index]['status'] = $status;
+                $steps[$index]['detail'] = $detail;
+                break;
+            }
+        }
+
+        $this->persistSteps($syncLogId, $steps);
     }
 
     private function uniquePropertySlug(string $name, string $externalId): string

@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Jobs\Concerns\TracksCronRun;
 use App\Models\ChannelAccount;
+use App\Models\ChannelSyncLog;
 use App\Services\Beds24\Beds24AlertService;
 use App\Services\Beds24\Beds24SyncService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -26,8 +27,22 @@ class SyncBeds24BookingsJob implements ShouldQueue
                         return;
                     }
 
+                    $log = ChannelSyncLog::create([
+                        'channel_account_id' => $account->id,
+                        'channel' => $account->provider,
+                        'operation' => 'full_sync',
+                        'status' => 'pending',
+                        'started_at' => now(),
+                    ]);
+
                     try {
-                        $summary = $sync->synchronize($account);
+                        $summary = $sync->synchronize($account, $log->id);
+
+                        $log->update([
+                            'status' => $summary['errors'] !== [] ? 'failed' : 'success',
+                            'error_message' => $summary['errors'] !== [] ? implode('; ', $summary['errors']) : null,
+                            'completed_at' => now(),
+                        ]);
 
                         Log::info('Beds24 sync complete', [
                             'account_id' => $account->id,
@@ -45,6 +60,11 @@ class SyncBeds24BookingsJob implements ShouldQueue
                             $alerts->notifyFailure($account, $summary['errors']);
                         }
                     } catch (\Throwable $e) {
+                        $log->update([
+                            'status' => 'failed',
+                            'error_message' => $e->getMessage(),
+                            'completed_at' => now(),
+                        ]);
                         $account->update(['status' => 'error', 'last_error' => $e->getMessage()]);
                         Log::error('Beds24 sync failed', ['account_id' => $account->id, 'message' => $e->getMessage()]);
 

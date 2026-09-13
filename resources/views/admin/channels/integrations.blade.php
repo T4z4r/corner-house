@@ -15,7 +15,7 @@
             <a href="{{ route('admin.channels.setup.page') }}" class="btn btn-outline-primary">Beds24 setup</a>
         @endcan
         @can('channels.sync')
-            <form method="POST" action="{{ route('admin.channels.sync') }}">@csrf<button class="btn btn-ch-primary">Sync from Beds24</button></form>
+            <button type="button" id="syncFromBeds24Btn" class="btn btn-ch-primary"><i class="bi bi-arrow-repeat me-1"></i>Sync from Beds24</button>
         @endcan
     </div>
 </div>
@@ -676,6 +676,29 @@
     </div>
 </div>
 
+{{-- Sync Progress Modal --}}
+<div class="modal fade" id="syncProgressModal" tabindex="-1" aria-labelledby="syncProgressModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title mb-1" id="syncProgressModalLabel"><i class="bi bi-arrow-repeat me-2 text-primary"></i>Syncing from Beds24</h5>
+                    <div class="small text-muted" id="syncProgressModalSubtitle">Queued…</div>
+                </div>
+            </div>
+            <div class="modal-body" id="syncProgressModalBody">
+                <div class="d-flex justify-content-center py-4">
+                    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading…</span></div>
+                </div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-outline-secondary" id="syncProgressRefreshBtn"><i class="bi bi-arrow-clockwise me-1"></i>Refresh</button>
+                <button type="button" class="btn btn-ch-primary" id="syncProgressCloseBtn" data-bs-dismiss="modal" disabled>Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Log Details Modal --}}
 <div class="modal fade" id="beds24LogModal" tabindex="-1" aria-labelledby="beds24LogModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -838,8 +861,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     const form = document.getElementById('beds24TestForm');
-    if (!form) return;
-    form.addEventListener('submit', async function (event) {
+    if (form) {
+        form.addEventListener('submit', async function (event) {
         event.preventDefault();
         const accountId = document.getElementById('beds24Account').value;
         const result = document.getElementById('beds24Result');
@@ -860,6 +883,210 @@ document.addEventListener('DOMContentLoaded', function () {
             result.textContent = 'Request failed.';
         }
     });
+    }
+
+    // ---- Sync from Beds24: progress modal ----
+    const syncBtn = document.getElementById('syncFromBeds24Btn');
+    const syncModalEl = document.getElementById('syncProgressModal');
+    const syncModal = syncModalEl ? new bootstrap.Modal(syncModalEl) : null;
+    const syncBody = document.getElementById('syncProgressModalBody');
+    const syncSubtitle = document.getElementById('syncProgressModalSubtitle');
+    const syncCloseBtn = document.getElementById('syncProgressCloseBtn');
+    const syncRefreshBtn = document.getElementById('syncProgressRefreshBtn');
+
+    const esc = (value) => {
+        const div = document.createElement('div');
+        div.textContent = value === null || value === undefined ? '' : String(value);
+        return div.innerHTML;
+    };
+
+    const stepIcon = (status) => {
+        if (status === 'running') {
+            return '<span class="spinner-border spinner-border-sm text-primary" role="status"></span>';
+        }
+        if (status === 'completed') {
+            return '<i class="bi bi-check-circle-fill text-success"></i>';
+        }
+        if (status === 'failed') {
+            return '<i class="bi bi-x-circle-fill text-danger"></i>';
+        }
+        return '<i class="bi bi-circle text-muted"></i>';
+    };
+
+    const stepRow = (step) => `
+        <li class="d-flex align-items-center gap-2 py-1">
+            ${stepIcon(step.status)}
+            <span class="fw-semibold">${esc(step.label ?? step.step)}</span>
+            <span class="ms-auto small text-muted text-end">${step.detail ? esc(step.detail) : ''}</span>
+        </li>`;
+
+    const runCard = (run, queued) => `
+        <div class="border rounded p-3 mb-3 ${queued || run.status === 'pending' ? 'border-primary' : ''}">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <strong>${esc(run.account_name)}</strong>
+                ${queued
+                    ? '<span class="badge bg-secondary">Queued</span>'
+                    : (run.status === 'pending'
+                        ? '<span class="badge bg-warning">In progress</span>'
+                        : (run.status === 'success'
+                            ? '<span class="badge bg-success">Completed</span>'
+                            : '<span class="badge bg-danger">Failed</span>'))}
+            </div>
+            <ul class="list-unstyled mb-0">
+                ${queued
+                    ? '<li class="d-flex align-items-center gap-2 py-1"><span class="spinner-border spinner-border-sm text-secondary" role="status"></span><span class="fw-semibold">Waiting to start…</span></li>'
+                    : (Array.isArray(run.steps) && run.steps.length
+                        ? run.steps.map(stepRow).join('')
+                        : '<li class="d-flex align-items-center gap-2 py-1"><span class="spinner-border spinner-border-sm text-primary" role="status"></span><span class="fw-semibold">Starting…</span></li>')}
+            </ul>
+        </div>`;
+
+    let syncPollTimer = null;
+    let syncRequestedAt = 0;
+
+    const stopSyncPoll = () => {
+        if (syncPollTimer) {
+            clearInterval(syncPollTimer);
+            syncPollTimer = null;
+        }
+    };
+
+    const setCloseEnabled = (enabled) => {
+        if (syncCloseBtn) {
+            syncCloseBtn.disabled = !enabled;
+        }
+    };
+
+    const renderSyncQueued = () => {
+        if (syncSubtitle) {
+            syncSubtitle.textContent = 'Queued — waiting for the worker to pick it up…';
+        }
+        if (syncBody) {
+            syncBody.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary mb-3" role="status"><span class="visually-hidden">Loading…</span></div>
+                    <div class="small text-muted">The sync has been dispatched. Progress will appear here once the worker starts.</div>
+                </div>`;
+        }
+    };
+
+    const renderSyncDone = () => {
+        if (syncSubtitle) {
+            syncSubtitle.textContent = 'Sync finished.';
+        }
+        setCloseEnabled(true);
+    };
+
+    const renderSyncError = (message) => {
+        stopSyncPoll();
+        if (syncSubtitle) {
+            syncSubtitle.textContent = 'Sync monitoring stopped.';
+        }
+        if (syncBody) {
+            syncBody.innerHTML = `<div class="alert alert-danger mb-0">${esc(message)}</div>`;
+        }
+        setCloseEnabled(true);
+    };
+
+    const pollSyncProgress = async () => {
+        try {
+            const response = await fetch('{{ route('admin.channels.sync.progress') }}', {
+                headers: jsonHeaders,
+            });
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+            const data = await response.json();
+            const runs = data.runs ?? [];
+            const expectedAccounts = data.accounts ?? [];
+
+            const ourRuns = runs.filter((run) => {
+                const started = run.started_at ? new Date(run.started_at).getTime() : 0;
+                return started >= syncRequestedAt - 2000;
+            });
+
+            if (expectedAccounts.length === 0) {
+                if (syncBody) {
+                    syncBody.innerHTML = `<div class="alert alert-info mb-0">No Beds24 accounts are configured.</div>`;
+                }
+                renderSyncDone();
+                return;
+            }
+
+            const coveredIds = new Set(
+                ourRuns.map((run) => run.account_id).filter((id) => id !== null && id !== undefined),
+            );
+            const queuedAccounts = expectedAccounts.filter((account) => !coveredIds.has(account.id));
+
+            if (ourRuns.length === 0) {
+                if (Date.now() - syncRequestedAt > 120000) {
+                    renderSyncError('No sync activity detected yet. Check that the queue worker is running and review the sync logs table.');
+                } else {
+                    renderSyncQueued();
+                }
+                return;
+            }
+
+            const allStepsDone = ourRuns.every((run) => run.status !== 'pending');
+            const allAccountsCovered = coveredIds.size === expectedAccounts.length;
+
+            if (syncBody) {
+                const queuedMarkup = queuedAccounts
+                    .map((account) => runCard({ account_name: account.name, status: null, steps: [] }, true))
+                    .join('');
+                syncBody.innerHTML = ourRuns.map((run) => runCard(run, false)).join('') + queuedMarkup;
+            }
+            if (syncSubtitle) {
+                syncSubtitle.textContent = allStepsDone ? 'Sync finished.' : 'Please wait while each part of the sync runs…';
+            }
+
+            if (allStepsDone && allAccountsCovered) {
+                stopSyncPoll();
+                setCloseEnabled(true);
+            }
+        } catch (e) {
+            renderSyncError('Could not reach the server: ' + e.message);
+        }
+    };
+
+    if (syncBtn) {
+        syncBtn.addEventListener('click', async function () {
+            this.disabled = true;
+            try {
+                const response = await fetch('{{ route('admin.channels.sync') }}', {
+                    method: 'POST',
+                    headers: jsonHeaders,
+                });
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+            } catch (e) {
+                this.disabled = false;
+                alert('Could not queue the sync: ' + e.message);
+                return;
+            } finally {
+                this.disabled = false;
+            }
+            syncRequestedAt = Date.now();
+            syncPollTimer = null;
+            renderSyncQueued();
+            setCloseEnabled(false);
+            if (syncModal) {
+                syncModal.show();
+            }
+            stopSyncPoll();
+            syncPollTimer = setInterval(pollSyncProgress, 1500);
+            pollSyncProgress();
+        });
+    }
+
+    if (syncRefreshBtn) {
+        syncRefreshBtn.addEventListener('click', pollSyncProgress);
+    }
+
+    if (syncModalEl) {
+        syncModalEl.addEventListener('hidden.bs.modal', stopSyncPoll);
+    }
 });
 </script>
 @endpush

@@ -119,6 +119,12 @@ class BookingController extends Controller
             return back()->withErrors(['check_in' => 'This stay exceeds the '.$quote['maximum_stay'].'-night maximum.']);
         }
 
+        // The damage deposit is collected up front with the stay, so it must be
+        // shown (and included in the total) here to match what holdAndPay charges.
+        $damageDeposit = (float) Setting::getValue('damage_deposit', 950);
+        $quote['damage_deposit'] = $damageDeposit;
+        $quote['total'] = round($quote['total'] + $damageDeposit, 2);
+
         // Max occupancy
         $maxAdults = (int) Setting::getValue('max_adults', 12);
         if ((int) $data['guests'] > $maxAdults) {
