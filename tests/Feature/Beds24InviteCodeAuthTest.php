@@ -22,7 +22,10 @@ class Beds24InviteCodeAuthTest extends TestCase
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
 
-        config(['services.beds24.refresh_token' => null]);
+        config([
+            'services.beds24.refresh_token' => null,
+            'services.beds24.invite_code' => null,
+        ]);
 
         Setting::firstOrCreate(['key' => 'min_price_weekday'], ['value' => '0', 'group' => 'booking', 'label' => 'Min weekday', 'cast' => 'decimal:2']);
         Setting::firstOrCreate(['key' => 'min_price_weekend'], ['value' => '0', 'group' => 'booking', 'label' => 'Min weekend', 'cast' => 'decimal:2']);
@@ -126,6 +129,28 @@ class Beds24InviteCodeAuthTest extends TestCase
         app(Beds24AuthService::class)->accessToken($account);
 
         Http::assertNothingSent();
+    }
+
+    public function test_access_token_can_be_minted_from_the_configured_invite_code(): void
+    {
+        config(['services.beds24.invite_code' => 'INVITE-FROM-ENV']);
+        $account = $this->accountWith([]);
+
+        Http::fake([
+            '*authentication/setup*' => Http::response([
+                'token' => 'access-from-env-invite',
+                'refreshToken' => 'refresh-from-env-invite',
+                'expiresIn' => 86400,
+            ], 200),
+        ]);
+
+        $token = app(Beds24AuthService::class)->accessToken($account);
+
+        $this->assertSame('access-from-env-invite', $token);
+        $account->refresh();
+        $this->assertSame('refresh-from-env-invite', $account->credentials['refresh_token']);
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'authentication/setup')
+            && $request->hasHeader('code', 'INVITE-FROM-ENV'));
     }
 
     public function test_access_token_falls_back_to_the_system_refresh_token_when_the_account_token_is_rejected(): void

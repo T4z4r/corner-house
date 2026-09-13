@@ -51,7 +51,9 @@ class Beds24AuthService
         }
 
         // 3. Last resort: re-exchange a stored invite code.
-        $inviteCode = $credentials['invite_code'] ?? $account->settings['invite_code'] ?? null;
+        $inviteCode = $credentials['invite_code']
+            ?? $account->settings['invite_code']
+            ?? config('services.beds24.invite_code');
 
         if (is_string($inviteCode) && $inviteCode !== '') {
             return $this->setup($account, $inviteCode)['token'];

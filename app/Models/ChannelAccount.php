@@ -79,7 +79,7 @@ class ChannelAccount extends Model
             return true;
         }
 
-        $fallback = config('services.beds24.refresh_token');
+        $fallback = config('services.beds24.refresh_token') ?: config('services.beds24.invite_code');
 
         return is_string($fallback) && $fallback !== '';
     }
