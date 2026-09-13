@@ -26,18 +26,31 @@ class Beds24AuthService
             return $access;
         }
 
-        $refresh = $credentials['refresh_token'] ?? config('services.beds24.refresh_token');
+        $accountRefresh = $credentials['refresh_token'] ?? null;
+        $systemRefresh = config('services.beds24.refresh_token');
 
-        if (is_string($refresh) && $refresh !== '') {
+        // 1. Try the account's stored refresh token.
+        if (is_string($accountRefresh) && $accountRefresh !== '') {
             try {
-                return $this->refreshAccessToken($account, $refresh);
-            } catch (\Throwable $e) {
-                if (empty($credentials['invite_code']) && empty($account->settings['invite_code'])) {
-                    throw $e;
-                }
+                return $this->refreshAccessToken($account, $accountRefresh);
+            } catch (\Throwable) {
+                // Token is dead — fall through to the system-wide fallback below.
             }
         }
 
+        // 2. Fall back to the system-wide refresh token (if it differs from the one just tried).
+        if (
+            is_string($systemRefresh) && $systemRefresh !== ''
+            && ($systemRefresh !== $accountRefresh)
+        ) {
+            try {
+                return $this->refreshAccessToken($account, $systemRefresh);
+            } catch (\Throwable) {
+                // System token also dead — fall through to invite-code exchange.
+            }
+        }
+
+        // 3. Last resort: re-exchange a stored invite code.
         $inviteCode = $credentials['invite_code'] ?? $account->settings['invite_code'] ?? null;
 
         if (is_string($inviteCode) && $inviteCode !== '') {

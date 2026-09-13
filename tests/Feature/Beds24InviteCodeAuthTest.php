@@ -103,6 +103,51 @@ class Beds24InviteCodeAuthTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_access_token_falls_back_to_the_system_refresh_token_when_the_account_token_is_rejected(): void
+    {
+        config(['services.beds24.refresh_token' => 'system-refresh-valid']);
+
+        $account = $this->accountWith([
+            'refresh_token' => 'stale-account-refresh',
+        ]);
+
+        Http::fake([
+            '*authentication/token*' => Http::sequence([
+                Http::response(['error' => 'Token not valid'], 401),
+                Http::response([
+                    'token' => 'access-from-system',
+                    'expiresIn' => 86400,
+                ], 200),
+            ]),
+        ]);
+
+        $token = app(Beds24AuthService::class)->accessToken($account);
+
+        $this->assertSame('access-from-system', $token);
+
+        $account->refresh();
+        $this->assertSame('system-refresh-valid', $account->credentials['refresh_token']);
+        $this->assertSame('access-from-system', $account->credentials['access_token']);
+    }
+
+    public function test_access_token_does_not_retry_a_system_token_identical_to_the_dead_account_token(): void
+    {
+        config(['services.beds24.refresh_token' => 'dead-system-refresh']);
+
+        $account = $this->accountWith([
+            'refresh_token' => 'dead-system-refresh',
+        ]);
+
+        Http::fake([
+            '*authentication/token*' => Http::response(['error' => 'Token not valid'], 401),
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        app(Beds24AuthService::class)->accessToken($account);
+
+        Http::assertSentCount(1);
+    }
+
     public function test_a_sync_powered_only_by_an_invite_code_imports_bookings(): void
     {
         $account = $this->accountWith(['invite_code' => 'INVITE-SYNC']);
