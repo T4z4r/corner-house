@@ -9,6 +9,7 @@ use App\Models\Setting;
 use App\Services\Audit\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
 class WebsiteManagementController extends Controller
@@ -147,18 +148,56 @@ class WebsiteManagementController extends Controller
 
     public function updatePlatforms(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'platform_airbnb_url' => ['nullable', 'url', 'max:500'],
-            'platform_booking_url' => ['nullable', 'url', 'max:500'],
-            'platform_vrbo_url' => ['nullable', 'url', 'max:500'],
-        ]);
+        $keys = ['platform_airbnb_url', 'platform_booking_url', 'platform_vrbo_url'];
 
-        foreach ($data as $key => $value) {
-            Setting::where('key', $key)->update(['value' => $value]);
+        $labels = [
+            'platform_airbnb_url' => 'Airbnb listing URL',
+            'platform_booking_url' => 'Booking.com listing URL',
+            'platform_vrbo_url' => 'Vrbo listing URL',
+        ];
+
+        $errors = [];
+
+        foreach ($keys as $key) {
+            $value = $request->input($key);
+
+            // Blank means "hide this platform" — store null so the public site
+            // stops showing its link, not a broken one.
+            if ($value === null || trim($value) === '') {
+                $this->savePlatformSetting($key, null, $labels[$key]);
+
+                continue;
+            }
+
+            $validator = Validator::make([$key => $value], [$key => ['url', 'max:500']]);
+
+            // An invalid URL in one field must not block the other two from
+            // saving. Report it and keep going.
+            if ($validator->fails()) {
+                $errors[$key] = $validator->errors()->first($key);
+
+                continue;
+            }
+
+            $this->savePlatformSetting($key, $value, $labels[$key]);
         }
 
         $this->auditLogger->log('platforms.updated', 'settings', 'settings', 'platforms');
 
-        return back()->with('status', 'Platform links updated.');
+        return back()
+            ->withErrors($errors)
+            ->with('status', 'Platform links updated.');
+    }
+
+    /**
+     * Save a platform URL through the model so the settings cache is
+     * invalidated, creating the setting row if it does not exist yet.
+     */
+    private function savePlatformSetting(string $key, ?string $value, string $label): void
+    {
+        Setting::updateOrCreate(
+            ['key' => $key],
+            ['group' => 'website', 'label' => $label, 'cast' => 'string', 'value' => $value],
+        );
     }
 }

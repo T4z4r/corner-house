@@ -12,6 +12,9 @@
         @can('reservations.create')
             <a href="{{ route('admin.reservations.create') }}" class="btn btn-ch-primary"><i class="bi bi-plus-lg me-1"></i>New booking</a>
         @endcan
+        @can('channels.sync')
+            <form method="POST" action="{{ route('admin.reservations.fetch-beds24') }}">@csrf<button class="btn btn-outline-primary"><i class="bi bi-arrow-repeat me-1"></i>Fetch from Beds24</button></form>
+        @endcan
     </div>
 
     <div class="ch-toolbar mb-3">

@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\FetchBeds24BookingsJob;
 use App\Models\Reservation;
+use App\Models\Setting;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -110,5 +113,78 @@ class AdminMissingModulesTest extends TestCase
             ])->assertRedirect();
 
         $this->assertDatabaseHas('communication_templates', ['name' => 'Welcome']);
+    }
+
+    public function test_platform_links_save_and_become_visible_on_the_booking_page(): void
+    {
+        $this->actingAs($this->superAdmin())
+            ->put(route('admin.website.platforms.update'), [
+                'platform_airbnb_url' => 'https://www.airbnb.co.uk/rooms/123456',
+                'platform_booking_url' => 'https://www.booking.com/hotel/gb/corner-house',
+                'platform_vrbo_url' => '',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status');
+
+        $this->assertSame('https://www.airbnb.co.uk/rooms/123456', Setting::getValue('platform_airbnb_url'));
+        $this->assertSame('https://www.booking.com/hotel/gb/corner-house', Setting::getValue('platform_booking_url'));
+        $this->assertNull(Setting::getValue('platform_vrbo_url'));
+        $this->assertDatabaseHas('audit_logs', ['action' => 'platforms.updated']);
+
+        $this->actingAs($this->superAdmin())
+            ->get(route('home'))
+            ->assertOk()
+            ->assertSee('https://www.airbnb.co.uk/rooms/123456', false)
+            ->assertSee('https://www.booking.com/hotel/gb/corner-house', false);
+    }
+
+    public function test_platform_links_save_even_when_one_url_is_invalid(): void
+    {
+        $this->actingAs($this->superAdmin())
+            ->put(route('admin.website.platforms.update'), [
+                'platform_airbnb_url' => 'not a valid url',
+                'platform_booking_url' => 'https://www.booking.com/hotel/gb/corner-house',
+                'platform_vrbo_url' => '',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasErrors('platform_airbnb_url');
+
+        $this->assertNull(Setting::getValue('platform_airbnb_url'));
+        $this->assertSame('https://www.booking.com/hotel/gb/corner-house', Setting::getValue('platform_booking_url'));
+    }
+
+    public function test_bookings_page_offers_fetch_from_beds24(): void
+    {
+        $this->actingAs($this->superAdmin())
+            ->get(route('admin.reservations.index'))
+            ->assertOk()
+            ->assertSee('Fetch from Beds24');
+    }
+
+    public function test_super_admin_can_queue_a_fetch_of_beds24_bookings(): void
+    {
+        Queue::fake([FetchBeds24BookingsJob::class]);
+
+        $this->actingAs($this->superAdmin())
+            ->post(route('admin.reservations.fetch-beds24'))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Beds24 bookings fetch queued. New and changed bookings will be imported.');
+
+        Queue::assertPushed(FetchBeds24BookingsJob::class);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'channels.fetch_bookings']);
+    }
+
+    public function test_fetch_from_beds24_requires_channel_sync_permission(): void
+    {
+        Queue::fake([FetchBeds24BookingsJob::class]);
+
+        $user = User::factory()->create();
+        $user->givePermissionTo('reservations.view');
+
+        $this->actingAs($user)
+            ->post(route('admin.reservations.fetch-beds24'))
+            ->assertForbidden();
+
+        Queue::assertNothingPushed();
     }
 }

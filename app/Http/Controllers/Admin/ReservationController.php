@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\FetchBeds24BookingsJob;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Services\Audit\AuditLogger;
@@ -48,6 +49,14 @@ class ReservationController extends Controller
         $reservations = $query->paginate(20)->withQueryString();
 
         return view('admin.reservations.index', ['reservations' => $reservations]);
+    }
+
+    public function fetchFromBeds24(): RedirectResponse
+    {
+        FetchBeds24BookingsJob::dispatch();
+        $this->auditLogger->log('channels.fetch_bookings', 'channels');
+
+        return back()->with('status', 'Beds24 bookings fetch queued. New and changed bookings will be imported.');
     }
 
     public function export(Request $request): StreamedResponse|View

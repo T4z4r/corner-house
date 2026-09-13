@@ -242,6 +242,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::post('/reservations/{reservation}/cancel', [ReservationController::class, 'cancel'])->name('reservations.cancel')->middleware('can:reservations.cancel');
         Route::post('/reservations/{reservation}/check-in', [ReservationController::class, 'checkIn'])->name('reservations.check-in')->middleware('can:reservations.update');
         Route::post('/reservations/{reservation}/check-out', [ReservationController::class, 'checkOut'])->name('reservations.check-out')->middleware('can:reservations.update');
+        Route::post('/reservations/fetch-beds24', [ReservationController::class, 'fetchFromBeds24'])->name('reservations.fetch-beds24')->middleware('can:channels.sync');
     });
 
     Route::middleware('can:calendar.view')->group(function (): void {
