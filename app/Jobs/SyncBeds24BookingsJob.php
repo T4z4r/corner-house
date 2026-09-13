@@ -24,7 +24,19 @@ class SyncBeds24BookingsJob implements ShouldQueue
                 }
 
                 try {
-                    $sync->synchronize($account);
+                    $summary = $sync->synchronize($account);
+
+                    Log::info('Beds24 sync complete', [
+                        'account_id' => $account->id,
+                        'provider' => $account->provider,
+                        'properties' => $summary['properties'],
+                        'rooms' => $summary['rooms'],
+                        'bookings' => $summary['bookings'],
+                        'bookings_pushed' => $summary['bookings_pushed'],
+                        'overrides' => $summary['overrides'],
+                        'blocks' => $summary['blocks'],
+                        'errors' => $summary['errors'],
+                    ]);
                 } catch (\Throwable $e) {
                     $account->update(['status' => 'error', 'last_error' => $e->getMessage()]);
                     Log::error('Beds24 sync failed', ['account_id' => $account->id, 'message' => $e->getMessage()]);

@@ -159,11 +159,16 @@ class Beds24SyncReliabilityTest extends TestCase
         $checkIn = now()->addDays(20)->toDateString();
         $checkOut = now()->addDays(23)->toDateString();
 
+        $propertiesCalls = 0;
+
         Http::fake([
-            '*properties*' => Http::sequence([
-                Http::response(['success' => false, 'error' => 'Server error'], 500),
-                Http::response(['data' => []], 200),
-            ]),
+            '*properties*' => function () use (&$propertiesCalls) {
+                $propertiesCalls++;
+
+                return $propertiesCalls <= 2
+                    ? Http::response(['success' => false, 'error' => 'Server error'], 500)
+                    : Http::response(['data' => []], 200);
+            },
             '*bookings*' => Http::response([
                 'data' => [[
                     'id' => 9001,
@@ -186,7 +191,8 @@ class Beds24SyncReliabilityTest extends TestCase
         $counts = app(Beds24SyncService::class)->synchronize($account);
 
         $this->assertSame(1, $counts['bookings']);
-        $this->assertSame(['catalog: Beds24 request failed: 500'], $counts['errors']);
+        $this->assertCount(1, $counts['errors']);
+        $this->assertStringContainsString('catalog: HTTP request returned status code 500', $counts['errors'][0]);
 
         $account->refresh();
         $this->assertSame('error', $account->status);

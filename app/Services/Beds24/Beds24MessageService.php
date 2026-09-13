@@ -69,6 +69,15 @@ class Beds24MessageService
             }
         }
 
+        Log::info('Beds24 messages fetched and stored', [
+            'account_id' => $account->id,
+            'total' => $summary['total'],
+            'created' => $summary['created'],
+            'updated' => $summary['updated'],
+            'failed' => $summary['failed'],
+            'message_ids' => collect($messages)->pluck('id')->filter()->values()->all(),
+        ]);
+
         $account->update([
             'last_message_synced_at' => now(),
             'last_message_sync_status' => $summary['failed'] > 0 ? 'failed' : 'success',

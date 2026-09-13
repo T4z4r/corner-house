@@ -42,13 +42,26 @@ class PushBeds24RatesJob implements ShouldQueue
                         $nightlyRate = round($nightlyRate * (1 - $longStay['pct'] / 100), 2);
                     }
 
-                    $channels->provider($account->provider)->pushRates($account, [[
+                    $pushed = $channels->provider($account->provider)->pushRates($account, [[
                         'roomId' => $mapping->external_room_id,
                         'from' => $from->toDateString(),
                         'to' => $to->toDateString(),
                         'price' => $nightlyRate,
                         'minimumStay' => $quote['minimum_stay'],
                     ]]);
+
+                    Log::info('Channel rates pushed to provider', [
+                        'mapping_id' => $mapping->id,
+                        'account_id' => $account->id,
+                        'provider' => $account->provider,
+                        'room_id' => $room->id,
+                        'external_room_id' => $mapping->external_room_id,
+                        'from' => $from->toDateString(),
+                        'to' => $to->toDateString(),
+                        'price' => $nightlyRate,
+                        'minimum_stay' => $quote['minimum_stay'],
+                        'pushed' => $pushed,
+                    ]);
                 } catch (\Throwable $e) {
                     Log::warning('Failed to push channel rates', [
                         'mapping_id' => $mapping->id,
