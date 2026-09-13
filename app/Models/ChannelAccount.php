@@ -75,7 +75,7 @@ class ChannelAccount extends Model
     {
         $credentials = $this->credentials ?? [];
 
-        if (! empty($credentials['refresh_token']) || ! empty($credentials['access_token'])) {
+        if (! empty($credentials['refresh_token']) || ! empty($credentials['access_token']) || ! empty($credentials['invite_code'])) {
             return true;
         }
 

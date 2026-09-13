@@ -47,6 +47,13 @@
                                     <div class="form-text">A token is stored. Enter a new value only if you want to replace it.</div>
                                 @endif
                             </div>
+                            <div class="col-12">
+                                <label class="form-label">Invite code <small class="text-muted">(optional; auto-mints tokens on sync — valid 24h from Beds24)</small></label>
+                                <input type="password" name="invite_code" class="form-control" value="" autocomplete="new-password" placeholder="{{ $account->credentials['invite_code'] ?? $account->settings['invite_code'] ?? 'Not set' }}">
+                                @if (! empty($account->credentials['invite_code']) || ! empty($account->settings['invite_code']))
+                                    <div class="form-text">A code is stored and will be re-exchanged automatically when no token is available.</div>
+                                @endif
+                            </div>
                         </div>
                         <div class="mt-4 d-flex gap-2">
                             <button type="submit" class="btn btn-ch-primary">Save changes</button>

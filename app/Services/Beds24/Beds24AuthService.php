@@ -11,6 +11,52 @@ class Beds24AuthService
 
     public function exchangeInviteCode(ChannelAccount $account, string $code): ChannelAccount
     {
+        $this->setup($account, $code);
+
+        return $account->fresh();
+    }
+
+    public function accessToken(ChannelAccount $account): string
+    {
+        $credentials = $account->credentials ?? [];
+        $access = $credentials['access_token'] ?? null;
+        $expiresAt = $credentials['access_token_expires_at'] ?? null;
+
+        if (is_string($access) && $access !== '' && $expiresAt && now()->lt($expiresAt)) {
+            return $access;
+        }
+
+        $refresh = $credentials['refresh_token'] ?? config('services.beds24.refresh_token');
+
+        if (is_string($refresh) && $refresh !== '') {
+            try {
+                return $this->refreshAccessToken($account, $refresh);
+            } catch (\Throwable $e) {
+                if (empty($credentials['invite_code']) && empty($account->settings['invite_code'])) {
+                    throw $e;
+                }
+            }
+        }
+
+        $inviteCode = $credentials['invite_code'] ?? $account->settings['invite_code'] ?? null;
+
+        if (is_string($inviteCode) && $inviteCode !== '') {
+            return $this->setup($account, $inviteCode)['token'];
+        }
+
+        throw new \RuntimeException('Beds24 refresh token or invite code is not configured. Exchange an invite code first.');
+    }
+
+    /**
+     * GET /authentication/setup — exchange an invite code for a refresh token
+     * and an initial access token. The invite code is stored with the account so
+     * later syncs can re-mint tokens automatically whenever the stored refresh
+     * token lapses or is missing.
+     *
+     * @return array{token: string, refresh_token: string, expires_in: int}
+     */
+    private function setup(ChannelAccount $account, string $code): array
+    {
         $log = $this->logger->start($account, 'get', 'authentication/setup', [
             'headers' => ['code' => $code],
             'body' => [],
@@ -48,31 +94,24 @@ class Beds24AuthService
         $account->update([
             'status' => 'active',
             'last_error' => null,
-            'credentials' => [
+            'credentials' => array_merge($account->credentials ?? [], [
+                'invite_code' => $code,
                 'refresh_token' => $refresh,
                 'access_token' => $token,
                 'access_token_expires_at' => now()->addSeconds(max(60, $expiresIn - 60))->toIso8601String(),
-            ],
+            ]),
         ]);
 
-        return $account->fresh();
+        return [
+            'token' => $token,
+            'refresh_token' => $refresh,
+            'expires_in' => $expiresIn,
+        ];
     }
 
-    public function accessToken(ChannelAccount $account): string
+    private function refreshAccessToken(ChannelAccount $account, string $refresh): string
     {
         $credentials = $account->credentials ?? [];
-        $access = $credentials['access_token'] ?? null;
-        $expiresAt = $credentials['access_token_expires_at'] ?? null;
-
-        if (is_string($access) && $access !== '' && $expiresAt && now()->lt($expiresAt)) {
-            return $access;
-        }
-
-        $refresh = $credentials['refresh_token'] ?? config('services.beds24.refresh_token');
-
-        if (! is_string($refresh) || $refresh === '') {
-            throw new \RuntimeException('Beds24 refresh token is not configured. Exchange an invite code first.');
-        }
 
         $log = $this->logger->start($account, 'get', 'authentication/token', [
             'headers' => ['refreshToken' => $refresh],

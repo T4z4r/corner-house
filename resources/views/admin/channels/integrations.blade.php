@@ -128,6 +128,7 @@
                                     <select name="status" class="form-select"><option value="inactive">Inactive</option><option value="active">Active</option></select>
                                 </div>
                                 <div class="col-12"><input name="refresh_token" class="form-control" placeholder="Refresh token (optional if using invite code)"></div>
+                                <div class="col-12"><input name="invite_code" class="form-control" placeholder="Beds24 invite code (optional; expires after 24h)"></div>
                                 <div class="col-12"><button class="btn btn-ch-primary btn-sm">Save account</button></div>
                             </form>
                         @endcan

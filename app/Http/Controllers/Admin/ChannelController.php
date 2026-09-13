@@ -687,6 +687,7 @@ class ChannelController extends Controller
             'provider' => ['required', 'string', 'max:50'],
             'name' => ['required', 'string', 'max:255'],
             'refresh_token' => ['nullable', 'string'],
+            'invite_code' => ['nullable', 'string'],
             'status' => ['required', 'in:active,inactive'],
         ]);
 
@@ -696,6 +697,7 @@ class ChannelController extends Controller
             'status' => $data['status'],
             'credentials' => array_filter([
                 'refresh_token' => $data['refresh_token'] ?? null,
+                'invite_code' => $data['invite_code'] ?? null,
             ]),
         ]);
 
@@ -718,6 +720,7 @@ class ChannelController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'status' => ['required', 'in:active,inactive'],
             'refresh_token' => ['nullable', 'string'],
+            'invite_code' => ['nullable', 'string'],
         ]);
 
         $old = $account->only(['name', 'status']);
@@ -725,6 +728,9 @@ class ChannelController extends Controller
         $credentials = $account->credentials ?? [];
         if (! empty($data['refresh_token'])) {
             $credentials['refresh_token'] = $data['refresh_token'];
+        }
+        if (! empty($data['invite_code'])) {
+            $credentials['invite_code'] = $data['invite_code'];
         }
 
         $account->update([
