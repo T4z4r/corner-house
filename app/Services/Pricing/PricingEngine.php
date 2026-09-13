@@ -102,7 +102,7 @@ class PricingEngine
             ->where('rule_type', '!=', 'length_of_stay')
             ->whereNotNull('minimum_stay')
             ->where(fn ($q) => $q->whereNull('room_id')->orWhere('room_id', $room->id))
-            ->where(fn ($q) => $q->whereNull('property_id')->orWhere('property_id', $room->property_id))
+            ->where(fn ($q) => $q->whereNull('property_id')->orWhereIn('property_id', $this->linkedPropertyIds($room)))
             ->get();
 
         foreach ($rules as $rule) {
@@ -142,7 +142,7 @@ class PricingEngine
             ->where('rule_type', '!=', 'length_of_stay')
             ->whereNotNull('max_stay')
             ->where(fn ($q) => $q->whereNull('room_id')->orWhere('room_id', $room->id))
-            ->where(fn ($q) => $q->whereNull('property_id')->orWhere('property_id', $room->property_id))
+            ->where(fn ($q) => $q->whereNull('property_id')->orWhereIn('property_id', $this->linkedPropertyIds($room)))
             ->get();
 
         foreach ($rules as $rule) {
@@ -190,7 +190,7 @@ class PricingEngine
             ->where('rule_type', 'length_of_stay')
             ->whereNotNull('minimum_stay')
             ->where(fn ($q) => $q->whereNull('room_id')->orWhere('room_id', $room->id))
-            ->where(fn ($q) => $q->whereNull('property_id')->orWhere('property_id', $room->property_id))
+            ->where(fn ($q) => $q->whereNull('property_id')->orWhereIn('property_id', $this->linkedPropertyIds($room)))
             ->orderByRaw('minimum_stay desc, abs(adjustment_value) desc')
             ->first();
 
@@ -218,7 +218,7 @@ class PricingEngine
             ->whereNotNull('minimum_stay')
             ->where('minimum_stay', '<=', $nights)
             ->where(fn ($q) => $q->whereNull('room_id')->orWhere('room_id', $room->id))
-            ->where(fn ($q) => $q->whereNull('property_id')->orWhere('property_id', $room->property_id))
+            ->where(fn ($q) => $q->whereNull('property_id')->orWhereIn('property_id', $this->linkedPropertyIds($room)))
             ->orderByRaw('minimum_stay desc, abs(adjustment_value) desc')
             ->first();
 
@@ -300,7 +300,7 @@ class PricingEngine
             ->where('is_enabled', true)
             ->where('rule_type', '!=', 'length_of_stay')
             ->where(fn ($q) => $q->whereNull('room_id')->orWhere('room_id', $room->id))
-            ->where(fn ($q) => $q->whereNull('property_id')->orWhere('property_id', $room->property_id))
+            ->where(fn ($q) => $q->whereNull('property_id')->orWhereIn('property_id', $this->linkedPropertyIds($room)))
             ->get();
 
         $adjustments = collect();
@@ -380,7 +380,7 @@ class PricingEngine
     private function findOverride(Room $room, Carbon $date): ?PricingOverride
     {
         return PricingOverride::query()
-            ->where('room_id', $room->id)
+            ->whereIn('room_id', $this->linkedRoomIds($room))
             ->where('is_enabled', true)
             ->whereDate('start_date', '<=', $date->toDateString())
             ->whereDate('end_date', '>=', $date->toDateString())
@@ -417,12 +417,45 @@ class PricingEngine
 
     /**
      * Scope matching a room's own blocks plus property-wide blocks
-     * (no room_id) for the same property.
+     * (no room_id) across the linked property group.
      */
     private function blockScopeFor(Room $room): \Closure
     {
         return fn ($q) => $q->where('room_id', $room->id)
-            ->orWhere(fn ($q2) => $q2->whereNull('room_id')->where('property_id', $room->property_id));
+            ->orWhere(fn ($q2) => $q2->whereNull('room_id')->whereIn('property_id', $this->linkedPropertyIds($room)));
+    }
+
+    /**
+     * Property ids across the linked group (this property plus its linked
+     * partner), so pricing rules and rates set on either listing apply to
+     * both sides of the shared accommodation.
+     *
+     * @return array<int, int>
+     */
+    private function linkedPropertyIds(Room $room): array
+    {
+        return $room->property?->linkedPropertyIds() ?? [(int) $room->property_id];
+    }
+
+    /**
+     * Room ids across the linked group: the room itself plus every room on
+     * the linked partner property, so manual rates and competitor data bound
+     * to either listing apply to both sides.
+     *
+     * @return array<int, int>
+     */
+    private function linkedRoomIds(Room $room): array
+    {
+        $ids = [$room->id];
+
+        foreach (array_diff($this->linkedPropertyIds($room), [(int) $room->property_id]) as $linkedPropertyId) {
+            $ids = array_merge($ids, Room::query()
+                ->where('property_id', (int) $linkedPropertyId)
+                ->pluck('id')
+                ->all());
+        }
+
+        return array_values(array_unique(array_map('intval', $ids)));
     }
 
     /**
@@ -434,8 +467,8 @@ class PricingEngine
         $latestByCompetitor = CompetitorRate::query()
             ->whereDate('date', $date->toDateString())
             ->where(function ($q) use ($room) {
-                $q->where('room_id', $room->id)
-                    ->orWhere(fn ($q2) => $q2->whereNull('room_id')->where('property_id', $room->property_id));
+                $q->whereIn('room_id', $this->linkedRoomIds($room))
+                    ->orWhere(fn ($q2) => $q2->whereNull('room_id')->whereIn('property_id', $this->linkedPropertyIds($room)));
             })
             ->get()
             ->groupBy('competitor')
@@ -458,8 +491,10 @@ class PricingEngine
      */
     private function occupancyForDate(Room $room, Carbon $date): float
     {
+        $propertyIds = $this->linkedPropertyIds($room);
+
         $activeRooms = Room::query()
-            ->where('property_id', $room->property_id)
+            ->whereIn('property_id', $propertyIds)
             ->where('status', 'active')
             ->count();
 
@@ -470,7 +505,7 @@ class PricingEngine
         $soldRooms = Reservation::query()
             ->active()
             ->whereHas('room', fn ($q) => $q
-                ->where('property_id', $room->property_id)
+                ->whereIn('property_id', $propertyIds)
                 ->where('status', 'active'))
             ->whereDate('check_in', '<=', $date->toDateString())
             ->whereDate('check_out', '>', $date->toDateString())

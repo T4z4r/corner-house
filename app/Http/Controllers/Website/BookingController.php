@@ -32,7 +32,14 @@ class BookingController extends Controller
 
     public function search(Request $request): View
     {
-        $property = Property::query()->where('status', 'active')->first();
+        $activeProperty = Property::query()->where('status', 'active')->orderByDesc('is_primary')->first();
+
+        $requestedPropertyId = $request->query('property_id');
+        $property = $activeProperty && $requestedPropertyId
+            ? Property::query()->where('status', 'active')->find($requestedPropertyId)
+            : null;
+        $property ??= $activeProperty;
+
         $rooms = collect();
 
         $checkIn = $request->query('check_in');
@@ -48,15 +55,25 @@ class BookingController extends Controller
                     ->map(function (Room $room) use ($start, $end, $guests): Room {
                         $quote = $this->pricing->calculateForRange($room, $start, $end, $guests, null, true);
                         $room->setAttribute('quote', $quote);
-                        $room->load(['images' => fn ($q) => $q->orderBy('sort_order')]);
+                        $room->load(['property', 'images' => fn ($q) => $q->orderBy('sort_order')]);
 
                         return $room;
                     });
             }
         }
 
+        // Linked properties are duplicate listings of the same accommodation,
+        // so the search page lets the guest pick which listing to book.
+        $availableProperties = $property ? Property::query()
+            ->whereIn('id', $property->linkedPropertyIds())
+            ->where('status', 'active')
+            ->orderByDesc('is_primary')
+            ->get(['id', 'name'])
+            : collect();
+
         return view('website.booking.search', [
             'property' => $property,
+            'availableProperties' => $availableProperties,
             'rooms' => $rooms,
             'checkIn' => $checkIn,
             'checkOut' => $checkOut,
@@ -307,6 +324,8 @@ class BookingController extends Controller
             'name' => $room->name,
             'capacity' => $room->capacity,
             'base_rate' => $room->base_rate,
+            'property_id' => (int) $room->property_id,
+            'property_name' => $room->property?->name,
         ]);
 
         return response()->json(['rooms' => $rooms->values()]);

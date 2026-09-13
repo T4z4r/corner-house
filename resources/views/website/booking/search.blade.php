@@ -3,7 +3,21 @@
 @section('content')
 @include('website._page-hero', ['kicker' => 'Bookings', 'title' => 'Find a stay', 'subtitle' => 'Choose dates. We will show what is free, with the house rate.'])
 <div class="container ch-section">
+    @if ($availableProperties->count() > 1)
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            @foreach ($availableProperties as $option)
+                <a class="btn {{ (int) $property?->id === (int) $option->id ? 'btn-ch-book' : 'btn-outline-secondary' }}"
+                   href="{{ route('booking.search', array_filter(['property_id' => $option->id, 'check_in' => $checkIn, 'check_out' => $checkOut, 'guests' => $guests])) }}">
+                    {{ $option->name }}
+                </a>
+            @endforeach
+        </div>
+    @endif
+
     <form method="GET" class="ch-booking-card ch-booking-bar ch-booking-bar-premium mb-5">
+        @if ($property)
+            <input type="hidden" name="property_id" value="{{ $property->id }}">
+        @endif
         <div class="row g-3 align-items-end">
             <div class="col-md-3">
                 <label class="form-label">Arrive</label>
@@ -53,7 +67,7 @@
                         </div>
                     @endif
                     <div class="ch-suite-body">
-                        <div class="ch-suite-eyebrow">Direct rate</div>
+                        <div class="ch-suite-eyebrow">{{ $availableProperties->count() > 1 && $room->property ? $room->property->name : 'Direct rate' }}</div>
                         <h3>{{ $room->name }}</h3>
                         <p class="ch-suite-meta">Sleeps {{ $room->capacity }} · {{ $room->quote['nights'] }} night(s)</p>
                         <p class="ch-price">£{{ number_format($room->quote['total'], 2) }}</p>

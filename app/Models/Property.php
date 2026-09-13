@@ -94,4 +94,22 @@ class Property extends Model
     {
         return $this->belongsTo(Property::class, 'linked_property_id');
     }
+
+    /**
+     * Ids of the linked property group: this property plus its two-way
+     * linked partner. Linked properties are duplicate listings of the same
+     * accommodation, so they share one live inventory and pricing surface.
+     *
+     * @return array<int, int>
+     */
+    public function linkedPropertyIds(): array
+    {
+        $ids = [$this->id];
+
+        if ($this->linked_property_id && (int) $this->linked_property_id !== $this->id) {
+            $ids[] = (int) $this->linked_property_id;
+        }
+
+        return array_values(array_unique($ids));
+    }
 }

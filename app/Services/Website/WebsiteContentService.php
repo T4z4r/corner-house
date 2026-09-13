@@ -37,6 +37,7 @@ class WebsiteContentService
         return [
             'property' => $property,
             'rooms' => $rooms,
+            'linkedProperties' => $this->linkedProperties($property),
             'amenities' => $this->amenityNames($facilityAmenities),
             'placesFood' => $this->places('Food & drink'),
             'placesDays' => $this->places('Days out'),
@@ -59,6 +60,25 @@ class WebsiteContentService
             'houseRules' => $this->rules(Setting::getValue('website_house_rules'), $this->defaultHouseRules()),
             'config' => $this->config(),
         ];
+    }
+
+    /**
+     * Partner properties linked to the main property, treated as duplicate
+     * listings of the same accommodation and shown alongside the rooms.
+     *
+     * @return Collection<int, Property>
+     */
+    private function linkedProperties(?Property $property): Collection
+    {
+        if (! $property || ! $property->linked_property_id) {
+            return new Collection;
+        }
+
+        return Property::query()
+            ->where('id', (int) $property->linked_property_id)
+            ->where('status', 'active')
+            ->with('images')
+            ->get();
     }
 
     /**

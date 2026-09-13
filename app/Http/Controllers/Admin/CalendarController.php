@@ -85,12 +85,20 @@ class CalendarController extends Controller
         $propertyId = $request->query('property_id');
         $roomId = $request->query('room_id');
 
+        // Linked properties are duplicate listings of the same accommodation,
+        // so the calendar merges both partners' bookings onto one inventory.
+        $propertyIds = null;
+        if ($propertyId) {
+            $property = Property::find($propertyId);
+            $propertyIds = $property?->linkedPropertyIds() ?? [(int) $propertyId];
+        }
+
         $events = collect();
 
         $reservations = Reservation::query()
             ->active()
-            ->with(['room', 'guest'])
-            ->when($propertyId, fn ($q) => $q->where('property_id', $propertyId))
+            ->with(['room', 'guest', 'property'])
+            ->when($propertyIds, fn ($q) => $q->whereIn('property_id', $propertyIds))
             ->when($roomId, fn ($q) => $q->where('room_id', $roomId))
             ->when($start, fn ($q) => $q->whereDate('check_out', '>=', $start))
             ->when($end, fn ($q) => $q->whereDate('check_in', '<=', $end))
@@ -113,14 +121,16 @@ class CalendarController extends Controller
                     'room_name' => $roomName,
                     'guest_name' => $guestName,
                     'reference' => $reservation->reference,
+                    'property_id' => $reservation->property_id,
+                    'property_name' => $reservation->property?->name,
                     'url' => route('admin.reservations.show', $reservation),
                 ],
             ]);
         }
 
         $blocks = CalendarBlock::query()
-            ->with('room')
-            ->when($propertyId, fn ($q) => $q->where('property_id', $propertyId))
+            ->with(['room.property', 'property'])
+            ->when($propertyIds, fn ($q) => $q->whereIn('property_id', $propertyIds))
             ->when($roomId, fn ($q) => $q->where('room_id', $roomId))
             ->when($start, fn ($q) => $q->whereDate('end_date', '>=', $start))
             ->when($end, fn ($q) => $q->whereDate('start_date', '<=', $end))
@@ -128,8 +138,8 @@ class CalendarController extends Controller
 
         $holds = BookingHold::query()
             ->active()
-            ->with('room')
-            ->when($propertyId, fn ($q) => $q->where('property_id', $propertyId))
+            ->with(['room.property'])
+            ->when($propertyIds, fn ($q) => $q->whereIn('property_id', $propertyIds))
             ->when($roomId, fn ($q) => $q->where('room_id', $roomId))
             ->when($start, fn ($q) => $q->whereDate('check_out', '>=', $start))
             ->when($end, fn ($q) => $q->whereDate('check_in', '<=', $end))
@@ -143,14 +153,20 @@ class CalendarController extends Controller
                 'start' => $hold->check_in->toDateString(),
                 'end' => $hold->check_out->toDateString(),
                 'className' => 'fc-event--hold',
-                'extendedProps' => ['type' => 'hold', 'room_id' => $hold->room_id, 'room_name' => $roomName],
+                'extendedProps' => [
+                    'type' => 'hold',
+                    'room_id' => $hold->room_id,
+                    'room_name' => $roomName,
+                    'property_id' => $hold->room?->property_id,
+                    'property_name' => $hold->room?->property?->name,
+                ],
             ]);
         }
 
         $overrides = PricingOverride::query()
             ->where('is_enabled', true)
-            ->with('room')
-            ->when($propertyId, fn ($q) => $q->whereHas('room', fn ($r) => $r->where('property_id', $propertyId)))
+            ->with(['room.property'])
+            ->when($propertyIds, fn ($q) => $q->whereHas('room', fn ($r) => $r->whereIn('property_id', $propertyIds)))
             ->when($roomId, fn ($q) => $q->where('room_id', $roomId))
             ->when($start, fn ($q) => $q->whereDate('end_date', '>=', $start))
             ->when($end, fn ($q) => $q->whereDate('start_date', '<=', $end))
@@ -173,6 +189,8 @@ class CalendarController extends Controller
                     'minimum_stay' => $override->minimum_stay,
                     'room_id' => $override->room_id,
                     'room_name' => $roomName,
+                    'property_id' => $override->room?->property_id,
+                    'property_name' => $override->room?->property?->name,
                     'from_beds24' => $override->notes === 'beds24-sync',
                 ],
             ]);
@@ -197,6 +215,8 @@ class CalendarController extends Controller
                     'block_active' => $block->is_active,
                     'room_id' => $block->room_id,
                     'room_name' => $roomName,
+                    'property_id' => $block->room?->property_id ?? $block->property_id,
+                    'property_name' => $block->room?->property?->name ?? $block->property?->name,
                 ],
             ]);
         }

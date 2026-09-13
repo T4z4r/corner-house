@@ -4,6 +4,7 @@ namespace App\Services\Availability;
 
 use App\Models\BookingHold;
 use App\Models\CalendarBlock;
+use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\Setting;
@@ -28,9 +29,17 @@ class AvailabilityService
             return ['available' => false, 'conflicts' => $conflicts];
         }
 
+        // Linked properties are duplicate listings of the same accommodation,
+        // so reservations, holds and blocks on the linked partner block this
+        // room from sale as well (shared live inventory).
+        $roomIds = $this->linkedRoomIds($room);
+        $propertyIds = $this->linkedPropertyIds($room);
+
         $reservationOverlap = Reservation::query()
             ->active()
-            ->overlapsDates($room->id, $checkIn, $checkOut)
+            ->whereIn('room_id', $roomIds)
+            ->whereDate('check_in', '<', $checkOut)
+            ->whereDate('check_out', '>', $checkIn)
             ->when($ignoredReservationIds, fn ($q) => $q->whereNotIn('id', $ignoredReservationIds))
             ->exists();
 
@@ -42,7 +51,7 @@ class AvailabilityService
         // current guest departs, so the room is never turned around same-day.
         $turnaroundConflict = Reservation::query()
             ->active()
-            ->where('room_id', $room->id)
+            ->whereIn('room_id', $roomIds)
             ->whereDate('check_out', $checkIn->toDateString())
             ->when($ignoredReservationIds, fn ($q) => $q->whereNotIn('id', $ignoredReservationIds))
             ->exists();
@@ -53,7 +62,9 @@ class AvailabilityService
 
         $holdOverlap = BookingHold::query()
             ->active()
-            ->overlapsDates($room->id, $checkIn, $checkOut)
+            ->whereIn('room_id', $roomIds)
+            ->whereDate('check_in', '<', $checkOut)
+            ->whereDate('check_out', '>', $checkIn)
             ->when($ignoredHoldIds, fn ($q) => $q->whereNotIn('id', $ignoredHoldIds))
             ->exists();
 
@@ -63,9 +74,9 @@ class AvailabilityService
 
         $blockOverlap = CalendarBlock::query()
             ->blockingInventory()
-            ->where(function ($q) use ($room) {
-                $q->where('room_id', $room->id)
-                    ->orWhere(fn ($q2) => $q2->whereNull('room_id')->where('property_id', $room->property_id));
+            ->where(function (Builder $q) use ($roomIds, $propertyIds) {
+                $q->whereIn('room_id', $roomIds)
+                    ->orWhere(fn ($q2) => $q2->whereNull('room_id')->whereIn('property_id', $propertyIds));
             })
             ->whereDate('start_date', '<=', $checkOut->toDateString())
             ->whereDate('end_date', '>=', $checkIn->toDateString())
@@ -107,6 +118,38 @@ class AvailabilityService
     }
 
     /**
+     * Room ids in the linked group: the room itself plus every room on the
+     * linked partner property. Duplicate listings share one live inventory,
+     * so any of these rooms being sold pulls the night off the market.
+     *
+     * @return array<int, int>
+     */
+    private function linkedRoomIds(Room $room): array
+    {
+        $ids = [$room->id];
+        $property = $room->property;
+
+        if ($property && $property->linked_property_id && (int) $property->linked_property_id !== (int) $room->property_id) {
+            $ids = array_merge($ids, Room::query()
+                ->where('property_id', (int) $property->linked_property_id)
+                ->pluck('id')
+                ->all());
+        }
+
+        return array_values(array_unique(array_map('intval', $ids)));
+    }
+
+    /**
+     * Property ids in the linked group (this property plus its linked partner).
+     *
+     * @return array<int, int>
+     */
+    private function linkedPropertyIds(Room $room): array
+    {
+        return $room->property?->linkedPropertyIds() ?? [(int) $room->property_id];
+    }
+
+    /**
      * Blocked-night ranges for the website availability calendar.
      *
      * Each range is end-exclusive ({start, end} covering nights in [start, end))
@@ -121,9 +164,11 @@ class AvailabilityService
     {
         $nights = [];
 
-        if ($propertyId) {
-            $roomIds = Room::query()->where('property_id', $propertyId)->pluck('id');
+        $property = $propertyId ? Property::find($propertyId) : null;
+        $propertyIds = $property ? $property->linkedPropertyIds() : ($propertyId ? [(int) $propertyId] : []);
+        $roomIds = $propertyIds !== [] ? Room::query()->whereIn('property_id', $propertyIds)->pluck('id') : collect();
 
+        if ($roomIds->isNotEmpty()) {
             Reservation::query()
                 ->whereIn('room_id', $roomIds)
                 ->active()
@@ -146,8 +191,8 @@ class AvailabilityService
 
             CalendarBlock::query()
                 ->blockingInventory()
-                ->where(function (Builder $query) use ($propertyId, $roomIds): void {
-                    $query->whereNull('room_id')->where('property_id', $propertyId)
+                ->where(function (Builder $query) use ($propertyIds, $roomIds): void {
+                    $query->whereNull('room_id')->whereIn('property_id', $propertyIds)
                         ->orWhereIn('room_id', $roomIds);
                 })
                 ->get()
