@@ -137,6 +137,11 @@
             height: 20px;
             color: currentColor;
             pointer-events: none;
+            grid-area: 1 / 1;
+        }
+
+        .ch-auth-toggle svg[hidden] {
+            display: none;
         }
 
         .ch-auth-check {
