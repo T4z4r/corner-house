@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CronJobRun;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
@@ -57,6 +58,27 @@ class CronJobsController extends Controller
         ];
 
         return view('admin.cron-jobs', compact('runs', 'jobs', 'cadence', 'summary'));
+    }
+
+    /**
+     * Queue a scheduled job for an immediate run.
+     */
+    public function run(string $job): RedirectResponse
+    {
+        $label = self::JOB_DEFINITIONS[$job] ?? null;
+
+        if ($label === null) {
+            abort(404);
+        }
+
+        $class = "App\\Jobs\\{$job}";
+
+        abort_unless(class_exists($class), 404);
+
+        dispatch(new $class);
+
+        return redirect()->route('admin.cron-jobs')
+            ->with('status', "{$label} has been queued to run.");
     }
 
     /**

@@ -44,7 +44,7 @@
         <div>
             <div class="ch-breadcrumb">System / Cron Jobs</div>
             <h4>Cron Jobs</h4>
-            <p class="ch-subtitle">Scheduled jobs and their recent run history</p>
+            <p class="ch-subtitle">Scheduled jobs and their recent run history. Use Run now to queue a job for immediate execution.</p>
         </div>
     </div>
 
@@ -97,6 +97,7 @@
                             <th>Duration</th>
                             <th class="text-end">Successful</th>
                             <th class="text-end">Failed</th>
+                            <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -123,13 +124,22 @@
                                 <td class="small">{{ $formatDuration($job['last_run']?->duration_ms) }}</td>
                                 <td class="text-end text-success fw-bold">{{ $job['success_count'] }}</td>
                                 <td class="text-end text-danger fw-bold">{{ $job['failure_count'] }}</td>
+                                <td class="text-end">
+                                    <form method="POST" action="{{ route('admin.cron-jobs.run', $job['name']) }}">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-primary"
+                                            onclick="return confirm('Run {{ $job['label'] }} now?')">
+                                            <i class="bi bi-play-fill me-1"></i>Run now
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                         @empty
                             @include('layouts.admin._empty', [
                                 'icon' => 'bi-clock-history',
                                 'message' => 'No scheduled jobs registered',
                                 'hint' => 'Scheduled jobs will appear here once they have been run at least once.',
-                                'colspan' => 7,
+                                'colspan' => 8,
                             ])
                         @endforelse
                     </tbody>

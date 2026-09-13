@@ -96,6 +96,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::get('/settings/schedule', [ScheduleSettingsController::class, 'index'])->name('schedule-settings');
         Route::put('/settings/schedule', [ScheduleSettingsController::class, 'update'])->name('schedule-settings.update');
         Route::get('/cron-jobs', [CronJobsController::class, 'index'])->name('cron-jobs');
+        Route::post('/cron-jobs/{job}/run', [CronJobsController::class, 'run'])->name('cron-jobs.run');
         Route::post('/settings/upload-image', [SettingsController::class, 'uploadImage'])->name('settings.upload-image')->middleware('can:settings.update');
         Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
         Route::post('/settings', [SettingsController::class, 'store'])->name('settings.store');
