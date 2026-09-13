@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\CalendarBlock;
 use App\Models\ChannelAccount;
 use App\Models\ChannelMapping;
+use App\Models\ChannelRate;
+use App\Models\ChannelRateMap;
 use App\Models\ChannelSyncLog;
 use App\Models\Guest;
 use App\Models\PricingOverride;
@@ -18,6 +20,7 @@ use App\Models\User;
 use App\Services\Beds24\Beds24ChannelProvider;
 use App\Services\Beds24\Beds24SyncService;
 use App\Services\Booking\BookingService;
+use App\Services\Channel\ChannelManager;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Database\Schema\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -2551,6 +2554,329 @@ class Beds24IntegrationTest extends TestCase
             ->assertSee('1720816102')
             ->assertSee('68925240')
             ->assertSee('Booking.com rate mapping');
+    }
+
+    public function test_sync_bookings_uses_explicit_arrival_window_on_initial_fetch(): void
+    {
+        $account = $this->beds24Account();
+        $account->update(['last_synced_at' => now()->subDay()]);
+
+        Http::fake([
+            '*bookings*' => Http::response(['success' => true, 'data' => []], 200),
+        ]);
+
+        app(ChannelManager::class)->syncBookings($account, true);
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'bookings')
+            && str_contains($request->url(), 'arrivalFrom')
+            && str_contains($request->url(), 'arrivalTo')
+            && str_contains($request->url(), 'page=1')
+            && $request->hasHeader('token', 'access-1'));
+    }
+
+    public function test_sync_bookings_uses_modified_from_on_incremental_fetch(): void
+    {
+        $account = $this->beds24Account();
+        $account->update(['last_synced_at' => now()->subDay()]);
+
+        Http::fake([
+            '*bookings*' => Http::response(['success' => true, 'data' => []], 200),
+        ]);
+
+        app(ChannelManager::class)->syncBookings($account);
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'bookings')
+            && str_contains($request->url(), 'modifiedFrom')
+            && ! str_contains($request->url(), 'arrivalFrom'));
+    }
+
+    public function test_sync_bookings_follows_all_pages(): void
+    {
+        $account = $this->beds24Account();
+        $property = Property::factory()->create();
+        $room = Room::factory()->create([
+            'property_id' => $property->id,
+            'status' => 'active',
+        ]);
+
+        ChannelMapping::create([
+            'channel_account_id' => $account->id,
+            'provider' => 'beds24',
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'external_property_id' => '2001',
+            'external_room_id' => '77',
+            'status' => 'active',
+        ]);
+
+        Http::fake(function ($request) {
+            if (! str_contains($request->url(), 'bookings')) {
+                return Http::response([], 404);
+            }
+
+            $page = (int) ($request->data()['page'] ?? 1);
+
+            if ($page === 1) {
+                return Http::response([
+                    'success' => true,
+                    'count' => 2,
+                    'pages' => ['nextPageExists' => true, 'nextPageLink' => 'example.com/api/example?page=2'],
+                    'data' => [[
+                        'id' => 9001,
+                        'roomId' => 77,
+                        'arrival' => now()->addDays(10)->toDateString(),
+                        'departure' => now()->addDays(13)->toDateString(),
+                        'numAdult' => 2,
+                        'status' => 'confirmed',
+                    ]],
+                ], 200);
+            }
+
+            return Http::response([
+                'success' => true,
+                'count' => 2,
+                'pages' => ['nextPageExists' => false],
+                'data' => [[
+                    'id' => 9002,
+                    'roomId' => 77,
+                    'arrival' => now()->addDays(20)->toDateString(),
+                    'departure' => now()->addDays(23)->toDateString(),
+                    'numAdult' => 2,
+                    'status' => 'confirmed',
+                ]],
+            ], 200);
+        });
+
+        $imported = app(ChannelManager::class)->syncBookings($account);
+
+        $this->assertSame(2, $imported);
+        $this->assertDatabaseHas('reservations', ['external_booking_id' => '9001']);
+        $this->assertDatabaseHas('reservations', ['external_booking_id' => '9002']);
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'bookings')
+            && (string) ($request->data()['page'] ?? '') === '1');
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'bookings')
+            && (string) ($request->data()['page'] ?? '') === '2');
+    }
+
+    public function test_booking_com_mapping_xml_can_be_pasted_and_stored()
+    {
+        $account = $this->beds24Account();
+
+        Http::fake([
+            '*channels/booking/reviews*' => Http::response(['data' => []], 200),
+        ]);
+
+        $xml = <<<'XML'
+        This XML file does not appear to have any style information associated with it. The document tree is shown below.
+        <roomrates>
+        <rooms>
+        <room id="1430594601" hotel_id="14305946" hotel_name="Corner House - Large country house next to marina" room_name="Budget Twin Room">
+        <rates>
+        <rate id="55419261" max_persons="12" policy="Non Refundable" policy_id="414619860" rate_name="Standard Rate" fixed_occupancy="12">
+        <meal_plan meal_plan_code="0"/>
+        <policies>
+        <guarantee_payment_policy>
+        <guarantee_payment policy_code="38" effective_from="after_cancellation_fee_begins" required="1"/>
+        </guarantee_payment_policy>
+        <cancel_policy>
+        <cancel_penalty policy_code="38"/>
+        </cancel_policy>
+        <booking_rules>
+        <booking_rule max_advanced_booking_offset="P360D"/>
+        </booking_rules>
+        </policies>
+        <pricing type="RLO">
+        <occupancy persons="1" percentage="65.0" round="0"/>
+        <occupancy persons="2" percentage="65.0" round="0"/>
+        <occupancy persons="11" percentage="95.0" round="0"/>
+        </pricing>
+        </rate>
+        <rate id="68966832" max_persons="12" policy="General" policy_id="414619844" rate_name="week days">
+        <meal_plan meal_plan_code="0"/>
+        <policies>
+        <guarantee_payment_policy>
+        <guarantee_payment policy_code="152" required="0"/>
+        </guarantee_payment_policy>
+        <cancel_policy>
+        <cancel_penalty policy_code="152"/>
+        </cancel_policy>
+        <booking_rules/>
+        </policies>
+        <pricing type="Standard" price1="1"/>
+        </rate>
+        <rate id="69033222" max_persons="12" policy="General" policy_id="414619844" rate_name="Corner house, old road, Braunston">
+        <meal_plan meal_plan_code="0"/>
+        <policies>
+        <guarantee_payment_policy>
+        <guarantee_payment policy_code="152" required="0"/>
+        </guarantee_payment_policy>
+        <cancel_policy>
+        <cancel_penalty policy_code="152"/>
+        </cancel_policy>
+        <booking_rules/>
+        </policies>
+        <pricing type="Standard" price1="1"/>
+        </rate>
+        </rates>
+        </room>
+        </rooms>
+        </roomrates>
+        <!--  RUID: [8eb7a1b3-644a-459a-95d3-f24c31f96ef1]  -->
+        XML;
+
+        $this->actingAs($this->superAdmin())
+            ->post(route('admin.channels.booking-mapping.paste'), [
+                'account_id' => $account->id,
+                'propid' => '352139',
+                'xml' => $xml,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status');
+
+        $this->assertStringContainsString('imported for property 352139', (string) session('status'));
+        $this->assertStringContainsString('3 rates', (string) session('status'));
+
+        $this->assertDatabaseHas('channel_rate_maps', [
+            'channel_account_id' => $account->id,
+            'external_property_id' => '352139',
+            'hotel_id' => '14305946',
+            'hotel_name' => 'Corner House - Large country house next to marina',
+        ]);
+        $this->assertDatabaseCount('channel_rates', 3);
+
+        $map = ChannelRateMap::query()
+            ->where('channel_account_id', $account->id)
+            ->where('external_property_id', '352139')
+            ->firstOrFail();
+        $this->assertStringContainsString('<roomrates>', (string) $map->raw_xml);
+
+        $rlo = ChannelRate::query()->where('external_rate_id', '55419261')->firstOrFail();
+        $this->assertSame('1430594601', $rlo->external_room_id);
+        $this->assertSame('Budget Twin Room', $rlo->room_name);
+        $this->assertSame('Standard Rate', $rlo->rate_name);
+        $this->assertSame('Non Refundable', $rlo->policy);
+        $this->assertSame('414619860', $rlo->policy_id);
+        $this->assertSame(12, $rlo->max_persons);
+        $this->assertSame(12, $rlo->fixed_occupancy);
+        $this->assertFalse($rlo->is_child_rate);
+        $this->assertSame('RLO', $rlo->pricing_type);
+        $this->assertSame('0', $rlo->meal_plan_code);
+        $this->assertEquals([1, 65.0, 0], [$rlo->occupancy[0]['persons'], $rlo->occupancy[0]['percentage'], $rlo->occupancy[0]['round']]);
+        $this->assertSame(11, $rlo->occupancy[2]['persons']);
+        $this->assertSame([
+            'policy_code' => '38',
+            'effective_from' => 'after_cancellation_fee_begins',
+            'required' => true,
+        ], $rlo->policies['guarantee_payment'][0]);
+        $this->assertSame('38', $rlo->policies['cancel_penalty'][0]['policy_code']);
+        $this->assertSame('P360D', $rlo->policies['booking_rules'][0]['max_advanced_booking_offset']);
+
+        $standard = ChannelRate::query()->where('external_rate_id', '68966832')->firstOrFail();
+        $this->assertSame('week days', $standard->rate_name);
+        $this->assertSame('Standard', $standard->pricing_type);
+        $this->assertSame([], $standard->occupancy);
+
+        $this->actingAs($this->superAdmin())
+            ->get(route('admin.channels.booking', ['account_id' => $account->id]))
+            ->assertOk()
+            ->assertSee('Standard Rate')
+            ->assertSee('Budget Twin Room')
+            ->assertSee('meal 0')
+            ->assertSee('cancel 38');
+    }
+
+    public function test_booking_com_mapping_xml_paste_rejects_invalid_xml(): void
+    {
+        $account = $this->beds24Account();
+
+        $this->actingAs($this->superAdmin())
+            ->post(route('admin.channels.booking-mapping.paste'), [
+                'account_id' => $account->id,
+                'propid' => '352139',
+                'xml' => 'this is definitely not roomrates xml',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status');
+
+        $this->assertStringContainsString('not valid xml', strtolower((string) session('status')));
+        $this->assertStringContainsString('not valid xml', strtolower((string) $account->refresh()->last_error));
+        $this->assertDatabaseCount('channel_rate_maps', 0);
+        $this->assertDatabaseCount('channel_rates', 0);
+    }
+
+    public function test_booking_com_mapping_xml_paste_replaces_existing_snapshot(): void
+    {
+        $account = $this->beds24Account();
+
+        $full = <<<'XML'
+        <roomrates><rooms>
+        <room id="1430594601" hotel_id="14305946" hotel_name="Corner House" room_name="Budget Twin Room">
+        <rates>
+        <rate id="55419261" max_persons="12" policy="Non Refundable" policy_id="414619860" rate_name="Standard Rate">
+        <meal_plan meal_plan_code="0"/>
+        <pricing type="RLO">
+        <occupancy persons="1" percentage="65.0" round="0"/>
+        </pricing>
+        </rate>
+        <rate id="68966832" max_persons="12" policy="General" policy_id="414619844" rate_name="week days">
+        <meal_plan meal_plan_code="0"/>
+        <pricing type="Standard" price1="1"/>
+        </rate>
+        </rates>
+        </room>
+        </rooms>
+        </roomrates>
+        XML;
+
+        $this->actingAs($this->superAdmin())
+            ->post(route('admin.channels.booking-mapping.paste'), [
+                'account_id' => $account->id,
+                'propid' => '352139',
+                'xml' => $full,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseCount('channel_rate_maps', 1);
+        $this->assertDatabaseCount('channel_rates', 2);
+
+        $replacement = <<<'XML'
+        <roomrates><rooms>
+        <room id="1430594601" hotel_id="14305946" hotel_name="Corner House" room_name="Garden Room">
+        <rates>
+        <rate id="99999999" max_persons="4" policy="General" policy_id="1" rate_name="Last Minute">
+        <meal_plan meal_plan_code="1"/>
+        <pricing type="Standard" price1="1"/>
+        </rate>
+        </rates>
+        </room>
+        </rooms>
+        </roomrates>
+        XML;
+
+        $this->actingAs($this->superAdmin())
+            ->post(route('admin.channels.booking-mapping.paste'), [
+                'account_id' => $account->id,
+                'propid' => '352139',
+                'xml' => $replacement,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status');
+
+        $this->assertStringContainsString('1 rates', (string) session('status'));
+        $this->assertDatabaseCount('channel_rate_maps', 1);
+        $this->assertDatabaseCount('channel_rates', 1);
+        $map = ChannelRateMap::query()
+            ->where('channel_account_id', $account->id)
+            ->where('external_property_id', '352139')
+            ->firstOrFail();
+        $this->assertSame('Garden Room', $map->fresh()->rates->sole()->room_name);
+        $this->assertDatabaseHas('channel_rates', [
+            'external_rate_id' => '99999999',
+            'rate_name' => 'Last Minute',
+            'meal_plan_code' => '1',
+        ]);
+        $this->assertDatabaseMissing('channel_rates', ['external_rate_id' => '55419261']);
     }
 
     private function beds24Account(): ChannelAccount

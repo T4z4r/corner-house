@@ -308,6 +308,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::post('/channels/properties/sync', [ChannelController::class, 'syncProperties'])->name('channels.properties.sync')->middleware('can:channels.configure');
         Route::post('/channels/rooms/sync', [ChannelController::class, 'syncRooms'])->name('channels.rooms.sync')->middleware('can:channels.configure');
         Route::post('/channels/booking-mapping/sync', [ChannelController::class, 'syncBookingMapping'])->name('channels.booking-mapping.sync')->middleware('can:channels.configure');
+        Route::post('/channels/booking-mapping/paste', [ChannelController::class, 'pasteBookingMapping'])->name('channels.booking-mapping.paste')->middleware('can:channels.configure');
         Route::post('/channels/{account}/setup', [ChannelController::class, 'setup'])->name('channels.setup')->middleware('can:channels.configure');
         Route::post('/channels/{account}/details', [ChannelController::class, 'details'])->name('channels.details')->middleware('can:channels.configure');
         Route::post('/channels/{account}/test', [ChannelController::class, 'test'])->name('channels.test')->middleware('can:channels.configure');

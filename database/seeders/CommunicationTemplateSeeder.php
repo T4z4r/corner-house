@@ -53,7 +53,7 @@ Please lock the back kitchen door and leave the key in the office outbuilding.
 A FEW EXTRAS
 Please treat the house as your own and you can use anything in the property and outbuildings (except Garage, which remains locked). There's some property information on the kitchen table, along with a complimentary bottle of Giraffe gin, which we produce here on site.
 
-Our website (corner house braunston) has a lot more information in addition to the below, but as a few key places of interest:
+Our website (cornerhousebraunston.uk) has a lot more information in addition to the below, but as a few key places of interest:
 
 EATING AND DRINKING NEARBY
 • The Gongoozlers Rest — a canal boat cafe at the marina just over the road. Seats around eight inside with outside seating too. Usually weekends only.

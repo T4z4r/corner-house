@@ -15,20 +15,66 @@ class Beds24ChannelProvider implements ChannelProviderInterface
         return 'beds24';
     }
 
+    private const MAX_BOOKING_PAGES = 100;
+
+    /**
+     * Beds24 only returns bookings whose arrival falls in the window you ask
+     * for. A wide explicit window (instead of the API default of yesterday to
+     * +1 year) is required so existing past stays are fetched too.
+     *
+     * @return array{arrivalFrom: string, arrivalTo: string}
+     */
+    public static function bookingWindow(): array
+    {
+        return [
+            'arrivalFrom' => now()->subYear()->toDateString(),
+            'arrivalTo' => now()->addYear()->toDateString(),
+        ];
+    }
+
     public function syncBookings(ChannelAccount $account): array
     {
         return $this->fetchBookings($account, $account->last_synced_at
             ? ['modifiedFrom' => $account->last_synced_at->toIso8601String()]
-            : []);
+            : self::bookingWindow());
     }
 
     /**
+     * Follows every page of GET /bookings. Without pagination Beds24 only
+     * returns the first page and bookings beyond it are silently lost.
+     *
      * @param  array<string, mixed>  $params
-     * @return array<string, mixed>
+     * @return array<int, array<string, mixed>>
      */
     public function fetchBookings(ChannelAccount $account, array $params = []): array
     {
-        return $this->client->get($account, 'bookings', $params);
+        $all = [];
+        $page = 1;
+
+        do {
+            $payload = $this->client->get($account, 'bookings', ['page' => $page] + $params);
+            $pageBookings = $payload['data'] ?? $payload['bookings'] ?? $payload['booking'] ?? $payload;
+
+            if (isset($pageBookings['id']) || isset($pageBookings['bookId'])) {
+                $pageBookings = [$pageBookings];
+            }
+
+            if (! is_array($pageBookings)) {
+                $pageBookings = [];
+            }
+
+            foreach ($pageBookings as $booking) {
+                if (is_array($booking)) {
+                    $all[] = $booking;
+                }
+            }
+
+            $pages = is_array($payload['pages'] ?? null) ? $payload['pages'] : [];
+            $more = (bool) ($pages['nextPageExists'] ?? false);
+            $page++;
+        } while ($more && $page <= self::MAX_BOOKING_PAGES);
+
+        return $all;
     }
 
     /**

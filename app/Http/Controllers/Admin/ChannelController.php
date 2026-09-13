@@ -304,6 +304,32 @@ class ChannelController extends Controller
         }
     }
 
+    public function pasteBookingMapping(Request $request, Beds24MappingService $service): RedirectResponse
+    {
+        $data = $request->validate([
+            'account_id' => ['required', 'integer', 'exists:channel_accounts,id'],
+            'propid' => ['required', 'string', 'max:100'],
+            'xml' => ['required', 'string', 'max:200000'],
+        ]);
+
+        $account = ChannelAccount::findOrFail($data['account_id']);
+
+        try {
+            $map = $service->importXml($account, trim($data['propid']), $data['xml']);
+
+            return back()->with('status', sprintf(
+                'Booking.com mapping imported for property %s (hotel: %s, %d rates).',
+                $map->external_property_id,
+                $map->hotel_name ?: 'unknown',
+                $map->rates()->count(),
+            ));
+        } catch (\Throwable $e) {
+            $account->update(['last_error' => $e->getMessage()]);
+
+            return back()->with('status', 'Could not import the Booking.com mapping: '.$e->getMessage());
+        }
+    }
+
     public function vrbo(Request $request, Beds24Client $client): View
     {
         $accounts = ChannelAccount::query()

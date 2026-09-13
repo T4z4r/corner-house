@@ -21,7 +21,7 @@ class FetchBeds24BookingsJob implements ShouldQueue
             ->where('status', 'active')
             ->each(function (ChannelAccount $account) use ($channels): void {
                 try {
-                    $channels->syncBookings($account);
+                    $channels->syncBookings($account, true);
                 } catch (\Throwable $e) {
                     $account->update(['status' => 'error', 'last_error' => $e->getMessage()]);
                     Log::error('Beds24 booking fetch failed', ['account_id' => $account->id, 'message' => $e->getMessage()]);

@@ -190,6 +190,7 @@
                             <th>Room</th>
                             <th>Rate</th>
                             <th>Occupancy %</th>
+                            <th>Policies &amp; meal</th>
                             <th>Relation</th>
                             <th>Synced</th>
                         </tr>
@@ -214,6 +215,20 @@
                                             <span class="text-muted small">—</span>
                                         @endforelse
                                     </td>
+                                    <td class="small">
+                                        @if ($rate->meal_plan_code !== null)
+                                            <span class="ch-badge ch-badge-muted">meal {{ $rate->meal_plan_code }}</span>
+                                        @endif
+                                        @foreach (($rate->policies['cancel_penalty'] ?? []) as $penalty)
+                                            <span class="ch-badge ch-badge-muted">cancel {{ $penalty['policy_code'] ?? '?' }}</span>
+                                        @endforeach
+                                        @foreach (($rate->policies['guarantee_payment'] ?? []) as $guarantee)
+                                            <span class="ch-badge ch-badge-muted">guarantee {{ $guarantee['policy_code'] ?? '?' }}</span>
+                                        @endforeach
+                                        @if ($rate->meal_plan_code === null && empty($rate->policies))
+                                            <span class="text-muted">—</span>
+                                        @endif
+                                    </td>
                                     <td>
                                         @if ($rate->parent_rate_id)
                                             <span class="small text-muted">parent {{ $rate->parent_rate_id }} @ {{ $rate->percentage }}%</span>
@@ -231,4 +246,38 @@
         @endif
     </div>
 </div>
+
+@can('channels.configure')
+    @if ($selectedAccount)
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-header bg-white">
+                <div class="fw-semibold">Paste getmapping XML (optional)</div>
+                <div class="small text-muted">
+                    Paste the output of <code>beds24.com/api/booking.com/getmapping.php?propid=...</code>
+                    copied from a browser signed into Beds24. This adds rate names, occupancy percentages,
+                    policies and meal plans. It replaces this property's stored snapshot; a later
+                    "Fetch &amp; save mapping" will replace it again with just the room/rate IDs.
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ route('admin.channels.booking-mapping.paste') }}">
+                    @csrf
+                    <input type="hidden" name="account_id" value="{{ $selectedAccount->id }}">
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-4 col-lg-3">
+                            <label class="form-label small text-muted mb-1" for="pastePropid">Beds24 property ID</label>
+                            <input type="text" class="form-control form-control-sm" id="pastePropid" name="propid"
+                                   value="{{ $mappedPropertyIds->first() }}" placeholder="e.g. 352139">
+                        </div>
+                    </div>
+                    <label class="form-label small text-muted mb-1" for="mappingXml">getmapping XML</label>
+                    <textarea class="form-control font-monospace" id="mappingXml" name="xml" rows="8"
+                              placeholder="<roomrates>... (paste from your Beds24 browser session)"
+                              required></textarea>
+                    <button class="btn btn-sm btn-ch-primary mt-2">Import mapping XML</button>
+                </form>
+            </div>
+        </div>
+    @endif
+@endcan
 @endsection

@@ -44,7 +44,7 @@ class ChannelManager
         if ($provider instanceof Beds24ChannelProvider) {
             $params = (! $full && $account->last_synced_at)
                 ? ['modifiedFrom' => $account->last_synced_at->toIso8601String()]
-                : [];
+                : Beds24ChannelProvider::bookingWindow();
             $payload = $provider->fetchBookings($account, $params);
         } else {
             $payload = $provider->syncBookings($account);
