@@ -157,7 +157,7 @@
     <div class="card-header bg-white d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
         <div>
             <div class="fw-semibold">Booking.com rate mapping</div>
-            <div class="small text-muted">Rooms, rates and occupancy pricing stored from Beds24's getmapping feed.</div>
+            <div class="small text-muted">Rooms, rates and occupancy pricing synced from Beds24's channel mapping.</div>
         </div>
         @can('channels.configure')
             @if ($selectedAccount)
@@ -204,7 +204,7 @@
                                         <div class="small text-muted">Room id: {{ $rate->external_room_id }}</div>
                                     </td>
                                     <td>
-                                        <div class="fw-semibold">{{ $rate->rate_name }}</div>
+                                        <div class="fw-semibold">{{ $rate->rate_name ?: $rate->external_rate_id }}</div>
                                         <div class="small text-muted">Rate id: {{ $rate->external_rate_id }} &middot; {{ $rate->is_child_rate ? 'child' : 'base' }}</div>
                                     </td>
                                     <td>

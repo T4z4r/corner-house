@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\CalendarBlock;
 use App\Models\ChannelAccount;
 use App\Models\ChannelMapping;
-use App\Models\ChannelRate;
 use App\Models\ChannelSyncLog;
 use App\Models\Guest;
 use App\Models\PricingOverride;
@@ -2393,111 +2392,59 @@ class Beds24IntegrationTest extends TestCase
             && (string) ($request->data()[0]['status'] ?? '') === 'cancelled');
     }
 
-    private const BOOKING_MAPPING_XML = <<<'XML'
-<?xml version="1.0" encoding="utf-8"?>
-<roomrates>
-<rooms>
-<room id="1720816101" hotel_id="17208161" hotel_name="Corner House - Large country house next to marina" room_name="Apartment">
-<rates>
-<rate id="68925230" max_persons="12" policy="General" policy_id="443764712" rate_name="Standard Rate" fixed_occupancy="12">
-<meal_plan meal_plan_code="0"/>
-<policies>
-<guarantee_payment_policy><guarantee_payment policy_code="1" effective_from="after_reservation_is_made" required="1"/></guarantee_payment_policy>
-<cancel_policy><cancel_penalty policy_code="38"/></cancel_policy>
-<booking_rules/>
-</policies>
-<pricing type="RLO">
-<occupancy persons="1" percentage="65.0" round="0"/>
-<occupancy persons="2" percentage="65.0" round="0"/>
-<occupancy persons="7" percentage="75.0" round="0"/>
-</pricing>
-</rate>
-<rate id="68925231" max_persons="12" policy="Non Refundable" policy_id="443764713" rate_name="Non-refundable Rate-Apartment-1720816101" is_child_rate="1" fixed_occupancy="12">
-<meal_plan meal_plan_code="0"/>
-<rate_relation follows_closed="0" follows_restrictions="1" follows_policygroup_id="0" follows_price="1" parent_rate_id="68925230" percentage="90.0"/>
-<pricing type="RLO">
-<occupancy persons="1" percentage="65.0" round="0"/>
-<occupancy persons="2" percentage="65.0" round="0"/>
-</pricing>
-</rate>
-<rate id="68925235" max_persons="12" policy="General" policy_id="443764712" rate_name="Weekly Rate-Apartment-1720816101" is_child_rate="1" fixed_occupancy="12">
-<rate_relation follows_closed="0" follows_restrictions="0" follows_policygroup_id="0" follows_price="1" parent_rate_id="68925230" percentage="85.0"/>
-<pricing type="RLO">
-<occupancy persons="1" percentage="65.0" round="0"/>
-</pricing>
-</rate>
-</rates>
-</room>
-</rooms>
-</roomrates>
-XML;
-
     public function test_booking_com_rate_mapping_is_fetched_and_stored(): void
     {
-        $account = ChannelAccount::factory()->create(['provider' => 'beds24', 'status' => 'active']);
+        $account = $this->beds24Account();
 
         Http::fake([
-            '*getmapping*' => Http::response(self::BOOKING_MAPPING_XML, 200),
+            '*channels*' => Http::response([
+                'success' => true,
+                'data' => [[
+                    'id' => 5,
+                    'propertyId' => 352139,
+                    'channel' => 'bookingcom',
+                    'connected' => true,
+                    'mappings' => [
+                        ['roomId' => 123, 'externalRoomId' => '1720816101', 'externalRateId' => '68925230'],
+                        ['roomId' => 124, 'externalRoomId' => '1720816102', 'externalRateId' => '68925240'],
+                    ],
+                ]],
+            ], 200),
         ]);
 
         $this->actingAs($this->superAdmin())
             ->post(route('admin.channels.booking-mapping.sync'), [
                 'account_id' => $account->id,
-                'propid' => '351393',
+                'propid' => '352139',
             ])
             ->assertRedirect()
-            ->assertSessionHas('status', 'Booking.com rate mapping synced for property 351393 (3 rates).');
+            ->assertSessionHas('status', 'Booking.com rate mapping synced for property 352139 (2 rates).');
 
         $this->assertDatabaseHas('channel_rate_maps', [
             'channel_account_id' => $account->id,
-            'external_property_id' => '351393',
-            'hotel_id' => '17208161',
-            'hotel_name' => 'Corner House - Large country house next to marina',
+            'external_property_id' => '352139',
         ]);
 
-        $this->assertDatabaseCount('channel_rates', 3);
+        $this->assertDatabaseCount('channel_rates', 2);
 
         $this->assertDatabaseHas('channel_rates', [
             'external_room_id' => '1720816101',
-            'room_name' => 'Apartment',
             'external_rate_id' => '68925230',
-            'rate_name' => 'Standard Rate',
             'is_child_rate' => false,
-            'parent_rate_id' => null,
-            'pricing_type' => 'RLO',
         ]);
 
         $this->assertDatabaseHas('channel_rates', [
-            'external_rate_id' => '68925231',
-            'rate_name' => 'Non-refundable Rate-Apartment-1720816101',
-            'is_child_rate' => true,
-            'parent_rate_id' => '68925230',
-            'percentage' => 90.0,
+            'external_room_id' => '1720816102',
+            'external_rate_id' => '68925240',
         ]);
 
-        $standard = app(ChannelRate::class)
-            ->where('external_rate_id', '68925230')
-            ->firstOrFail();
-
-        $this->assertSame([
-            ['persons' => 1, 'percentage' => 65.0, 'round' => 0],
-            ['persons' => 2, 'percentage' => 65.0, 'round' => 0],
-            ['persons' => 7, 'percentage' => 75.0, 'round' => 0],
-        ], array_map(
-            fn (array $entry) => [
-                'persons' => (int) $entry['persons'],
-                'percentage' => (float) $entry['percentage'],
-                'round' => (int) $entry['round'],
-            ],
-            $standard->occupancy,
-        ));
-
-        $this->assertSame('38', $standard->policies['cancel_penalty']['policy_code'] ?? null);
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'channels')
+            && str_contains($request->url(), 'propertyId=352139'));
     }
 
     public function test_booking_com_rate_mapping_uses_mapped_property_id_when_not_provided(): void
     {
-        $account = ChannelAccount::factory()->create(['provider' => 'beds24', 'status' => 'active']);
+        $account = $this->beds24Account();
         ChannelMapping::factory()->create([
             'channel_account_id' => $account->id,
             'property_id' => Property::factory()->create()->id,
@@ -2506,7 +2453,15 @@ XML;
         ]);
 
         Http::fake([
-            '*getmapping*' => Http::response(self::BOOKING_MAPPING_XML, 200),
+            '*channels*' => Http::response([
+                'data' => [[
+                    'id' => 1,
+                    'propertyId' => 351393,
+                    'channel' => 'bookingcom',
+                    'connected' => true,
+                    'mappings' => [['roomId' => 9, 'externalRoomId' => 'R1', 'externalRateId' => 'X1']],
+                ]],
+            ], 200),
         ]);
 
         $this->actingAs($this->superAdmin())
@@ -2514,18 +2469,18 @@ XML;
                 'account_id' => $account->id,
             ])
             ->assertRedirect()
-            ->assertSessionHas('status', 'Booking.com rate mapping synced for property 351393 (3 rates).');
+            ->assertSessionHas('status', 'Booking.com rate mapping synced for property 351393 (1 rates).');
 
-        Http::assertSent(fn ($request) => str_contains($request->url(), 'getmapping')
-            && str_contains($request->url(), 'propid=351393'));
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'channels')
+            && str_contains($request->url(), 'propertyId=351393'));
     }
 
     public function test_booking_com_rate_mapping_reports_failure(): void
     {
-        $account = ChannelAccount::factory()->create(['provider' => 'beds24', 'status' => 'active']);
+        $account = $this->beds24Account();
 
         Http::fake([
-            '*getmapping*' => Http::response('Server error', 500),
+            '*channels*' => Http::response('Server error', 500),
         ]);
 
         $this->actingAs($this->superAdmin())
@@ -2537,15 +2492,15 @@ XML;
             ->assertSessionHas('status');
 
         $this->assertStringContainsString('could not sync', strtolower((string) session('status')));
-        $this->assertStringContainsString('failed', strtolower((string) $account->refresh()->last_error));
+        $this->assertStringContainsString('500', (string) $account->refresh()->last_error);
     }
 
-    public function test_booking_com_rate_mapping_reports_non_xml_body_instead_of_invalid_xml(): void
+    public function test_booking_com_rate_mapping_reports_when_no_booking_com_connection(): void
     {
-        $account = ChannelAccount::factory()->create(['provider' => 'beds24', 'status' => 'active']);
+        $account = $this->beds24Account();
 
         Http::fake([
-            '*getmapping*' => Http::response('error', 200, ['content-type' => 'text/html']),
+            '*channels*' => Http::response(['data' => []], 200),
         ]);
 
         $this->actingAs($this->superAdmin())
@@ -2556,22 +2511,29 @@ XML;
             ->assertRedirect()
             ->assertSessionHas('status');
 
-        $status = (string) session('status');
-
-        $this->assertStringContainsString('could not sync', strtolower($status));
-        $this->assertStringContainsString('not XML', $status);
-        $this->assertStringContainsString('error', $status);
-        $this->assertStringContainsString('unauthorised', strtolower($account->refresh()->last_error));
+        $this->assertStringContainsString('could not sync', strtolower((string) session('status')));
+        $this->assertStringContainsString('no booking.com channel connection', strtolower((string) $account->refresh()->last_error));
 
         $this->assertDatabaseCount('channel_rate_maps', 0);
     }
 
     public function test_booking_com_rate_mapping_page_shows_stored_rates(): void
     {
-        $account = ChannelAccount::factory()->create(['provider' => 'beds24', 'status' => 'active']);
+        $account = $this->beds24Account();
 
         Http::fake([
-            '*getmapping*' => Http::response(self::BOOKING_MAPPING_XML, 200),
+            '*channels*' => Http::response([
+                'data' => [[
+                    'id' => 5,
+                    'propertyId' => 351393,
+                    'channel' => 'bookingcom',
+                    'connected' => true,
+                    'mappings' => [
+                        ['roomId' => 123, 'externalRoomId' => '1720816101', 'externalRateId' => '68925230'],
+                        ['roomId' => 124, 'externalRoomId' => '1720816102', 'externalRateId' => '68925240'],
+                    ],
+                ]],
+            ], 200),
         ]);
 
         $this->actingAs($this->superAdmin())
@@ -2584,9 +2546,23 @@ XML;
         $this->actingAs($this->superAdmin())
             ->get(route('admin.channels.booking', ['account_id' => $account->id]))
             ->assertOk()
-            ->assertSee('Standard Rate')
-            ->assertSee('Non-refundable Rate-Apartment-1720816101')
-            ->assertSee('7p')
+            ->assertSee('1720816101')
+            ->assertSee('68925230')
+            ->assertSee('1720816102')
+            ->assertSee('68925240')
             ->assertSee('Booking.com rate mapping');
+    }
+
+    private function beds24Account(): ChannelAccount
+    {
+        return ChannelAccount::factory()->create([
+            'provider' => 'beds24',
+            'status' => 'active',
+            'credentials' => [
+                'refresh_token' => 'refresh-token',
+                'access_token' => 'access-1',
+                'access_token_expires_at' => now()->addHour()->toIso8601String(),
+            ],
+        ]);
     }
 }

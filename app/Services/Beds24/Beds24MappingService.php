@@ -5,129 +5,56 @@ namespace App\Services\Beds24;
 use App\Models\ChannelAccount;
 use App\Models\ChannelRateMap;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use RuntimeException;
-use SimpleXMLElement;
 
 class Beds24MappingService
 {
-    /**
-     * Fetch the Booking.com room/rate mapping XML for a Beds24 property.
-     */
-    public function fetch(string $propertyId): string
-    {
-        $url = (string) config('services.beds24.booking_mapping_url', 'https://beds24.com/api/booking.com/getmapping.php');
+    /** @var list<string> */
+    private const BOOKING_COM_CHANNEL_NAMES = ['booking.com', 'bookingcom', 'booking'];
 
-        $response = Http::connectTimeout(5)
-            ->timeout(25)
-            ->accept('application/xml')
-            ->get($url, ['propid' => $propertyId]);
-
-        if ($response->failed()) {
-            throw new RuntimeException('Beds24 booking mapping request failed ('.$response->status().').');
-        }
-
-        return $response->body();
-    }
-
-    /**
-     * Parse the getmapping XML into a structured array.
-     *
-     * @return array{rooms: array<int, array<string, mixed>>}
-     */
-    public function parse(string $xml): array
-    {
-        $rooms = [];
-
-        $root = $this->asXml($xml);
-
-        foreach ($root->rooms->room as $room) {
-            if (! $room instanceof SimpleXMLElement) {
-                continue;
-            }
-
-            $rates = [];
-
-            foreach ($room->rates->rate as $rate) {
-                if (! $rate instanceof SimpleXMLElement) {
-                    continue;
-                }
-
-                $rates[] = [
-                    'external_rate_id' => (string) ($rate['id'] ?? ''),
-                    'rate_name' => (string) ($rate['rate_name'] ?? ''),
-                    'policy' => $this->attribute($rate, 'policy'),
-                    'policy_id' => $this->attribute($rate, 'policy_id'),
-                    'max_persons' => $this->attribute($rate, 'max_persons') !== null ? (int) $this->attribute($rate, 'max_persons') : null,
-                    'fixed_occupancy' => $this->attribute($rate, 'fixed_occupancy') !== null ? (int) $this->attribute($rate, 'fixed_occupancy') : null,
-                    'is_child_rate' => $this->attribute($rate, 'is_child_rate') === '1',
-                    'meal_plan_code' => isset($rate->meal_plan['meal_plan_code']) ? (string) $rate->meal_plan['meal_plan_code'] : null,
-                    'pricing_type' => isset($rate->pricing['type']) ? (string) $rate->pricing['type'] : null,
-                    'occupancy' => $this->parseOccupancy($rate),
-                    'rate_relation' => $this->parseRateRelation($rate),
-                    'policies' => $this->parsePolicies($rate),
-                ];
-            }
-
-            $rooms[] = [
-                'external_room_id' => (string) ($room['id'] ?? ''),
-                'hotel_id' => (string) ($room['hotel_id'] ?? ''),
-                'hotel_name' => (string) ($room['hotel_name'] ?? ''),
-                'room_name' => (string) ($room['room_name'] ?? ''),
-                'rates' => $rates,
-            ];
-        }
-
-        return ['rooms' => $rooms];
-    }
+    public function __construct(private readonly Beds24Client $client) {}
 
     /**
      * Fetch and store the Booking.com mapping for a property, replacing any previous copy.
+     *
+     * The mapping is read from the authenticated API v2 /channels endpoint. The
+     * legacy getmapping.php feed is avoided because it only answers to a browser
+     * signed into Beds24 and returns "error" to server-side clients.
      */
     public function sync(ChannelAccount $account, string $propertyId): ChannelRateMap
     {
-        $xml = $this->fetch($propertyId);
-        $parsed = $this->parse($xml);
+        $connection = $this->bookingComConnection($this->fetchChannels($account, $propertyId), $propertyId);
 
-        return DB::transaction(function () use ($account, $propertyId, $xml, $parsed) {
+        return DB::transaction(function () use ($account, $propertyId, $connection) {
             $map = ChannelRateMap::query()->updateOrCreate(
                 [
                     'channel_account_id' => $account->id,
                     'external_property_id' => $propertyId,
                 ],
-                [
-                    'hotel_id' => $parsed['rooms'][0]['hotel_id'] ?? null,
-                    'hotel_name' => $parsed['rooms'][0]['hotel_name'] ?? null,
-                    'raw_xml' => $xml,
-                    'synced_at' => now(),
-                ],
+                ['synced_at' => now()],
             );
 
             $map->rates()->delete();
 
-            foreach ($parsed['rooms'] as $room) {
-                foreach ($room['rates'] as $rate) {
-                    $relation = $rate['rate_relation'];
-
-                    $map->rates()->create([
-                        'external_room_id' => $room['external_room_id'],
-                        'room_name' => $room['room_name'],
-                        'external_rate_id' => $rate['external_rate_id'],
-                        'rate_name' => $rate['rate_name'],
-                        'policy' => $rate['policy'],
-                        'policy_id' => $rate['policy_id'],
-                        'max_persons' => $rate['max_persons'],
-                        'fixed_occupancy' => $rate['fixed_occupancy'],
-                        'is_child_rate' => $rate['is_child_rate'],
-                        'parent_rate_id' => $relation['parent_rate_id'] ?? null,
-                        'follows_price' => $relation['follows_price'] ?? null,
-                        'percentage' => $relation['percentage'] ?? null,
-                        'pricing_type' => $rate['pricing_type'],
-                        'meal_plan_code' => $rate['meal_plan_code'],
-                        'occupancy' => $rate['occupancy'],
-                        'policies' => $rate['policies'],
-                    ]);
-                }
+            foreach ($connection['mappings'] as $mapping) {
+                $map->rates()->create([
+                    'external_room_id' => $this->mappingValue($mapping, 'externalRoomId'),
+                    'room_name' => null,
+                    'external_rate_id' => $this->mappingValue($mapping, 'externalRateId'),
+                    'rate_name' => '',
+                    'policy' => null,
+                    'policy_id' => null,
+                    'max_persons' => null,
+                    'fixed_occupancy' => null,
+                    'is_child_rate' => false,
+                    'parent_rate_id' => null,
+                    'follows_price' => null,
+                    'percentage' => null,
+                    'pricing_type' => null,
+                    'meal_plan_code' => null,
+                    'occupancy' => [],
+                    'policies' => [],
+                ]);
             }
 
             $account->update(['last_error' => null, 'last_synced_at' => now()]);
@@ -136,102 +63,79 @@ class Beds24MappingService
         });
     }
 
-    private function asXml(string $xml): SimpleXMLElement
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchChannels(ChannelAccount $account, string $propertyId): array
     {
-        $body = trim($xml);
+        $payload = $this->client->get($account, 'channels', ['propertyId' => $propertyId]);
 
-        $root = @simplexml_load_string($body);
+        $entries = is_array($payload) ? ($payload['data'] ?? $payload) : null;
 
-        if ($root instanceof SimpleXMLElement) {
-            return $root;
+        if (! is_array($entries)) {
+            throw new RuntimeException('Beds24 /channels returned an unexpected response (expected a channel list).');
         }
 
-        // A feed problem, not a parser problem: Beds24's getmapping endpoint
-        // answers "error" (200 OK, non-XML) to clients without a valid Beds24
-        // session cookie, and the legacy endpoint also fails on malformed XML.
-        // Surface the actual body so the admin message names the real cause.
-        if ($body === '') {
-            throw new RuntimeException('Beds24 booking mapping returned an empty response.');
-        }
-
-        $type = str_starts_with($body, '<') ? 'malformed XML' : 'not XML';
-        $snippet = ' Response ('.strlen($body).' bytes): "'.mb_substr($body, 0, 160).'"';
-        $hint = $type === 'not XML'
-            ? 'The Beds24 getmapping feed is rejecting unauthorised requests — it often returns "error" to server-side clients (browsers show the real XML because they carry a logged-in Beds24 session).'
-            : '';
-
-        throw new RuntimeException('Beds24 booking mapping returned '.$type.$snippet.'.'.$hint);
-    }
-
-    private function attribute(SimpleXMLElement $node, string $name): ?string
-    {
-        return isset($node[$name]) ? (string) $node[$name] : null;
+        return array_values(array_filter($entries, fn ($entry) => is_array($entry)));
     }
 
     /**
-     * @return array<int, array{persons: int, percentage: float, round: int}>
+     * @param  array<int, array<string, mixed>>  $channels
+     * @return array{propertyId: string, mappings: array<int, array<string, mixed>>}
      */
-    private function parseOccupancy(SimpleXMLElement $rate): array
+    private function bookingComConnection(array $channels, string $propertyId): array
     {
-        $occupancy = [];
+        $connection = null;
 
-        foreach ($rate->pricing->occupancy as $entry) {
-            $occupancy[] = [
-                'persons' => $this->attribute($entry, 'persons') !== null ? (int) $this->attribute($entry, 'persons') : 0,
-                'percentage' => $this->attribute($entry, 'percentage') !== null ? (float) $this->attribute($entry, 'percentage') : 0.0,
-                'round' => $this->attribute($entry, 'round') !== null ? (int) $this->attribute($entry, 'round') : 0,
-            ];
+        foreach ($channels as $channel) {
+            if (in_array(strtolower((string) ($channel['channel'] ?? '')), self::BOOKING_COM_CHANNEL_NAMES, true)) {
+                $connection = $channel;
+                break;
+            }
         }
 
-        return $occupancy;
-    }
-
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function parseRateRelation(SimpleXMLElement $rate): ?array
-    {
-        if (! isset($rate->rate_relation)) {
-            return null;
+        if ($connection === null) {
+            throw new RuntimeException(sprintf(
+                'Beds24 returned no Booking.com channel connection for property %s. Add Booking.com in Beds24 (Settings > Channel Manager > Booking.com) and activate the connection.',
+                $propertyId,
+            ));
         }
 
-        $relation = $rate->rate_relation;
+        if (($connection['connected'] ?? true) === false) {
+            throw new RuntimeException(sprintf(
+                'The Booking.com connection for property %s is not active. Activate it in Beds24, then sync again.',
+                $propertyId,
+            ));
+        }
+
+        $mappings = array_values(array_filter($connection['mappings'] ?? [], fn ($mapping) => is_array($mapping)));
+
+        if ($mappings === []) {
+            throw new RuntimeException(sprintf(
+                'The Booking.com connection for property %s has no room/rate mappings. Map your rooms and rate plans in Beds24 (Settings > Channel Manager > Booking.com > Get Codes), then sync again.',
+                $propertyId,
+            ));
+        }
 
         return [
-            'follows_closed' => $this->attribute($relation, 'follows_closed'),
-            'follows_restrictions' => $this->attribute($relation, 'follows_restrictions'),
-            'follows_policygroup_id' => $this->attribute($relation, 'follows_policygroup_id'),
-            'follows_price' => $this->attribute($relation, 'follows_price'),
-            'parent_rate_id' => $this->attribute($relation, 'parent_rate_id'),
-            'percentage' => $this->attribute($relation, 'percentage') !== null ? (float) $this->attribute($relation, 'percentage') : null,
+            'propertyId' => $this->mappingValue($connection, 'propertyId', $propertyId),
+            'mappings' => $mappings,
         ];
     }
 
     /**
-     * @return array<string, mixed>
+     * @param  array<string, mixed>  $mapping
      */
-    private function parsePolicies(SimpleXMLElement $rate): array
+    private function mappingValue(array $mapping, string $key, string $default = ''): string
     {
-        $policies = [];
+        $snake = (string) preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $key);
 
-        $guarantee = $rate->policies->guarantee_payment_policy->guarantee_payment ?? null;
-
-        if ($guarantee instanceof SimpleXMLElement) {
-            $policies['guarantee_payment'] = [
-                'policy_code' => $this->attribute($guarantee, 'policy_code'),
-                'effective_from' => $this->attribute($guarantee, 'effective_from'),
-                'required' => $this->attribute($guarantee, 'required') !== null ? (int) $this->attribute($guarantee, 'required') : null,
-            ];
+        foreach ([$key, $snake] as $candidate) {
+            if (array_key_exists($candidate, $mapping)) {
+                return (string) $mapping[$candidate];
+            }
         }
 
-        $cancel = $rate->policies->cancel_policy->cancel_penalty ?? null;
-
-        if ($cancel instanceof SimpleXMLElement) {
-            $policies['cancel_penalty'] = [
-                'policy_code' => $this->attribute($cancel, 'policy_code'),
-            ];
-        }
-
-        return $policies;
+        return $default;
     }
 }
