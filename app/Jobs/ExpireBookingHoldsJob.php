@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Jobs\Concerns\TracksCronRun;
 use App\Services\Booking\BookingHoldService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -9,12 +10,14 @@ use Illuminate\Support\Facades\Log;
 
 class ExpireBookingHoldsJob implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, TracksCronRun;
 
     public function handle(BookingHoldService $holds): void
     {
-        $released = $holds->expireExpiredHolds();
+        $this->trackCronRun(function () use ($holds): void {
+            $released = $holds->expireExpiredHolds();
 
-        Log::info('Booking holds expired', ['released' => $released]);
+            Log::info('Booking holds expired', ['released' => $released]);
+        });
     }
 }

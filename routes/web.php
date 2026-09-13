@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\CalendarController;
 use App\Http\Controllers\Admin\ChannelController;
 use App\Http\Controllers\Admin\ChatbotController;
 use App\Http\Controllers\Admin\CommunicationController;
+use App\Http\Controllers\Admin\CronJobsController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EnquiryController;
 use App\Http\Controllers\Admin\EventController;
@@ -94,6 +95,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::get('/settings/stripe', [SettingsController::class, 'stripe'])->name('settings.stripe');
         Route::get('/settings/schedule', [ScheduleSettingsController::class, 'index'])->name('schedule-settings');
         Route::put('/settings/schedule', [ScheduleSettingsController::class, 'update'])->name('schedule-settings.update');
+        Route::get('/cron-jobs', [CronJobsController::class, 'index'])->name('cron-jobs');
         Route::post('/settings/upload-image', [SettingsController::class, 'uploadImage'])->name('settings.upload-image')->middleware('can:settings.update');
         Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
         Route::post('/settings', [SettingsController::class, 'store'])->name('settings.store');

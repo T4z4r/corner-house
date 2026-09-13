@@ -117,7 +117,7 @@ Toggle the **Enabled** switch off for any task you don't want to sync automatica
 1. **Verify the command** — Ensure the path is correct and `php` is accessible
 2. **Check PHP path** — Some servers require the full PHP path:
    ```bash
-   cd /path/to/corner-house && /usr/bin/php artisan schedule:run >> /dev/null 2>&1
+   cd /home/cornzbzi/cornerhouse.com && /usr/bin/php artisan schedule:run >> /dev/null 2>&1
    ```
 3. **Find PHP path** — Run `which php` via SSH, or check cPanel → **Select PHP Version**
 
@@ -163,7 +163,7 @@ This shows all registered scheduled tasks and their next run times.
 For high-traffic setups, you can run the scheduler more frequently:
 
 ```bash
-* * * * * cd /path/to/corner-house && php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd /home/cornzbzi/cornerhouse.com & php artisan schedule:run >> /dev/null 2>&1
 * * * * * sleep 30 && cd /home/cornzbzi/cornerhouse.com && php artisan schedule:run >> /dev/null 2>&1
 ```
 

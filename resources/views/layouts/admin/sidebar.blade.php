@@ -167,6 +167,11 @@
                     <i class="bi bi-gear me-2"></i><span class="nav-text">Settings</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.cron-jobs') }}" class="nav-link {{ request()->routeIs('admin.cron-jobs') ? 'active' : '' }}">
+                    <i class="bi bi-clock-history me-2"></i><span class="nav-text">Cron Jobs</span>
+                </a>
+            </li>
     </ul>
     <hr class="text-secondary">
     <div class="dropdown mb-2">
@@ -262,6 +267,11 @@
             <li class="nav-item">
             <a href="{{ route('admin.settings') }}" class="nav-link {{ request()->routeIs('admin.settings') ? 'active' : '' }}">
                 <i class="bi bi-gear me-2"></i><span class="nav-text">Settings</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.cron-jobs') }}" class="nav-link {{ request()->routeIs('admin.cron-jobs') ? 'active' : '' }}">
+                <i class="bi bi-clock-history me-2"></i><span class="nav-text">Cron Jobs</span>
             </a>
         </li>
     </ul>
