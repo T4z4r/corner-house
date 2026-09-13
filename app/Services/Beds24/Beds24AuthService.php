@@ -79,6 +79,7 @@ class Beds24AuthService
             ->timeout(20)
             ->acceptJson()
             ->withHeaders(['code' => $code])
+            ->retry(3, 1000)
             ->get($this->url('authentication/setup'));
 
         $body = $response->json();
@@ -135,6 +136,7 @@ class Beds24AuthService
             ->timeout(20)
             ->acceptJson()
             ->withHeaders(['refreshToken' => $refresh])
+            ->retry(3, 1000)
             ->get($this->url('authentication/token'));
 
         $body = $response->json();

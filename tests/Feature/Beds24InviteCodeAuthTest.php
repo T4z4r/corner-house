@@ -91,6 +91,31 @@ class Beds24InviteCodeAuthTest extends TestCase
         Http::assertSent(fn ($request) => str_contains($request->url(), 'authentication/setup'));
     }
 
+    public function test_access_token_recovers_from_a_token_endpoint_timeout_with_the_invite_code(): void
+    {
+        $account = $this->accountWith([
+            'refresh_token' => 'stale-refresh',
+            'invite_code' => 'INVITE-TIMEOUT',
+        ]);
+
+        Http::fake([
+            '*authentication/token*' => Http::failedConnection(),
+            '*authentication/setup*' => Http::response([
+                'token' => 'access-recovered-after-timeout',
+                'refreshToken' => 'refresh-recovered-after-timeout',
+                'expiresIn' => 86400,
+            ], 200),
+        ]);
+
+        $token = app(Beds24AuthService::class)->accessToken($account);
+
+        $this->assertSame('access-recovered-after-timeout', $token);
+        $this->assertGreaterThanOrEqual(2, collect(Http::recorded())->filter(
+            fn ($request) => str_contains($request->url(), 'authentication/token')
+        )->count());
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'authentication/setup'));
+    }
+
     public function test_access_token_raises_when_no_credentials_or_invite_code_exist(): void
     {
         $account = $this->accountWith([]);
