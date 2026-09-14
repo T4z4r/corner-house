@@ -110,6 +110,9 @@
                     @if ($reservation->notes)
                         <hr><strong>Notes:</strong> {{ $reservation->notes }}
                     @endif
+                    @if ($reservation->drinks_package)
+                        <hr><strong>Drinks package:</strong> Serengeti Spirits requested
+                    @endif
                 </div>
             </div>
 

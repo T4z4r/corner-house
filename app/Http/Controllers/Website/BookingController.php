@@ -202,6 +202,7 @@ class BookingController extends Controller
                 'check_in' => ['required', 'date'],
                 'check_out' => ['required', 'date', 'after:check_in'],
                 'guests_count' => ['required', 'integer', 'min:1'],
+                'drinks' => ['nullable', 'boolean'],
                 'guest_first_name' => ['required', 'string', 'max:255'],
                 'guest_last_name' => ['required', 'string', 'max:255'],
                 'guest_email' => ['required', 'email'],
@@ -313,6 +314,7 @@ class BookingController extends Controller
                 'hold_token' => $hold['hold']->hold_token,
                 'damage_deposit' => $damageDeposit,
                 'addons_total' => $addonsTotal,
+                'drinks_package' => (bool) ($data['drinks'] ?? false),
             ]);
 
             // Attach add-ons to reservation

@@ -119,6 +119,7 @@ class BookingService
                 'check_in' => $checkIn,
                 'check_out' => $checkOut,
                 'guests_count' => $data['guests_count'] ?? 1,
+                'drinks_package' => (bool) ($data['drinks_package'] ?? false),
                 'status' => $data['status'] ?? 'pending',
                 'source' => $data['source'] ?? 'direct',
                 'channel' => $data['channel'] ?? null,

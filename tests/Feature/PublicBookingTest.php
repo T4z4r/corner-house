@@ -210,6 +210,7 @@ class PublicBookingTest extends TestCase
             'guest_first_name' => 'Alex',
             'guest_last_name' => 'Guest',
             'guest_email' => 'alex@example.com',
+            'drinks' => '1',
         ]);
 
         $response->assertRedirect();
@@ -217,6 +218,7 @@ class PublicBookingTest extends TestCase
             'source' => 'direct',
             'status' => 'hold',
             'payment_status' => 'unpaid',
+            'drinks_package' => true,
         ]);
         $this->assertDatabaseHas('payments', ['status' => 'pending']);
 
