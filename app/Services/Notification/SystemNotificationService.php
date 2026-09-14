@@ -2,13 +2,17 @@
 
 namespace App\Services\Notification;
 
+use App\Mail\SystemNotificationMail;
 use App\Models\Communication;
 use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\Reservation;
+use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\SystemNotification;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
@@ -250,17 +254,40 @@ class SystemNotificationService
     ): void {
         $recipients = $this->recipients($actorId);
 
-        if ($recipients->isEmpty()) {
+        if ($recipients->isNotEmpty()) {
+            Notification::send($recipients, new SystemNotification(
+                title: $title,
+                message: $message,
+                url: $url,
+                level: $level,
+                icon: $icon,
+                metadata: $metadata,
+            ));
+        }
+
+        $this->sendNotificationEmail($title, $message, $url);
+    }
+
+    private function sendNotificationEmail(string $title, string $message, ?string $url = null): void
+    {
+        if (! (bool) Setting::getValue('email_notifications_enabled', true)) {
             return;
         }
 
-        Notification::send($recipients, new SystemNotification(
-            title: $title,
-            message: $message,
-            url: $url,
-            level: $level,
-            icon: $icon,
-            metadata: $metadata,
-        ));
+        $recipient = trim((string) (Setting::getValue('admin_notification_email') ?: Setting::getValue('booking_notify_email', '')));
+
+        if ($recipient === '') {
+            return;
+        }
+
+        try {
+            Mail::to($recipient)->send(new SystemNotificationMail($title, $message, $url));
+        } catch (\Throwable $e) {
+            Log::warning('Failed to send system notification email', [
+                'recipient' => $recipient,
+                'title' => $title,
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 }

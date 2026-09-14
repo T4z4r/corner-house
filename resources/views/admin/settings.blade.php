@@ -98,37 +98,18 @@
                                                    min="1"
                                                    max="65535"
                                                    value="{{ $setting->value }}">
-                                        @elseif ($setting->key === 'mail_from_address')
-                                            <input type="email"
-                                                   class="form-control"
-                                                   id="{{ $setting->key }}"
-                                                   name="{{ $setting->key }}"
-                                                   value="{{ $setting->value }}">
-                                        @elseif ($setting->key === 'ai_instructions')
-                                            <textarea class="form-control" id="{{ $setting->key }}" name="{{ $setting->key }}" rows="4">{{ $setting->value }}</textarea>
-                                        @elseif (in_array($setting->key, ['website_footer_text', 'website_about_text']))
-                                            <textarea class="form-control" id="{{ $setting->key }}" name="{{ $setting->key }}" rows="3">{{ $setting->value }}</textarea>
-                                        @elseif (str_starts_with($setting->key, 'website_') && in_array($setting->key, ['website_facebook', 'website_instagram', 'website_twitter', 'website_youtube', 'website_tiktok']))
-                                            <input type="url"
-                                                   class="form-control"
-                                                   id="{{ $setting->key }}"
-                                                   name="{{ $setting->key }}"
-                                                   value="{{ $setting->value }}"
-                                                   placeholder="https://...">
-                                        @elseif (str_starts_with($setting->key, 'platform_'))
-                                            <input type="url"
-                                                   class="form-control"
-                                                   id="{{ $setting->key }}"
-                                                   name="{{ $setting->key }}"
-                                                   value="{{ $setting->value }}"
-                                                   placeholder="https://...">
-                                        @elseif ($setting->key === 'website_contact_email')
+                                        @elseif (in_array($setting->key, ['mail_from_address', 'website_contact_email', 'booking_notify_email', 'admin_notification_email', 'beds24_alert_email']))
                                             <input type="email"
                                                    class="form-control"
                                                    id="{{ $setting->key }}"
                                                    name="{{ $setting->key }}"
                                                    value="{{ $setting->value }}"
-                                                   placeholder="hello@example.com">
+                                                   placeholder="admin@example.com">
+                                            @if (in_array($setting->key, ['booking_notify_email', 'admin_notification_email']))
+                                                <div class="form-text">Receives email notifications for new bookings and system events (excludes cron job notifications).</div>
+                                            @elseif ($setting->key === 'beds24_alert_email')
+                                                <div class="form-text">Receives Beds24 channel sync failure alerts.</div>
+                                            @endif
                                         @elseif ($setting->key === 'website_contact_phone')
                                             <input type="tel"
                                                    class="form-control"

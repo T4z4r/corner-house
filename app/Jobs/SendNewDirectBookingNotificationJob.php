@@ -24,7 +24,7 @@ class SendNewDirectBookingNotificationJob implements ShouldQueue
             return;
         }
 
-        $recipient = trim((string) Setting::getValue('booking_notify_email', ''));
+        $recipient = trim((string) (Setting::getValue('admin_notification_email') ?: Setting::getValue('booking_notify_email', '')));
 
         if ($recipient === '') {
             return;

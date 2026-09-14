@@ -17,7 +17,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class BookingController extends Controller
@@ -198,7 +200,7 @@ class BookingController extends Controller
                 'addon_ids' => ['nullable', 'array'],
                 'addon_ids.*' => ['integer', 'exists:add_ons,id'],
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             if ($request->expectsJson()) {
                 return response()->json(['error' => implode(' ', array_merge(...array_values($e->errors())))], 422);
             }
@@ -334,7 +336,7 @@ class BookingController extends Controller
 
             return redirect()->route('booking.checkout', $reservation->id);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Direct booking Stripe payment error', [
+            Log::error('Direct booking Stripe payment error', [
                 'message' => $e->getMessage(),
             ]);
 
@@ -373,7 +375,7 @@ class BookingController extends Controller
                 );
                 $checkoutUrl = $this->payments->checkoutUrl($payment);
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Failed to generate Stripe checkout session', [
+                Log::warning('Failed to generate Stripe checkout session', [
                     'message' => $e->getMessage(),
                 ]);
             }
@@ -387,7 +389,7 @@ class BookingController extends Controller
             $paymentIntentSecret = $this->payments->clientSecret($intentPayment);
             $paymentIntentId = $intentPayment->provider_payment_id;
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Failed to prepare Stripe payment intent', [
+            Log::warning('Failed to prepare Stripe payment intent', [
                 'message' => $e->getMessage(),
             ]);
         }
@@ -540,7 +542,7 @@ class BookingController extends Controller
             'end' => ['required', 'date', 'after:start'],
         ]);
 
-        $room = $data['room_id']
+        $room = ($data['room_id'] ?? null)
             ? Room::query()->where('status', 'active')->find($data['room_id'])
             : Room::query()->where('status', 'active')->orderBy('id')->first();
 
