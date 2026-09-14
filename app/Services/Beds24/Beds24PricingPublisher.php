@@ -66,66 +66,6 @@ class Beds24PricingPublisher
             return false;
         }
 
-        /**
-         * Publish only the configured weekday/weekend defaults and optional
-         * holiday weekend uplift, without applying other local pricing rules.
-         */
-        public function postDefaultRates(Carbon $from, Carbon $to): bool
-        {
-            $account = $this->activeAccount();
-            if (! $account instanceof ChannelAccount || $to->lt($from)) {
-                return false;
-            }
-
-            $rows = [];
-            $mappings = ChannelMapping::query()
-                ->where('channel_account_id', $account->id)
-                ->where('provider', 'beds24')
-                ->where('status', 'active')
-                ->whereNotNull('external_room_id')
-                ->with('room')
-                ->get();
-
-            $weekday = (float) Setting::getValue('min_price_weekday', 550);
-            $weekend = (float) Setting::getValue('min_price_weekend', 625);
-            $upliftEnabled = (bool) Setting::getValue('holiday_weekend_uplift_enabled', false);
-            $uplift = (float) Setting::getValue('holiday_weekend_uplift', 5);
-
-            foreach ($mappings as $mapping) {
-                if (! $mapping->room instanceof Room) {
-                    continue;
-                }
-
-                for ($date = $from->copy()->startOfDay(); $date->lte($to); $date->addDay()) {
-                    $isWeekend = in_array($date->dayOfWeek, [Carbon::FRIDAY, Carbon::SATURDAY, Carbon::SUNDAY], true);
-                    $rate = $isWeekend ? $weekend : $weekday;
-
-                    if ($isWeekend && $upliftEnabled && $this->pricing->dayCategory($date) === 'uplift') {
-                        $rate = round($rate * (1 + ($uplift / 100)), 2);
-                    }
-
-                    $rows[] = [
-                        'roomId' => $mapping->external_room_id,
-                        'from' => $date->toDateString(),
-                        'to' => $date->toDateString(),
-                        'price1' => $rate,
-                    ];
-                }
-            }
-
-            if ($rows === []) {
-                return false;
-            }
-
-            try {
-                return $this->provider->updateRestrictions($account, $rows);
-            } catch (\Throwable $e) {
-                Log::warning('Failed to post default Beds24 rates', ['message' => $e->getMessage()]);
-
-                return false;
-            }
-        }
-
         $room = $override->room;
         if (! $room instanceof Room) {
             return false;
@@ -145,6 +85,66 @@ class Beds24PricingPublisher
                 'pricing_override_id' => $override->id,
                 'message' => $e->getMessage(),
             ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Publish only the configured weekday/weekend defaults and optional
+     * holiday weekend uplift, without applying other local pricing rules.
+     */
+    public function postDefaultRates(Carbon $from, Carbon $to): bool
+    {
+        $account = $this->activeAccount();
+        if (! $account instanceof ChannelAccount || $to->lt($from)) {
+            return false;
+        }
+
+        $rows = [];
+        $mappings = ChannelMapping::query()
+            ->where('channel_account_id', $account->id)
+            ->where('provider', 'beds24')
+            ->where('status', 'active')
+            ->whereNotNull('external_room_id')
+            ->with('room')
+            ->get();
+
+        $weekday = (float) Setting::getValue('min_price_weekday', 550);
+        $weekend = (float) Setting::getValue('min_price_weekend', 625);
+        $upliftEnabled = (bool) Setting::getValue('holiday_weekend_uplift_enabled', false);
+        $uplift = (float) Setting::getValue('holiday_weekend_uplift', 5);
+
+        foreach ($mappings as $mapping) {
+            if (! $mapping->room instanceof Room) {
+                continue;
+            }
+
+            for ($date = $from->copy()->startOfDay(); $date->lte($to); $date->addDay()) {
+                $isWeekend = in_array($date->dayOfWeek, [Carbon::FRIDAY, Carbon::SATURDAY, Carbon::SUNDAY], true);
+                $rate = $isWeekend ? $weekend : $weekday;
+
+                if ($isWeekend && $upliftEnabled && $this->pricing->dayCategory($date) === 'uplift') {
+                    $rate = round($rate * (1 + ($uplift / 100)), 2);
+                }
+
+                $rows[] = [
+                    'roomId' => $mapping->external_room_id,
+                    'from' => $date->toDateString(),
+                    'to' => $date->toDateString(),
+                    'price1' => $rate,
+                ];
+            }
+        }
+
+        if ($rows === []) {
+            return false;
+        }
+
+        try {
+            return $this->provider->updateRestrictions($account, $rows);
+        } catch (\Throwable $e) {
+            Log::warning('Failed to post default Beds24 rates', ['message' => $e->getMessage()]);
 
             return false;
         }

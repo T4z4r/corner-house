@@ -91,7 +91,7 @@ return [
         'roundrobin' => [
             'transport' => 'roundrobin',
             'mailers' => [
-                'ses',
+                'ses',kk
                 'postmark',
             ],
             'retry_after' => 60,
