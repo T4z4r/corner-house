@@ -19,11 +19,11 @@ class PublicBookingTest extends TestCase
     {
         parent::setUp();
 
-        Setting::firstOrCreate(['key' => 'min_price_weekday'], ['value' => '0', 'group' => 'booking', 'label' => 'Min weekday', 'cast' => 'decimal:2']);
-        Setting::firstOrCreate(['key' => 'min_price_weekend'], ['value' => '0', 'group' => 'booking', 'label' => 'Min weekend', 'cast' => 'decimal:2']);
-        Setting::firstOrCreate(['key' => 'cleaning_fee'], ['value' => '0', 'group' => 'booking', 'label' => 'Cleaning', 'cast' => 'decimal:2']);
-        Setting::firstOrCreate(['key' => 'damage_deposit'], ['value' => '0', 'group' => 'booking', 'label' => 'Deposit', 'cast' => 'decimal:2']);
-        Setting::firstOrCreate(['key' => 'direct_booking_discount'], ['value' => '0', 'group' => 'booking', 'label' => 'Discount', 'cast' => 'decimal:2']);
+        Setting::updateOrCreate(['key' => 'min_price_weekday'], ['value' => '0', 'group' => 'booking', 'label' => 'Min weekday', 'cast' => 'decimal:2']);
+        Setting::updateOrCreate(['key' => 'min_price_weekend'], ['value' => '0', 'group' => 'booking', 'label' => 'Min weekend', 'cast' => 'decimal:2']);
+        Setting::updateOrCreate(['key' => 'cleaning_fee'], ['value' => '0', 'group' => 'booking', 'label' => 'Cleaning', 'cast' => 'decimal:2']);
+        Setting::updateOrCreate(['key' => 'damage_deposit'], ['value' => '0', 'group' => 'booking', 'label' => 'Deposit', 'cast' => 'decimal:2']);
+        Setting::updateOrCreate(['key' => 'direct_booking_discount'], ['value' => '0', 'group' => 'booking', 'label' => 'Discount', 'cast' => 'decimal:2']);
     }
 
     public function test_search_lists_available_rooms_with_server_price(): void

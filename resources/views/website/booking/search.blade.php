@@ -71,8 +71,8 @@
                         <h3>{{ $room->name }}</h3>
                         <p class="ch-suite-meta">Sleeps {{ $room->capacity }} · {{ $room->quote['nights'] }} night(s)</p>
                         <p class="ch-price">£{{ number_format($room->quote['total'], 2) }}</p>
-                        <p class="text-muted small">No browser-submitted price is trusted. This total was calculated by the booking engine.</p>
-                        <a class="btn btn-ch-book" href="{{ route('booking.details', ['room' => $room, 'check_in' => $checkIn, 'check_out' => $checkOut, 'guests' => $guests]) }}">Continue</a>
+                        <p class="text-muted small">Instant booking direct with our 10% direct-booking discount applied.</p>
+                        <a class="btn btn-ch-book" href="{{ route('booking.details', ['room' => $room, 'check_in' => $checkIn, 'check_out' => $checkOut, 'guests' => $guests]) }}"><i class="bi bi-credit-card me-1"></i>Book &amp; Checkout</a>
                     </div>
                 </article>
             </div>

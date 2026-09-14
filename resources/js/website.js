@@ -174,7 +174,19 @@ function renderQuote(){
     document.getElementById("q-total").textContent = gbp(gross - discount + CONFIG.cleaningFee);
     document.getElementById("q-dep").textContent = gbp(CONFIG.securityDeposit);
     lines.hidden=false;
-  } else lines.hidden=true;
+
+    const checkoutBtn = document.getElementById("checkout-btn");
+    if (checkoutBtn) {
+      const g = document.querySelector('select[name="guests"]')?.value || '12';
+      checkoutBtn.href = `/book?check_in=${fmtISO(checkIn)}&check_out=${fmtISO(checkOut)}&guests=${encodeURIComponent(g)}`;
+    }
+  } else {
+    lines.hidden=true;
+    const checkoutBtn = document.getElementById("checkout-btn");
+    if (checkoutBtn) {
+      checkoutBtn.href = '/book';
+    }
+  }
 }
 
 /* ---------- Enquiry form ---------- */

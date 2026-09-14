@@ -34,7 +34,7 @@
             <a href="#places" data-nav="places">Places of interest</a>
             <a href="#spirits" data-nav="spirits">Serengeti Spirits</a>
             <a href="#foundation" data-nav="foundation">Wright Foundation &amp; Sustainability</a>
-            <a href="#book" data-nav="book" class="btn btn-primary">Check availability</a>
+            <a href="{{ route('booking.search') }}" class="btn btn-primary">Check availability &amp; Book</a>
         </nav>
     </div>
 </header>
@@ -61,7 +61,7 @@
                 <li><a href="#about">About</a></li>
                 <li><a href="#rooms">The house</a></li>
                 <li><a href="#places">Places of interest</a></li>
-                <li><a href="#book">Make a booking</a></li>
+                <li><a href="{{ route('booking.search') }}">Make a booking</a></li>
             </ul>
         </div>
         <div>
@@ -75,7 +75,7 @@
         <div>
             <h4>Booking</h4>
             <ul>
-                <li><a href="#book">Make a booking</a></li>
+                <li><a href="{{ route('booking.search') }}">Make a booking</a></li>
                 <li><a href="#rules">Booking rules</a></li>
                 <li><a href="#house-rules">House rules</a></li>
                 <li><a href="#terms">Terms and conditions</a></li>

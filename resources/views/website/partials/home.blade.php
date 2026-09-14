@@ -5,7 +5,7 @@
                 <h1>A unique ivy-covered period house, <em>by the marina, at the heart of the Midlands</em></h1>
                 <p class="lede">{{ $site['property']?->short_description ?: 'Corner House is a 175-year-old period home a few footsteps from Braunston Marina — five ensuite bedrooms, a 25ft kitchen built for entertaining, a games room and plenty of outside space, for family and friends to socialise and enjoy.' }}</p>
                 <div class="hero-actions">
-                    <a class="btn btn-primary" href="#book">Check availability</a>
+                    <a class="btn btn-primary" href="{{ route('booking.search') }}">Check availability &amp; Book</a>
                     <a class="btn btn-outline" href="#about">See the house</a>
                 </div>
             </div>
