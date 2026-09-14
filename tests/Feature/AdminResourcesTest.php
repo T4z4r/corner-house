@@ -46,12 +46,14 @@ class AdminResourcesTest extends TestCase
 
     public function test_super_admin_can_list_guests(): void
     {
-        Guest::factory()->create(['first_name' => 'Jane', 'last_name' => 'Doe']);
+        $guest = Guest::factory()->create(['first_name' => 'Jane', 'last_name' => 'Doe']);
 
         $this->actingAs($this->actingAsSuperAdmin())
             ->get(route('admin.guests.index'))
             ->assertOk()
-            ->assertSee('Jane');
+            ->assertSee('Jane')
+            ->assertSee(route('admin.guests.edit', $guest))
+            ->assertSee('data-confirm="Delete this guest?"', false);
     }
 
     public function test_user_without_guest_permission_cannot_list_guests(): void

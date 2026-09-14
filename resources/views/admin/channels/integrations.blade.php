@@ -1080,9 +1080,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (!response.ok) {
                     throw new Error('HTTP ' + response.status);
                 }
+                window.location.reload();
+                return;
             } catch (e) {
                 this.disabled = false;
-                alert('Could not queue the sync: ' + e.message);
+                alert('Could not complete the sync: ' + e.message);
                 return;
             } finally {
                 this.disabled = false;
