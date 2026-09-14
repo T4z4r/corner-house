@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Mail\GuestCommunicationMail;
+use App\Mail\SystemNotificationMail;
 use App\Models\Communication;
 use App\Models\Reservation;
+use App\Models\Setting;
 use App\Models\User;
+use App\Services\Cron\CronRunRecorder;
 use App\Services\Notification\SystemNotificationService;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -344,6 +347,35 @@ class AdminNotificationsTest extends TestCase
             ->assertForbidden();
 
         $this->assertDatabaseCount('communications', 1);
+    }
+
+    public function test_system_notifications_send_email_to_admin_notification_email(): void
+    {
+        Mail::fake();
+
+        Setting::updateOrCreate(['key' => 'admin_notification_email'], ['group' => 'notifications', 'value' => 'admin-recipient@example.com', 'cast' => 'string']);
+        Setting::updateOrCreate(['key' => 'email_notifications_enabled'], ['group' => 'notifications', 'value' => '1', 'cast' => 'boolean']);
+
+        $reservation = Reservation::factory()->create(['status' => 'confirmed']);
+
+        app(SystemNotificationService::class)->reservationCreated($reservation);
+
+        Mail::assertSent(SystemNotificationMail::class, function (SystemNotificationMail $mail): bool {
+            return $mail->hasTo('admin-recipient@example.com')
+                && str_contains($mail->envelope()->subject, 'Reservation confirmed');
+        });
+    }
+
+    public function test_cron_job_runs_do_not_send_system_notification_emails(): void
+    {
+        Mail::fake();
+
+        Setting::updateOrCreate(['key' => 'admin_notification_email'], ['group' => 'notifications', 'value' => 'admin-recipient@example.com', 'cast' => 'string']);
+
+        $run = CronRunRecorder::start('GenerateSeasonalPricingJob');
+        CronRunRecorder::finish($run);
+
+        Mail::assertNothingSent();
     }
 
     private function adminUser(string $name = 'Admin'): User
