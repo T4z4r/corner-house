@@ -330,13 +330,17 @@ class BookingService
             return $existing;
         }
 
-        return Guest::create([
-            'first_name' => $data['guest_first_name'] ?? $data['lead_first_name'] ?? 'Guest',
-            'last_name' => $data['guest_last_name'] ?? $data['lead_last_name'] ?? '',
+        $guest = new Guest();
+        $guest->forceFill([
+            'first_name' => trim((string) ($data['guest_first_name'] ?? $data['lead_first_name'] ?? '')) ?: 'Guest',
+            'last_name' => trim((string) ($data['guest_last_name'] ?? $data['lead_last_name'] ?? '')),
             'email' => $email,
             'phone' => $data['guest_phone'] ?? null,
             'country' => $data['guest_country'] ?? null,
             'source' => $data['source'] ?? 'direct',
         ]);
+        $guest->save();
+
+        return $guest;
     }
 }

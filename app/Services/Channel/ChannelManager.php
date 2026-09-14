@@ -412,7 +412,11 @@ class ChannelManager
             return;
         }
 
-        $guest = Guest::query()->create($guestData);
+        $guest = new Guest();
+        $guest->forceFill($guestData);
+        $guest->first_name = trim((string) $guest->first_name) ?: 'Guest';
+        $guest->last_name = trim((string) $guest->last_name);
+        $guest->save();
         $reservation->update(['guest_id' => $guest->id]);
     }
 
@@ -423,8 +427,8 @@ class ChannelManager
     private function guestDataFromBooking(array $booking): array
     {
         return array_filter([
-            'first_name' => $booking['firstName'] ?? $booking['guestFirstName'] ?? null,
-            'last_name' => $booking['lastName'] ?? $booking['guestLastName'] ?? null,
+            'first_name' => trim((string) ($booking['firstName'] ?? $booking['guestFirstName'] ?? $booking['first_name'] ?? '')) ?: 'Guest',
+            'last_name' => trim((string) ($booking['lastName'] ?? $booking['guestLastName'] ?? $booking['last_name'] ?? '')),
             'email' => $booking['email'] ?? $booking['guestEmail'] ?? null,
             'phone' => $booking['phone'] ?? $booking['guestPhone'] ?? null,
             'country' => $booking['country'] ?? $booking['guestCountry'] ?? null,
