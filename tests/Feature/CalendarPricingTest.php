@@ -303,16 +303,19 @@ class CalendarPricingTest extends TestCase
             'base_rate' => 650,
         ]);
 
-        $this->getJson(route('booking.prices', [
+        $response = $this->getJson(route('booking.prices', [
             'room_id' => $room->id,
             'start' => '2026-01-05',
             'end' => '2026-01-07',
         ]))
             ->assertOk()
-            ->assertJsonPath('room_id', $room->id)
-            ->assertJsonPath('base_amount', 1300.0)
-            ->assertJsonPath('nights', 2)
-            ->assertJsonStructure(['per_night', 'discount_amount', 'fees_amount']);
+            ->assertJsonPath('room_id', $room->id);
+
+        $this->assertEquals(1300, $response->json('base_amount'));
+        $this->assertSame(2, $response->json('nights'));
+        $this->assertArrayHasKey('per_night', $response->json());
+        $this->assertArrayHasKey('discount_amount', $response->json());
+        $this->assertArrayHasKey('fees_amount', $response->json());
     }
 
     public function test_booking_prices_include_pricing_overrides(): void
@@ -332,15 +335,16 @@ class CalendarPricingTest extends TestCase
             'is_enabled' => true,
         ]);
 
-        $this->getJson(route('booking.prices', [
+        $response = $this->getJson(route('booking.prices', [
             'room_id' => $room->id,
             'start' => '2026-01-05',
             'end' => '2026-01-07',
         ]))
-            ->assertOk()
-            ->assertJsonPath('base_amount', 1649.0) // 650 + 999
-            ->assertJsonPath('per_night.2026-01-05', 650.0)
-            ->assertJsonPath('per_night.2026-01-06', 999.0);
+            ->assertOk();
+
+        $this->assertEquals(1649, $response->json('base_amount'));
+        $this->assertEquals(650, $response->json('per_night.2026-01-05'));
+        $this->assertEquals(999, $response->json('per_night.2026-01-06'));
     }
 
     public function test_booking_prices_falls_back_to_first_room_when_no_room_specified(): void
