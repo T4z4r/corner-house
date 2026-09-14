@@ -57,13 +57,13 @@ class PaymentService
 
         if ($reservation->relationLoaded('addons') || $reservation->addons()->exists()) {
             foreach ($reservation->addons as $addon) {
-                $itemPrice = (float) ($addon->pivot->total_price ?? $addon->price);
+                $unitPrice = (float) ($addon->pivot->unit_price ?? $addon->price);
                 $qty = (int) ($addon->pivot->quantity ?? 1);
-                if ($itemPrice > 0) {
+                if ($unitPrice > 0) {
                     $lineItems[] = [
                         'name' => $addon->name,
                         'description' => 'Add-on package',
-                        'amount' => $itemPrice,
+                        'amount' => $unitPrice,
                         'quantity' => $qty,
                     ];
                 }
@@ -71,7 +71,11 @@ class PaymentService
         }
 
         // Use itemized line items only if they match the reservation total
-        $lineItemsSum = array_sum(array_column($lineItems, 'amount'));
+        $lineItemsSum = 0;
+        foreach ($lineItems as $item) {
+            $lineItemsSum += ((float) $item['amount']) * ((int) ($item['quantity'] ?? 1));
+        }
+
         if ($lineItems === [] || abs($lineItemsSum - (float) $reservation->total_amount) > 0.01) {
             $lineItems = [];
         }

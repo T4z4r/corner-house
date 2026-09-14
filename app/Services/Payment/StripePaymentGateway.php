@@ -25,15 +25,19 @@ class StripePaymentGateway implements PaymentGatewayInterface
 
         if (! empty($payload['line_items']) && is_array($payload['line_items'])) {
             $sessionParams['line_items'] = array_map(function (array $item) use ($payload): array {
+                $productData = [
+                    'name' => (string) ($item['name'] ?? $payload['description']),
+                ];
+                if (! empty($item['description'])) {
+                    $productData['description'] = (string) $item['description'];
+                }
+
                 return [
-                    'quantity' => $item['quantity'] ?? 1,
+                    'quantity' => (int) ($item['quantity'] ?? 1),
                     'price_data' => [
                         'currency' => strtolower((string) ($item['currency'] ?? $payload['currency'])),
                         'unit_amount' => (int) round(((float) ($item['amount'] ?? 0)) * 100),
-                        'product_data' => [
-                            'name' => (string) ($item['name'] ?? $payload['description']),
-                            'description' => isset($item['description']) ? (string) $item['description'] : null,
-                        ],
+                        'product_data' => $productData,
                     ],
                 ];
             }, $payload['line_items']);
