@@ -59,6 +59,8 @@ Route::get('/ical/{room}', [IcalController::class, '__invoke'])->name('ical.room
 Route::get('/book', [BookingController::class, 'search'])->name('booking.search');
 Route::get('/book/room/{room}', [BookingController::class, 'details'])->name('booking.details');
 Route::post('/book/pay', [BookingController::class, 'holdAndPay'])->name('booking.pay');
+Route::get('/book/pay/{reservation}', [BookingController::class, 'checkoutPage'])->name('booking.checkout');
+Route::post('/book/pay/{reservation}/confirm', [BookingController::class, 'confirmDirectPayment'])->name('booking.checkout.confirm');
 Route::get('/book/confirmation', [BookingController::class, 'confirmation'])->name('booking.confirmation');
 
 Route::post('/booking/enquiry', [WebsiteController::class, 'enquiry'])->name('booking.enquiry');

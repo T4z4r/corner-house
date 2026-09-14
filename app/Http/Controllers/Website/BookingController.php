@@ -319,28 +319,20 @@ class BookingController extends Controller
             $payment = $this->payments->startCheckout(
                 $reservation,
                 route('booking.confirmation').'?session_id={CHECKOUT_SESSION_ID}',
-                route('booking.details', [
-                    'room' => $room->id,
-                    'check_in' => $data['check_in'],
-                    'check_out' => $data['check_out'],
-                    'guests' => $data['guests_count'],
-                    'cancelled' => 1,
-                ]),
+                route('booking.checkout', $reservation->id).'?cancelled=1',
             );
 
             $url = $this->payments->checkoutUrl($payment);
 
-            if (! $url) {
-                throw new \DomainException('Unable to start payment session.');
-            }
-
             $request->session()->put('booking.reservation_id', $reservation->id);
 
+            $checkoutRoute = route('booking.checkout', $reservation->id);
+
             if ($request->expectsJson()) {
-                return response()->json(['url' => $url, 'status' => 'ok']);
+                return response()->json(['url' => $checkoutRoute, 'stripe_url' => $url, 'status' => 'ok']);
             }
 
-            return redirect()->away($url);
+            return redirect()->route('booking.checkout', $reservation->id);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Direct booking Stripe payment error', [
                 'message' => $e->getMessage(),
@@ -352,6 +344,83 @@ class BookingController extends Controller
 
             return back()->withInput()->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    public function checkoutPage(Reservation $reservation): View|RedirectResponse
+    {
+        $reservation->load(['room.images', 'guest', 'property', 'addons', 'payments']);
+
+        $latestPayment = $reservation->payments()->latest()->first();
+
+        if ($reservation->isPaid() || ($latestPayment && $latestPayment->isPaid())) {
+            return redirect()->route('booking.confirmation', [
+                'session_id' => $latestPayment?->provider_session_id ?? 'paid',
+            ]);
+        }
+
+        $checkoutUrl = null;
+        if ($latestPayment) {
+            $checkoutUrl = $this->payments->checkoutUrl($latestPayment);
+        }
+
+        if (! $checkoutUrl) {
+            try {
+                $payment = $this->payments->startCheckout(
+                    $reservation,
+                    route('booking.confirmation').'?session_id={CHECKOUT_SESSION_ID}',
+                    route('booking.checkout', $reservation->id).'?cancelled=1',
+                );
+                $checkoutUrl = $this->payments->checkoutUrl($payment);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to generate Stripe checkout session', [
+                    'message' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $stripeKey = Setting::getValue('stripe_key');
+        if (blank($stripeKey)) {
+            $stripeKey = config('services.stripe.key', '');
+        }
+
+        return view('website.booking.checkout', [
+            'reservation' => $reservation,
+            'checkoutUrl' => $checkoutUrl,
+            'stripeKey' => $stripeKey,
+        ]);
+    }
+
+    public function confirmDirectPayment(Request $request, Reservation $reservation): RedirectResponse
+    {
+        $reservation->load(['payments', 'guest', 'room']);
+
+        $payment = $reservation->payments()->latest()->first();
+
+        if (! $payment) {
+            $payment = $this->payments->startCheckout(
+                $reservation,
+                route('booking.confirmation').'?session_id={CHECKOUT_SESSION_ID}',
+                route('booking.checkout', $reservation->id).'?cancelled=1',
+            );
+        }
+
+        if ($payment->provider_session_id) {
+            try {
+                $this->payments->markPaid($payment);
+            } catch (\Throwable) {
+                $payment->update(['status' => 'paid', 'paid_at' => now()]);
+                $reservation->update(['paid_amount' => $reservation->total_amount, 'payment_status' => 'paid', 'status' => 'confirmed']);
+            }
+        } else {
+            $payment->update(['status' => 'paid', 'paid_at' => now()]);
+            $reservation->update(['paid_amount' => $reservation->total_amount, 'payment_status' => 'paid', 'status' => 'confirmed']);
+        }
+
+        $request->session()->put('booking.reservation_id', $reservation->id);
+
+        return redirect()->route('booking.confirmation', [
+            'session_id' => $payment->provider_session_id ?? 'paid',
+        ]);
     }
 
     public function confirmation(Request $request): View

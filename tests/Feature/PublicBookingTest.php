@@ -217,6 +217,45 @@ class PublicBookingTest extends TestCase
         $this->assertNotNull($payment->provider_session_id);
     }
 
+    public function test_guest_can_view_stripe_checkout_page_and_confirm_payment(): void
+    {
+        $room = Room::factory()->create(['name' => 'The Garden Suite', 'base_rate' => 100, 'status' => 'active']);
+        $checkIn = now()->addDays(30)->toDateString();
+        $checkOut = now()->addDays(32)->toDateString();
+
+        $response = $this->post(route('booking.pay'), [
+            'room_id' => $room->id,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'guests_count' => 2,
+            'guest_first_name' => 'Sarah',
+            'guest_last_name' => 'Connor',
+            'guest_email' => 'sarah@example.com',
+        ]);
+
+        $reservation = Reservation::query()->first();
+        $this->assertNotNull($reservation);
+        $response->assertRedirect(route('booking.checkout', $reservation->id));
+
+        $this->get(route('booking.checkout', $reservation->id))
+            ->assertOk()
+            ->assertSee('Complete Your Payment')
+            ->assertSee('The Garden Suite');
+
+        $this->post(route('booking.checkout.confirm', $reservation->id), [
+            'cardholder_name' => 'Sarah Connor',
+            'card_number' => '4242 4242 4242 4242',
+            'card_expiry' => '12 / 28',
+            'card_cvc' => '123',
+        ])->assertRedirect(route('booking.confirmation', ['session_id' => Payment::query()->first()->provider_session_id]));
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+        ]);
+    }
+
     public function test_api_calculates_price_and_creates_hold(): void
     {
         $room = Room::factory()->create(['base_rate' => 50, 'status' => 'active']);

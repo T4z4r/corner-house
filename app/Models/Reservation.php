@@ -96,6 +96,11 @@ class Reservation extends Model
             ->withTimestamps();
     }
 
+    public function isPaid(): bool
+    {
+        return $this->payment_status === 'paid' || $this->status === 'confirmed';
+    }
+
     /**
      * Whether the reservation occupies a date range (excludes cancelled).
      */
