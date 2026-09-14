@@ -174,51 +174,63 @@ function renderQuote(){
     document.getElementById("q-total").textContent = gbp(gross - discount + CONFIG.cleaningFee);
     document.getElementById("q-dep").textContent = gbp(CONFIG.securityDeposit);
     lines.hidden=false;
-
-    const checkoutBtn = document.getElementById("checkout-btn");
-    if (checkoutBtn) {
-      const g = document.querySelector('select[name="guests"]')?.value || '12';
-      checkoutBtn.href = `/book?check_in=${fmtISO(checkIn)}&check_out=${fmtISO(checkOut)}&guests=${encodeURIComponent(g)}`;
-    }
-  } else {
-    lines.hidden=true;
-    const checkoutBtn = document.getElementById("checkout-btn");
-    if (checkoutBtn) {
-      checkoutBtn.href = '/book';
-    }
-  }
+  } else lines.hidden=true;
 }
 
-/* ---------- Enquiry form ---------- */
-document.getElementById("enquiry").addEventListener("submit", async e=>{
-  e.preventDefault();
-  if(!checkIn || !checkOut){ setError("Choose your check-in and check-out dates on the calendar first."); return; }
-  const f=new FormData(e.target);
-  const payload = {
-    checkIn: fmtISO(checkIn), checkOut: fmtISO(checkOut),
-    nights: Math.round((checkOut-checkIn)/86400000),
-    name:f.get("name"), email:f.get("email"), phone:f.get("phone"),
-    guests:f.get("guests"), message:f.get("message"), drinksPackage: !!f.get("drinks"),
-    acceptedTerms: !!f.get("agree"), acceptedAt: new Date().toISOString()
-  };
-  if(CONFIG.bookingEndpoint){
-    try{
+/* ---------- Direct Booking Stripe Checkout form ---------- */
+const enquiryForm = document.getElementById("enquiry");
+if (enquiryForm) {
+  enquiryForm.addEventListener("submit", async e=>{
+    e.preventDefault();
+    if(!checkIn || !checkOut){ setError("Choose your check-in and check-out dates on the calendar first."); return; }
+    const f=new FormData(e.target);
+    const payload = {
+      checkIn: fmtISO(checkIn),
+      checkOut: fmtISO(checkOut),
+      name: f.get("name"),
+      email: f.get("email"),
+      phone: f.get("phone"),
+      guests: f.get("guests"),
+      message: f.get("message"),
+      drinks: !!f.get("drinks"),
+      agree: !!f.get("agree")
+    };
+
+    setError("");
+    const submitBtn = enquiryForm.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Redirecting to Stripe Checkout...";
+    }
+
+    try {
       const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-      const r=await fetch(CONFIG.bookingEndpoint,{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrf},body:JSON.stringify(payload)});
-      if(!r.ok) throw new Error();
-      e.target.innerHTML = `<p><strong>Enquiry sent.</strong> We will reply to ${payload.email} within 24 hours to confirm availability and price.</p>`;
-    }catch(err){ setError("The enquiry could not be sent. Please email us directly at "+CONFIG.enquiryEmail+"."); }
-    return;
-  }
-  const body = [
-    `Booking enquiry for Corner House, Braunston`, ``,
-    `Check in:  ${fmtLong(checkIn)}`, `Check out: ${fmtLong(checkOut)} (${payload.nights} nights)`,
-    `Guests: ${payload.guests}`, `Drinks package: ${payload.drinksPackage?"yes":"no"}`, ``,
-    `Name: ${payload.name}`, `Email: ${payload.email}`, `Phone: ${payload.phone||"-"}`, ``,
-    payload.message||""
-  ].join("\n");
-  location.href = `mailto:${CONFIG.enquiryEmail}?subject=${encodeURIComponent("Booking enquiry "+payload.checkIn+" to "+payload.checkOut)}&body=${encodeURIComponent(body)}`;
-});
+      const endpoint = CONFIG.bookingEndpoint || "/book/pay";
+      const r = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "X-CSRF-TOKEN": csrf
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await r.json();
+      if (!r.ok || !data.url) {
+        throw new Error(data.error || data.message || "Unable to start payment session.");
+      }
+
+      window.location.href = data.url;
+    } catch(err) {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Proceed to Stripe Checkout";
+      }
+      setError(err.message || "The payment checkout session could not be started. Please try again.");
+    }
+  });
+}
 
 loadAvailability().then(renderMonths);
 renderMonths();
