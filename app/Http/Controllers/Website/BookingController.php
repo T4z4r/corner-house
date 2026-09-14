@@ -239,26 +239,34 @@ class BookingController extends Controller
                 ]);
             }
 
+            $reservation->load(['room', 'guest', 'property', 'addons']);
+
             $payment = $this->payments->startCheckout(
-                $result['reservation'],
+                $reservation,
                 route('booking.confirmation').'?session_id={CHECKOUT_SESSION_ID}',
-                route('booking.search', [
+                route('booking.details', [
+                    'room' => $room->id,
                     'check_in' => $data['check_in'],
                     'check_out' => $data['check_out'],
                     'guests' => $data['guests_count'],
+                    'cancelled' => 1,
                 ]),
             );
 
             $url = $this->payments->checkoutUrl($payment);
 
             if (! $url) {
-                throw new \DomainException('Unable to start payment.');
+                throw new \DomainException('Unable to start payment session.');
             }
 
-            $request->session()->put('booking.reservation_id', $result['reservation']->id);
+            $request->session()->put('booking.reservation_id', $reservation->id);
 
             return redirect()->away($url);
-        } catch (\DomainException $e) {
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Direct booking Stripe payment error', [
+                'message' => $e->getMessage(),
+            ]);
+
             return back()->withInput()->withErrors(['error' => $e->getMessage()]);
         }
     }

@@ -191,6 +191,32 @@ class PublicBookingTest extends TestCase
         $this->assertSame(1, Reservation::query()->count());
     }
 
+    public function test_stripe_checkout_receives_customer_email_and_itemized_line_items(): void
+    {
+        $room = Room::factory()->create(['name' => 'The Garden Suite', 'base_rate' => 100, 'status' => 'active']);
+        $checkIn = now()->addDays(25)->toDateString();
+        $checkOut = now()->addDays(27)->toDateString();
+
+        $response = $this->post(route('booking.pay'), [
+            'room_id' => $room->id,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'guests_count' => 2,
+            'guest_first_name' => 'Jane',
+            'guest_last_name' => 'Doe',
+            'guest_email' => 'jane@example.com',
+        ]);
+
+        $response->assertRedirect();
+        $reservation = Reservation::query()->first();
+        $this->assertNotNull($reservation);
+        $this->assertSame('jane@example.com', $reservation->guest->email);
+
+        $payment = Payment::query()->where('reservation_id', $reservation->id)->first();
+        $this->assertNotNull($payment);
+        $this->assertNotNull($payment->provider_session_id);
+    }
+
     public function test_api_calculates_price_and_creates_hold(): void
     {
         $room = Room::factory()->create(['base_rate' => 50, 'status' => 'active']);

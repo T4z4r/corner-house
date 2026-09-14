@@ -1497,6 +1497,69 @@ class Beds24IntegrationTest extends TestCase
         $this->assertSame(191, $property->getValue());
     }
 
+    public function test_post_default_rates_posts_only_uplift_dates_with_rate_plus_uplift(): void
+    {
+        Setting::updateOrCreate(['key' => 'holiday_weekend_uplift_enabled'], ['value' => '1', 'group' => 'pricing', 'label' => 'Uplift enabled', 'cast' => 'boolean']);
+        Setting::updateOrCreate(['key' => 'holiday_weekend_uplift'], ['value' => '5', 'group' => 'pricing', 'label' => 'Uplift', 'cast' => 'integer']);
+        Setting::updateOrCreate(['key' => 'min_price_weekend'], ['value' => '625', 'group' => 'pricing', 'label' => 'Min price weekend', 'cast' => 'integer']);
+        Setting::updateOrCreate(['key' => 'school_holiday_periods'], [
+            'value' => json_encode([
+                ['label' => 'Test Uplift Window', 'start' => '2026-10-23', 'end' => '2026-11-01'],
+            ]),
+            'group' => 'pricing',
+            'label' => 'School holiday periods',
+            'cast' => 'json',
+        ]);
+
+        $account = ChannelAccount::factory()->create([
+            'provider' => 'beds24',
+            'status' => 'active',
+            'credentials' => [
+                'refresh_token' => 'refresh-token',
+                'access_token' => 'access-1',
+                'access_token_expires_at' => now()->addHour()->toIso8601String(),
+            ],
+        ]);
+        $property = Property::factory()->create();
+        $room = Room::factory()->create([
+            'property_id' => $property->id,
+            'status' => 'active',
+        ]);
+        ChannelMapping::create([
+            'channel_account_id' => $account->id,
+            'provider' => 'beds24',
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'external_property_id' => '2001',
+            'external_room_id' => '77',
+            'status' => 'active',
+        ]);
+
+        Http::fake([
+            '*inventory/rooms/calendar*' => Http::response([
+                'data' => [
+                    ['success' => true],
+                ],
+            ], 200),
+        ]);
+
+        $from = Carbon::parse('2026-10-23');
+        $to = Carbon::parse('2026-10-25'); // Fri 23rd Oct, Sat 24th Oct, Sun 25th Oct -> all uplift weekend days
+
+        $result = app(Beds24PricingPublisher::class)->postDefaultRates($from, $to);
+        $this->assertTrue($result);
+
+        Http::assertSent(function ($request): bool {
+            $payload = $request->data();
+            $calendar = $payload[0]['calendar'] ?? [];
+
+            // Rates for 625 * 1.05 = 656.25
+            return str_contains($request->url(), 'inventory/rooms/calendar')
+                && count($calendar) === 3
+                && $calendar[0]['price1'] == 656.25;
+        });
+    }
+
     public function test_booking_can_be_published_from_integrations_page(): void
     {
         $account = ChannelAccount::factory()->create([

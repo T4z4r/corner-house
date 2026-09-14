@@ -448,8 +448,8 @@
                                 @can('channels.configure')
                                     <form method="POST" action="{{ route('admin.channels.pricing.defaults.publish') }}" class="mb-3">
                                         @csrf
-                                        <button class="btn btn-sm btn-ch-primary" type="submit">Post default prices to Beds24</button>
-                                        <span class="small text-muted ms-2">Posts 550 Monday-Thursday and 625 Friday-Sunday for the next 90 days, plus configured uplift days.</span>
+                                        <button class="btn btn-sm btn-ch-primary" type="submit">Post uplift prices to Beds24</button>
+                                        <span class="small text-muted ms-2">Posts rate + uplift amount for uplift days over the next 90 days.</span>
                                     </form>
                                 @endcan
                                 <div class="row g-3">

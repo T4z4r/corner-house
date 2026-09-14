@@ -31,10 +31,57 @@ class PaymentService
             'status' => 'pending',
         ]);
 
+        $lineItems = [];
+        $roomName = $reservation->room?->name ?? 'Accommodation';
+        $nights = $reservation->nights_count;
+        $stayDates = $reservation->check_in?->format('d M Y').' → '.$reservation->check_out?->format('d M Y').' ('.$nights.' night'.($nights > 1 ? 's' : '').')';
+
+        $subtotal = (float) $reservation->subtotal_amount;
+        if ($subtotal > 0) {
+            $lineItems[] = [
+                'name' => 'Stay at '.$roomName,
+                'description' => $stayDates,
+                'amount' => $subtotal,
+                'quantity' => 1,
+            ];
+        }
+
+        if ((float) $reservation->damage_deposit > 0) {
+            $lineItems[] = [
+                'name' => 'Damage Deposit (refundable)',
+                'description' => 'Refunded after check-out inspection',
+                'amount' => (float) $reservation->damage_deposit,
+                'quantity' => 1,
+            ];
+        }
+
+        if ($reservation->relationLoaded('addons') || $reservation->addons()->exists()) {
+            foreach ($reservation->addons as $addon) {
+                $itemPrice = (float) ($addon->pivot->total_price ?? $addon->price);
+                $qty = (int) ($addon->pivot->quantity ?? 1);
+                if ($itemPrice > 0) {
+                    $lineItems[] = [
+                        'name' => $addon->name,
+                        'description' => 'Add-on package',
+                        'amount' => $itemPrice,
+                        'quantity' => $qty,
+                    ];
+                }
+            }
+        }
+
+        // Use itemized line items only if they match the reservation total
+        $lineItemsSum = array_sum(array_column($lineItems, 'amount'));
+        if ($lineItems === [] || abs($lineItemsSum - (float) $reservation->total_amount) > 0.01) {
+            $lineItems = [];
+        }
+
         $session = $this->gateway->createCheckoutSession([
             'amount' => (float) $reservation->total_amount,
             'currency' => $payment->currency,
             'description' => 'Corner House booking '.$reservation->reference,
+            'customer_email' => $reservation->guest?->email,
+            'line_items' => $lineItems,
             'success_url' => $successUrl,
             'cancel_url' => $cancelUrl,
             'metadata' => [

@@ -3,6 +3,24 @@
 @section('content')
 @include('website._page-hero', ['kicker' => 'Checkout', 'title' => 'Your details'])
 <div class="container ch-section">
+    @if ($errors->any())
+        <div class="alert alert-danger mb-4 rounded-3 shadow-sm">
+            <div class="fw-semibold mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i>Please check your booking details:</div>
+            <ul class="mb-0 ps-3 small">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    @if (request()->query('cancelled'))
+        <div class="alert alert-warning mb-4 rounded-3 shadow-sm d-flex align-items-center gap-2">
+            <i class="bi bi-info-circle-fill fs-5 text-warning"></i>
+            <div>Payment was cancelled on Stripe. You can review your details and try again when you are ready.</div>
+        </div>
+    @endif
+
     @php
         $addons = \App\Models\AddOn::query()->where('is_active', true)->orderBy('sort_order')->get();
     @endphp
@@ -59,7 +77,16 @@
                     </div>
                 @endif
 
-                <button class="btn btn-ch-book mt-4">Continue to payment</button>
+                <div class="mt-4 pt-3 border-top">
+                    <button class="btn btn-ch-book w-100 py-3" type="submit" id="submitPaymentBtn">
+                        <i class="bi bi-shield-lock-fill me-2"></i>Proceed to Stripe Checkout
+                    </button>
+                    <div class="d-flex align-items-center justify-content-center gap-3 mt-3 text-muted small">
+                        <span><i class="bi bi-lock me-1"></i>256-Bit SSL Encryption</span>
+                        <span>·</span>
+                        <span><i class="bi bi-credit-card me-1"></i>Powered by Stripe</span>
+                    </div>
+                </div>
             </form>
         </div>
         <div class="col-lg-5">

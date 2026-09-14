@@ -413,8 +413,8 @@ class ChannelController extends Controller
         $posted = $publisher->postDefaultRates(now()->startOfDay(), now()->addDays(90)->startOfDay());
 
         return back()->with('status', $posted
-            ? 'Weekday and Friday-to-Sunday default prices posted to Beds24.'
-            : 'Default prices could not be posted to Beds24.');
+            ? 'Uplift prices posted to Beds24.'
+            : 'Uplift prices could not be posted to Beds24.');
     }
 
     public function publishProperty(Property $property, Beds24PropertyPublisher $publisher): RedirectResponse

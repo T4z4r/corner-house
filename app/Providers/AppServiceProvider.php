@@ -23,13 +23,19 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(StripeClient::class, function (): StripeClient {
-            $secret = Setting::getValue('stripe_secret', config('services.stripe.secret', ''));
+            $secret = Setting::getValue('stripe_secret');
+            if (blank($secret)) {
+                $secret = config('services.stripe.secret', '');
+            }
 
             return new StripeClient((string) $secret);
         });
 
         $this->app->singleton(PaymentGatewayInterface::class, function ($app): PaymentGatewayInterface {
-            $secret = Setting::getValue('stripe_secret', config('services.stripe.secret', ''));
+            $secret = Setting::getValue('stripe_secret');
+            if (blank($secret)) {
+                $secret = config('services.stripe.secret', '');
+            }
 
             if ($app->environment('testing') || blank($secret)) {
                 return $app->make(FakePaymentGateway::class);

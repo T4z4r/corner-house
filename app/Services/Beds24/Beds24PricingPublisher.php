@@ -91,8 +91,8 @@ class Beds24PricingPublisher
     }
 
     /**
-     * Publish only the configured weekday/weekend defaults and optional
-     * holiday weekend uplift, without applying other local pricing rules.
+     * Publish only the configured holiday weekend uplifts (rate + uplift amount)
+     * to Beds24 for dates where an uplift applies, skipping non-uplift dates.
      */
     public function postDefaultRates(Carbon $from, Carbon $to): bool
     {
@@ -110,10 +110,13 @@ class Beds24PricingPublisher
             ->with('room')
             ->get();
 
-        $weekday = (float) Setting::getValue('min_price_weekday', 550);
         $weekend = (float) Setting::getValue('min_price_weekend', 625);
         $upliftEnabled = (bool) Setting::getValue('holiday_weekend_uplift_enabled', false);
         $uplift = (float) Setting::getValue('holiday_weekend_uplift', 5);
+
+        if (! $upliftEnabled) {
+            return false;
+        }
 
         foreach ($mappings as $mapping) {
             if (! $mapping->room instanceof Room) {
@@ -122,11 +125,13 @@ class Beds24PricingPublisher
 
             for ($date = $from->copy()->startOfDay(); $date->lte($to); $date->addDay()) {
                 $isWeekend = in_array($date->dayOfWeek, [Carbon::FRIDAY, Carbon::SATURDAY, Carbon::SUNDAY], true);
-                $rate = $isWeekend ? $weekend : $weekday;
 
-                if ($isWeekend && $upliftEnabled && $this->pricing->dayCategory($date) === 'uplift') {
-                    $rate = round($rate * (1 + ($uplift / 100)), 2);
+                if (! $isWeekend || $this->pricing->dayCategory($date) !== 'uplift') {
+                    continue;
                 }
+
+                $baseRate = max($weekend, (float) ($mapping->room->base_rate ?? 0));
+                $rate = round($baseRate * (1 + ($uplift / 100)), 2);
 
                 $rows[] = [
                     'roomId' => $mapping->external_room_id,

@@ -12,22 +12,45 @@ class StripePaymentGateway implements PaymentGatewayInterface
 
     public function createCheckoutSession(array $payload): array
     {
-        $session = $this->client->checkout->sessions->create([
+        $sessionParams = [
             'mode' => 'payment',
             'success_url' => $payload['success_url'],
             'cancel_url' => $payload['cancel_url'],
             'metadata' => $payload['metadata'] ?? [],
-            'line_items' => [[
+        ];
+
+        if (! empty($payload['customer_email'])) {
+            $sessionParams['customer_email'] = $payload['customer_email'];
+        }
+
+        if (! empty($payload['line_items']) && is_array($payload['line_items'])) {
+            $sessionParams['line_items'] = array_map(function (array $item) use ($payload): array {
+                return [
+                    'quantity' => $item['quantity'] ?? 1,
+                    'price_data' => [
+                        'currency' => strtolower((string) ($item['currency'] ?? $payload['currency'])),
+                        'unit_amount' => (int) round(((float) ($item['amount'] ?? 0)) * 100),
+                        'product_data' => [
+                            'name' => (string) ($item['name'] ?? $payload['description']),
+                            'description' => isset($item['description']) ? (string) $item['description'] : null,
+                        ],
+                    ],
+                ];
+            }, $payload['line_items']);
+        } else {
+            $sessionParams['line_items'] = [[
                 'quantity' => 1,
                 'price_data' => [
-                    'currency' => strtolower($payload['currency']),
-                    'unit_amount' => (int) round($payload['amount'] * 100),
+                    'currency' => strtolower((string) $payload['currency']),
+                    'unit_amount' => (int) round(((float) $payload['amount']) * 100),
                     'product_data' => [
-                        'name' => $payload['description'],
+                        'name' => (string) $payload['description'],
                     ],
                 ],
-            ]],
-        ]);
+            ]];
+        }
+
+        $session = $this->client->checkout->sessions->create($sessionParams);
 
         return [
             'id' => $session->id,
@@ -62,9 +85,12 @@ class StripePaymentGateway implements PaymentGatewayInterface
 
     public function parseWebhook(string $payload, string $signature): array
     {
-        $secret = (string) Setting::getValue('stripe_webhook_secret', config('services.stripe.webhook_secret', ''));
+        $secret = Setting::getValue('stripe_webhook_secret');
+        if (blank($secret)) {
+            $secret = config('services.stripe.webhook_secret', '');
+        }
 
-        $event = Webhook::constructEvent($payload, $signature, $secret);
+        $event = Webhook::constructEvent($payload, $signature, (string) $secret);
 
         return $event->toArray();
     }
