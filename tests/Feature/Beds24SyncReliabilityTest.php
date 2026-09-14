@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Jobs\PushBeds24RatesJob;
 use App\Jobs\SyncBeds24BookingsJob;
-use App\Jobs\SyncBeds24MessagesJob;
 use App\Models\ChannelAccount;
 use App\Models\ChannelMapping;
 use App\Models\Property;
@@ -31,9 +30,9 @@ class Beds24SyncReliabilityTest extends TestCase
 
         config(['services.beds24.refresh_token' => null]);
 
-        Setting::firstOrCreate(['key' => 'min_price_weekday'], ['value' => '0', 'group' => 'booking', 'label' => 'Min weekday', 'cast' => 'decimal:2']);
-        Setting::firstOrCreate(['key' => 'min_price_weekend'], ['value' => '0', 'group' => 'booking', 'label' => 'Min weekend', 'cast' => 'decimal:2']);
-        Setting::firstOrCreate(['key' => 'cleaning_fee'], ['value' => '0', 'group' => 'booking', 'label' => 'Cleaning', 'cast' => 'decimal:2']);
+        Setting::updateOrCreate(['key' => 'min_price_weekday'], ['value' => '0', 'group' => 'booking', 'label' => 'Min weekday', 'cast' => 'decimal:2']);
+        Setting::updateOrCreate(['key' => 'min_price_weekend'], ['value' => '0', 'group' => 'booking', 'label' => 'Min weekend', 'cast' => 'decimal:2']);
+        Setting::updateOrCreate(['key' => 'cleaning_fee'], ['value' => '0', 'group' => 'booking', 'label' => 'Cleaning', 'cast' => 'decimal:2']);
     }
 
     private function beds24Account(string $status = 'active'): ChannelAccount

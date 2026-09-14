@@ -1,39 +1,336 @@
 @extends('layouts.website.app')
-@section('title', 'Checkout & Payment')
+@section('title', 'Guest Details & Stay Options')
 @section('content')
-@include('website._page-hero', ['kicker' => 'Secure Checkout', 'title' => 'Guest Details & Payment'])
-<div class="container ch-section">
-    <!-- Step Progress Indicator -->
-    <div class="row justify-content-center mb-5">
-        <div class="col-lg-10">
-            <div class="d-flex align-items-center justify-content-between position-relative px-3 px-md-5">
-                <div class="text-center position-relative z-1">
-                    <div class="rounded-circle bg-success text-white d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 38px; height: 38px; font-weight: 600;">
-                        <i class="bi bi-check-lg"></i>
-                    </div>
-                    <div class="small fw-semibold mt-2 text-dark">1. Select Dates</div>
-                </div>
-                <div class="flex-grow-1 mx-2" style="height: 3px; background: var(--ch-forest, #2d4d3a);"></div>
-                <div class="text-center position-relative z-1">
-                    <div class="rounded-circle text-white d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 38px; height: 38px; font-weight: 600; background: var(--ch-forest, #2d4d3a);">
-                        2
-                    </div>
-                    <div class="small fw-semibold mt-2 text-dark">2. Details &amp; Add-ons</div>
-                </div>
-                <div class="flex-grow-1 mx-2" style="height: 3px; background: #e0e0e0;"></div>
-                <div class="text-center position-relative z-1">
-                    <div class="rounded-circle bg-light text-muted border d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px; font-weight: 600;">
-                        3
-                    </div>
-                    <div class="small text-muted mt-2">3. Stripe Payment</div>
-                </div>
-            </div>
+
+@include('website._page-hero', ['kicker' => 'Direct Booking · Step 2 of 3', 'title' => 'Guest Details & Stay Options', 'subtitle' => 'Confirm your guest details, select optional add-ons, and proceed to instant secure payment.'])
+
+<style>
+/* Corner House Premium Checkout Tokens */
+:root {
+  --ch-ivy-deep: #1F3826;
+  --ch-ivy: #2F5136;
+  --ch-ivy-soft: #7E9A7A;
+  --ch-sage: #D6DFCD;
+  --ch-terracotta: #B4552B;
+  --ch-terracotta-deep: #8C3E1C;
+  --ch-terracotta-tint: #F0DED2;
+  --ch-stone: #EEE8DB;
+  --ch-stone-light: #F7F4EC;
+  --ch-ink: #1E211C;
+  --ch-ink-soft: #4F554B;
+  --ch-line: rgba(31,56,38,.14);
+}
+
+.ch-checkout-container {
+  padding-top: 2.5rem;
+  padding-bottom: 5rem;
+}
+
+/* Stepper */
+.ch-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  max-width: 780px;
+  margin: 0 auto 3rem auto;
+}
+.ch-stepper::before {
+  content: "";
+  position: absolute;
+  top: 22px;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: var(--ch-line);
+  z-index: 0;
+}
+.ch-step-item {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  background: var(--ch-stone-light);
+  padding: 0 0.8rem;
+}
+.ch-step-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  font-size: 1.1rem;
+  border: 2px solid var(--ch-line);
+  background: #fff;
+  color: var(--ch-ink-soft);
+  transition: all 0.3s ease;
+}
+.ch-step-item.completed .ch-step-circle {
+  background: var(--ch-ivy-deep);
+  border-color: var(--ch-ivy-deep);
+  color: #fff;
+}
+.ch-step-item.active .ch-step-circle {
+  background: var(--ch-terracotta);
+  border-color: var(--ch-terracotta);
+  color: #fff;
+  box-shadow: 0 0 0 4px var(--ch-terracotta-tint);
+}
+.ch-step-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ch-ink-soft);
+  margin-top: 0.5rem;
+  text-transform: uppercase;
+}
+.ch-step-item.active .ch-step-label {
+  color: var(--ch-ivy-deep);
+}
+
+/* Form Card */
+.ch-card-premium {
+  background: #ffffff;
+  border: 1px solid var(--ch-line);
+  border-radius: 12px;
+  padding: 2.2rem;
+  box-shadow: 0 16px 40px -16px rgba(31,56,38,0.1);
+}
+
+.ch-card-header-title {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.5rem;
+  color: var(--ch-ivy-deep);
+  margin-bottom: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.ch-step-badge {
+  background: var(--ch-ivy-deep);
+  color: var(--ch-stone-light);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: var(--body);
+}
+
+/* Custom Input Styling */
+.ch-form-group {
+  margin-bottom: 1.2rem;
+}
+.ch-form-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ch-ivy-deep);
+  margin-bottom: 0.4rem;
+}
+.ch-form-control {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-family: var(--body);
+  font-size: 1rem;
+  color: var(--ch-ink);
+  background: var(--ch-stone-light);
+  border: 1px solid rgba(31,56,38,0.2);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+.ch-form-control:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: var(--ch-ivy-deep);
+  box-shadow: 0 0 0 3px rgba(31,56,38,0.12);
+}
+
+/* Addon Selection Cards */
+.ch-addon-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.1rem 1.2rem;
+  background: var(--ch-stone-light);
+  border: 1px solid var(--ch-line);
+  border-radius: 8px;
+  cursor: pointer;
+  height: 100%;
+  transition: all 0.2s ease;
+}
+.ch-addon-card:hover {
+  border-color: var(--ch-ivy-soft);
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -8px rgba(31,56,38,0.12);
+}
+.ch-addon-card input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin-top: 3px;
+  accent-color: var(--ch-ivy-deep);
+  cursor: pointer;
+}
+
+/* Payment Method Highlight Box */
+.ch-payment-box {
+  background: linear-gradient(135deg, rgba(31,56,38,0.04) 0%, rgba(180,85,43,0.04) 100%);
+  border: 1.5px solid var(--ch-ivy-soft);
+  border-radius: 10px;
+  padding: 1.4rem;
+}
+
+/* Submit Button */
+.btn-ch-pay {
+  background: linear-gradient(145deg, var(--ch-terracotta), var(--ch-terracotta-deep));
+  color: #ffffff;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
+  padding: 1.15rem 1.8rem;
+  border-radius: 8px;
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  box-shadow: 0 10px 25px -5px rgba(180,85,43,0.4);
+  transition: all 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+.btn-ch-pay:hover {
+  background: linear-gradient(145deg, var(--ch-terracotta-deep), var(--ch-terracotta));
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -4px rgba(180,85,43,0.5);
+  color: #ffffff;
+}
+
+/* Order Summary Sidebar */
+.ch-summary-card {
+  background: #ffffff;
+  border: 1px solid var(--ch-line);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 16px 40px -16px rgba(31,56,38,0.12);
+  position: sticky;
+  top: 100px;
+}
+.ch-summary-media {
+  height: 180px;
+  position: relative;
+  background: var(--ch-ivy-deep);
+  overflow: hidden;
+}
+.ch-summary-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ch-summary-media-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(31,56,38,0.85) 0%, transparent 70%);
+}
+.ch-summary-media-title {
+  position: absolute;
+  bottom: 1rem;
+  left: 1.2rem;
+  right: 1.2rem;
+  color: #ffffff;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.6rem;
+  margin: 0;
+}
+
+.ch-summary-body {
+  padding: 1.6rem;
+}
+.ch-date-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--ch-ivy-deep);
+  color: var(--ch-stone-light);
+  padding: 0.45rem 0.9rem;
+  border-radius: 99px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.ch-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.45rem 0;
+  font-size: 0.95rem;
+  color: var(--ch-ink);
+}
+.ch-breakdown-row.discount {
+  color: var(--ch-terracotta-deep);
+  font-weight: 700;
+}
+.ch-breakdown-row.total-row {
+  border-top: 2px solid var(--ch-ivy-deep);
+  margin-top: 0.8rem;
+  padding-top: 1rem;
+}
+.ch-total-price {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 2.2rem;
+  color: var(--ch-ivy-deep);
+  line-height: 1;
+}
+
+.ch-badge-guarantee {
+  background: var(--ch-stone-light);
+  border: 1px solid var(--ch-sage);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1.2rem;
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+.ch-badge-guarantee i {
+  color: var(--ch-terracotta);
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+</style>
+
+<div class="wrap ch-checkout-container">
+
+    <!-- 3-Step Luxury Progress Bar -->
+    <div class="ch-stepper">
+        <div class="ch-step-item completed">
+            <div class="ch-step-circle"><i class="bi bi-check-lg"></i></div>
+            <span class="ch-step-label">1. Dates</span>
+        </div>
+        <div class="ch-step-item active">
+            <div class="ch-step-circle">2</div>
+            <span class="ch-step-label">2. Details</span>
+        </div>
+        <div class="ch-step-item">
+            <div class="ch-step-circle">3</div>
+            <span class="ch-step-label">3. Payment</span>
         </div>
     </div>
 
+    <!-- Error Alerts -->
     @if ($errors->any())
-        <div class="alert alert-danger mb-4 rounded-3 shadow-sm">
-            <div class="fw-semibold mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i>Please check your booking details:</div>
+        <div class="alert alert-danger mb-4 rounded-3 shadow-sm border-0" style="background:#fdf2f2; color:#842029; border-left:4px solid #b4552b !important;">
+            <div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i>Please review your details:</div>
             <ul class="mb-0 ps-3 small">
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -43,73 +340,81 @@
     @endif
 
     @if (request()->query('cancelled'))
-        <div class="alert alert-warning mb-4 rounded-3 shadow-sm d-flex align-items-center gap-2">
-            <i class="bi bi-info-circle-fill fs-5 text-warning"></i>
-            <div>Payment was cancelled on Stripe. Your details are preserved below so you can try again whenever you are ready.</div>
+        <div class="alert alert-warning mb-4 rounded-3 shadow-sm border-0 d-flex align-items-center gap-3 p-3" style="background:#fff9e6; color:#664d03; border-left:4px solid #c9a227 !important;">
+            <i class="bi bi-info-circle-fill fs-3" style="color:#c9a227;"></i>
+            <div>
+                <strong class="d-block">Payment was cancelled on Stripe</strong>
+                <span>Your booking details have been preserved below. You can try again whenever you are ready.</span>
+            </div>
         </div>
     @endif
 
     @php
         $addons = \App\Models\AddOn::query()->where('is_active', true)->orderBy('sort_order')->get();
+        $roomHero = $room->images->first();
     @endphp
+
     <div class="row g-5">
+        <!-- Main Form Column -->
         <div class="col-lg-7">
-            <form method="POST" action="{{ route('booking.pay') }}" class="ch-form-card" id="bookingForm">
+            <form method="POST" action="{{ route('booking.pay') }}" id="bookingForm">
                 @csrf
                 <input type="hidden" name="room_id" value="{{ $room->id }}">
                 <input type="hidden" name="check_in" value="{{ $checkIn->toDateString() }}">
                 <input type="hidden" name="check_out" value="{{ $checkOut->toDateString() }}">
                 <input type="hidden" name="guests_count" value="{{ $guests }}">
 
-                <!-- Section 1: Guest Information -->
-                <div class="mb-4">
-                    <h5 class="mb-1 d-flex align-items-center gap-2" style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;">
-                        <span class="badge rounded-circle bg-dark text-white" style="width:26px; height:26px; font-size:0.85rem; font-family:sans-serif;">1</span>
-                        Guest Information
-                    </h5>
-                    <p class="text-muted small mb-3">Who is the lead guest for this booking?</p>
+                <!-- Section 1: Lead Guest Information -->
+                <div class="ch-card-premium mb-4">
+                    <h2 class="ch-card-header-title">
+                        <span class="ch-step-badge">1</span>
+                        Lead Guest Details
+                    </h2>
+                    <p class="small text-muted mb-4">Please provide details for the lead guest under this reservation.</p>
+
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">First name <span class="text-danger">*</span></label>
-                            <input type="text" name="guest_first_name" class="form-control" value="{{ old('guest_first_name') }}" placeholder="Alex" required>
+                        <div class="col-md-6 ch-form-group">
+                            <label class="ch-form-label">First Name <span class="text-danger">*</span></label>
+                            <input type="text" name="guest_first_name" class="ch-form-control" value="{{ old('guest_first_name') }}" placeholder="e.g. Alex" required>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Last name <span class="text-danger">*</span></label>
-                            <input type="text" name="guest_last_name" class="form-control" value="{{ old('guest_last_name') }}" placeholder="Smith" required>
+                        <div class="col-md-6 ch-form-group">
+                            <label class="ch-form-label">Last Name <span class="text-danger">*</span></label>
+                            <input type="text" name="guest_last_name" class="ch-form-control" value="{{ old('guest_last_name') }}" placeholder="e.g. Smith" required>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Email address <span class="text-danger">*</span></label>
-                            <input type="email" name="guest_email" class="form-control" value="{{ old('guest_email') }}" placeholder="alex@example.com" required>
-                            <div class="form-text small">Booking &amp; payment receipts will be sent here.</div>
+                        <div class="col-md-6 ch-form-group">
+                            <label class="ch-form-label">Email Address <span class="text-danger">*</span></label>
+                            <input type="email" name="guest_email" class="ch-form-control" value="{{ old('guest_email') }}" placeholder="alex@example.com" required>
+                            <div class="small text-muted mt-1">Confirmation and receipts will be sent to this address.</div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Phone number</label>
-                            <input type="tel" name="guest_phone" class="form-control" value="{{ old('guest_phone') }}" placeholder="+44 7700 900123">
-                            <div class="form-text small">Used for pre-arrival SMS &amp; check-in details.</div>
+                        <div class="col-md-6 ch-form-group">
+                            <label class="ch-form-label">Phone Number</label>
+                            <input type="tel" name="guest_phone" class="ch-form-control" value="{{ old('guest_phone') }}" placeholder="+44 7700 900123">
+                            <div class="small text-muted mt-1">Used for pre-arrival notification and key access.</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Section 2: Add-ons / Enhancements -->
+                <!-- Section 2: Optional Enhancements -->
                 @if ($addons->isNotEmpty())
-                    <div class="mt-4 pt-4 border-top mb-4">
-                        <h5 class="mb-1 d-flex align-items-center gap-2" style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;">
-                            <span class="badge rounded-circle bg-dark text-white" style="width:26px; height:26px; font-size:0.85rem; font-family:sans-serif;">2</span>
-                            Enhance Your Stay <span class="text-muted fw-normal fs-6">(Optional)</span>
-                        </h5>
-                        <p class="text-muted small mb-3">Select drinks packages, hampers, or experiences to add to your stay.</p>
+                    <div class="ch-card-premium mb-4">
+                        <h2 class="ch-card-header-title">
+                            <span class="ch-step-badge">2</span>
+                            Enhance Your Stay <span class="fw-normal fs-6 text-muted">(Optional)</span>
+                        </h2>
+                        <p class="small text-muted mb-4">Select welcome packages, drinks, or hampers to have ready upon arrival.</p>
+
                         <div class="row g-3">
                             @foreach ($addons as $addon)
                                 <div class="col-sm-6">
-                                    <label class="ch-addon-option d-flex gap-3 p-3 border rounded-3 bg-light cursor-pointer h-100" for="addon_{{ $addon->id }}">
-                                        <input type="checkbox" name="addon_ids[]" value="{{ $addon->id }}" id="addon_{{ $addon->id }}" class="form-check-input mt-1 addon-check" data-price="{{ $addon->price }}">
-                                        <div class="flex-grow-1">
-                                            <strong class="d-block text-dark" style="font-size:0.92rem;">{{ $addon->name }}</strong>
-                                            <span class="text-muted small d-block mb-1">{{ $addon->description ? \Illuminate\Support\Str::limit($addon->description, 60) : '' }}</span>
-                                            <div class="fw-bold" style="color:var(--ch-forest, #2d4d3a); font-size:0.88rem;">
+                                    <label class="ch-addon-card" for="addon_{{ $addon->id }}">
+                                        <input type="checkbox" name="addon_ids[]" value="{{ $addon->id }}" id="addon_{{ $addon->id }}" class="addon-check" data-price="{{ $addon->price }}">
+                                        <div>
+                                            <strong class="d-block" style="color:var(--ch-ivy-deep); font-size:0.95rem;">{{ $addon->name }}</strong>
+                                            <span class="small text-muted d-block mb-2">{{ $addon->description ? \Illuminate\Support\Str::limit($addon->description, 65) : '' }}</span>
+                                            <div class="fw-bold" style="color:var(--ch-terracotta); font-size:0.9rem;">
                                                 +£{{ number_format($addon->price, 2) }}
                                                 @if ($addon->unit)
-                                                    <span class="text-muted fw-normal">/ {{ $addon->unit }}</span>
+                                                    <span class="fw-normal text-muted" style="font-size:0.8rem;">/ {{ $addon->unit }}</span>
                                                 @endif
                                             </div>
                                         </div>
@@ -121,133 +426,197 @@
                 @endif
 
                 <!-- Section 3: Stripe Payment Method -->
-                <div class="mt-4 pt-4 border-top">
-                    <h5 class="mb-1 d-flex align-items-center gap-2" style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;">
-                        <span class="badge rounded-circle bg-dark text-white" style="width:26px; height:26px; font-size:0.85rem; font-family:sans-serif;">{{ $addons->isNotEmpty() ? '3' : '2' }}</span>
-                        Payment Method
-                    </h5>
-                    <p class="text-muted small mb-3">All payments are processed securely via Stripe. Your card is charged instantly upon checkout.</p>
+                <div class="ch-card-premium">
+                    <h2 class="ch-card-header-title">
+                        <span class="ch-step-badge">{{ $addons->isNotEmpty() ? '3' : '2' }}</span>
+                        Secure Instant Checkout
+                    </h2>
+                    <p class="small text-muted mb-4">You will be securely redirected to Stripe's encrypted payment checkout page.</p>
 
-                    <div class="p-3 border border-2 border-primary rounded-3 bg-white mb-4">
+                    <div class="ch-payment-box mb-4">
                         <div class="d-flex align-items-center justify-content-between mb-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-shield-check-fill fs-4 text-primary"></i>
+                            <div class="d-flex align-items-center gap-3">
+                                <i class="bi bi-shield-check-fill fs-3" style="color:var(--ch-ivy-deep);"></i>
                                 <div>
-                                    <strong class="d-block">Stripe Secure Checkout</strong>
-                                    <span class="text-muted small">Credit card, debit card, Apple Pay, Google Pay</span>
+                                    <strong class="d-block text-dark" style="font-family:'Fraunces',serif; font-size:1.15rem;">Stripe Hosted Payment Gateway</strong>
+                                    <span class="small text-muted">Supports Credit Cards, Debit Cards, Apple Pay &amp; Google Pay</span>
                                 </div>
                             </div>
-                            <span class="badge text-bg-primary">Secure</span>
+                            <span class="badge" style="background:var(--ch-ivy-deep); color:var(--ch-stone-light); font-size:0.75rem; letter-spacing:0.06em; text-transform:uppercase; padding:0.35rem 0.7rem;">Verified</span>
                         </div>
-                        <div class="d-flex flex-wrap align-items-center gap-2 mt-3 pt-2 border-top">
-                            <span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-credit-card me-1"></i>Visa</span>
-                            <span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-credit-card me-1"></i>Mastercard</span>
-                            <span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-credit-card me-1"></i>American Express</span>
-                            <span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-apple me-1"></i>Apple Pay</span>
-                            <span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-google me-1"></i>Google Pay</span>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mt-3 pt-3 border-top" style="border-color:var(--ch-line) !important;">
+                            <span class="badge bg-white text-dark border px-2.5 py-1.5 small"><i class="bi bi-credit-card me-1"></i>Visa</span>
+                            <span class="badge bg-white text-dark border px-2.5 py-1.5 small"><i class="bi bi-credit-card me-1"></i>Mastercard</span>
+                            <span class="badge bg-white text-dark border px-2.5 py-1.5 small"><i class="bi bi-credit-card me-1"></i>American Express</span>
+                            <span class="badge bg-white text-dark border px-2.5 py-1.5 small"><i class="bi bi-apple me-1"></i>Apple Pay</span>
+                            <span class="badge bg-white text-dark border px-2.5 py-1.5 small"><i class="bi bi-google me-1"></i>Google Pay</span>
                         </div>
                     </div>
 
                     <div class="form-check mb-4">
-                        <input class="form-check-input" type="checkbox" name="agree_terms" id="agree_terms" required>
+                        <input class="form-check-input" type="checkbox" name="agree_terms" id="agree_terms" required checked>
                         <label class="form-check-label small text-muted" for="agree_terms">
-                            I agree to the <a href="#house-rules" class="text-decoration-underline">House Rules</a> and acknowledge that direct bookings carry a 10% discount with a 30% non-refundable deposit on cancellation outside 5 days.
+                            I accept the <a href="#house-rules" class="text-decoration-underline" style="color:var(--ch-terracotta-deep);">House Rules</a> and acknowledge that direct bookings include a 10% direct-booking discount.
                         </label>
                     </div>
 
-                    <button class="btn btn-ch-book w-100 py-3 fs-5 shadow" type="submit" id="submitPaymentBtn">
-                        <i class="bi bi-shield-lock-fill me-2"></i>Proceed to Stripe Secure Checkout
+                    <button class="btn-ch-pay" type="submit" id="submitPaymentBtn">
+                        <i class="bi bi-shield-lock-fill"></i>
+                        <span>Proceed to Stripe Secure Checkout</span>
+                        <i class="bi bi-arrow-right ms-1"></i>
                     </button>
 
-                    <div class="d-flex align-items-center justify-content-center gap-3 mt-3 text-muted small">
-                        <span><i class="bi bi-lock-fill text-success me-1"></i>256-Bit SSL Encrypted</span>
+                    <div class="d-flex align-items-center justify-content-center gap-4 mt-4 text-muted small">
+                        <span><i class="bi bi-lock-fill me-1" style="color:var(--ch-ivy-deep);"></i>256-Bit SSL Encryption</span>
                         <span>·</span>
-                        <span><i class="bi bi-shield-check me-1"></i>PCI DSS Level 1 Certified</span>
+                        <span><i class="bi bi-shield-check me-1" style="color:var(--ch-ivy-deep);"></i>PCI-DSS Compliant</span>
                     </div>
                 </div>
             </form>
         </div>
 
-        <!-- Right Column: Order Summary -->
+        <!-- Right Column: Premium Order Summary Sidebar -->
         <div class="col-lg-5">
-            <div class="ch-booking-card shadow-sm border-0 sticky-top" style="top: 2rem;">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h2>{{ $room->name }}</h2>
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Direct Discount</span>
+            <div class="ch-summary-card">
+                <!-- Media Header -->
+                <div class="ch-summary-media">
+                    @if ($roomHero)
+                        <img src="{{ asset('storage/'.$roomHero->path) }}" alt="{{ $room->name }}">
+                    @else
+                        <div class="d-flex align-items-center justify-content-center h-100 text-white fs-1"><i class="bi bi-house-heart"></i></div>
+                    @endif
+                    <div class="ch-summary-media-overlay"></div>
+                    <h3 class="ch-summary-media-title">{{ $room->name }}</h3>
                 </div>
-                <p class="ch-suite-meta mb-1"><i class="bi bi-calendar-event me-1"></i>{{ $checkIn->format('d M Y') }} → {{ $checkOut->format('d M Y') }}</p>
-                <p class="ch-suite-meta mb-3"><i class="bi bi-people me-1"></i>{{ $quote['nights'] }} night(s) · {{ $guests }} guest(s)</p>
-                
-                <hr>
 
-                <h6 class="mb-2 font-serif fw-semibold"><i class="bi bi-list-stars me-1"></i>Nightly Breakdown</h6>
-                <div class="bg-light p-2 rounded-2 mb-3">
-                    @foreach ($quote['per_night'] as $date => $rate)
-                        <div class="d-flex justify-content-between small text-muted py-1">
-                            <span>{{ \Carbon\Carbon::parse($date)->format('D j M Y') }}</span>
-                            <span class="fw-semibold text-dark">£{{ number_format($rate, 2) }}</span>
+                <div class="ch-summary-body">
+                    <!-- Stay Pill -->
+                    <div class="ch-date-pill">
+                        <i class="bi bi-calendar-check"></i>
+                        <span>{{ $checkIn->format('d M Y') }} → {{ $checkOut->format('d M Y') }}</span>
+                    </div>
+                    <div class="small text-muted mb-3"><i class="bi bi-moon-stars me-1"></i>{{ $quote['nights'] }} night(s) · {{ $guests }} guest(s)</div>
+
+                    <!-- Nightly Breakdown -->
+                    <div class="p-2.5 rounded mb-3" style="background:var(--ch-stone-light); border:1px solid var(--ch-line);">
+                        <div class="small font-bold text-uppercase mb-1" style="font-size:0.7rem; letter-spacing:0.08em; color:var(--ch-ivy-deep);">Nightly Rate Breakdown</div>
+                        @foreach ($quote['per_night'] as $date => $rate)
+                            <div class="d-flex justify-content-between small text-muted py-0.5">
+                                <span>{{ \Carbon\Carbon::parse($date)->format('D j M Y') }}</span>
+                                <span class="fw-semibold text-dark">£{{ number_format($rate, 2) }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <!-- Itemized Rows -->
+                    <div class="ch-breakdown-row">
+                        <span>Accommodation Stay</span>
+                        <span>£{{ number_format($quote['base_amount'], 2) }}</span>
+                    </div>
+
+                    @if ($quote['discount_amount'] > 0)
+                        <div class="ch-breakdown-row discount">
+                            <span>Direct Discount ({{ \App\Models\Setting::getValue('direct_booking_discount', 10) }}%)</span>
+                            <span>-£{{ number_format($quote['discount_amount'], 2) }}</span>
                         </div>
-                    @endforeach
-                </div>
+                    @endif
 
-                <div class="d-flex justify-content-between py-1">
-                    <span>Accommodation Stay</span>
-                    <span>£{{ number_format($quote['base_amount'], 2) }}</span>
-                </div>
+                    @if ($quote['fees_amount'] > 0)
+                        <div class="ch-breakdown-row">
+                            <span>Cleaning Fee</span>
+                            <span>£{{ number_format($quote['fees_amount'], 2) }}</span>
+                        </div>
+                    @endif
 
-                @if ($quote['discount_amount'] > 0)
-                    <div class="d-flex justify-content-between py-1 text-success">
-                        <span>Direct-booking discount ({{ \App\Models\Setting::getValue('direct_booking_discount', 10) }}%)</span>
-                        <span class="fw-bold">-£{{ number_format($quote['discount_amount'], 2) }}</span>
+                    <div id="addonsSummary"></div>
+
+                    @if (! empty($quote['damage_deposit']) && $quote['damage_deposit'] > 0)
+                        <div class="ch-breakdown-row py-2 my-2 border-top border-bottom small text-muted">
+                            <span><i class="bi bi-info-circle me-1"></i>Refundable Security Deposit</span>
+                            <span class="fw-bold text-dark">£{{ number_format($quote['damage_deposit'], 2) }}</span>
+                        </div>
+                    @endif
+
+                    <div class="ch-breakdown-row text-muted small">
+                        <span>Taxes &amp; VAT</span>
+                        <span>£{{ number_format($quote['tax_amount'], 2) }}</span>
                     </div>
-                @endif
 
-                @if ($quote['fees_amount'] > 0)
-                    <div class="d-flex justify-content-between py-1">
-                        <span>Cleaning fee</span>
-                        <span>£{{ number_format($quote['fees_amount'], 2) }}</span>
+                    <!-- Grand Total -->
+                    <div class="ch-breakdown-row total-row">
+                        <div>
+                            <span class="d-block fw-bold text-dark fs-6" style="font-family:'Fraunces',serif;">Grand Total</span>
+                            <span class="small text-muted">Includes stay, deposit &amp; tax</span>
+                        </div>
+                        <span class="ch-total-price" id="totalDisplay">£{{ number_format($quote['total'], 2) }}</span>
                     </div>
-                @endif
+                    <input type="hidden" id="baseTotal" value="{{ $quote['total'] }}">
 
-                <div id="addonsSummary"></div>
-
-                @if (! empty($quote['damage_deposit']) && $quote['damage_deposit'] > 0)
-                    <div class="d-flex justify-content-between py-1 text-muted border-top border-bottom my-2 py-2 small">
-                        <span><i class="bi bi-info-circle me-1"></i>Damage deposit (refundable)</span>
-                        <span class="fw-semibold text-dark">£{{ number_format($quote['damage_deposit'], 2) }}</span>
-                    </div>
-                @endif
-
-                <div class="d-flex justify-content-between py-1">
-                    <span>Taxes &amp; VAT</span>
-                    <span>£{{ number_format($quote['tax_amount'], 2) }}</span>
-                </div>
-
-                <hr class="my-3">
-
-                <div class="d-flex justify-content-between align-items-center ch-price">
-                    <div>
-                        <span class="d-block fs-5 fw-bold text-dark">Total Amount</span>
-                        <span class="text-muted small font-sans">Includes taxes &amp; deposit</span>
-                    </div>
-                    <span class="fs-2 fw-bold text-dark" id="totalDisplay">£{{ number_format($quote['total'], 2) }}</span>
-                </div>
-                <input type="hidden" id="baseTotal" value="{{ $quote['total'] }}">
-
-                <div class="p-3 bg-light rounded-3 mt-3 border">
-                    <div class="d-flex gap-2">
-                        <i class="bi bi-patch-check-fill text-success fs-5"></i>
+                    <!-- Direct Guarantee Banner -->
+                    <div class="ch-badge-guarantee">
+                        <i class="bi bi-patch-check-fill"></i>
                         <div class="small">
-                            <strong>Direct Booking Guarantee:</strong> You are receiving our lowest rate guaranteed, with {{ \App\Models\Setting::getValue('direct_booking_discount', 10) }}% off platform prices.
+                            <strong class="d-block text-dark mb-0.5">Best Rate Guaranteed</strong>
+                            <span>You are saving {{ \App\Models\Setting::getValue('direct_booking_discount', 10) }}% off platform rates by booking direct with Corner House.</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- House Rules Accordion / Card -->
-            <div class="ch-booking-card mt-3">
-                <h6 class="mb-2 fw-semibold"><i class="bi bi-house-door me-1"></i>House rules summary</h6>
+            <!-- House Rules Accordion -->
+            <div class="ch-card-premium mt-4 p-4" id="house-rules">
+                <h4 class="mb-2 fs-6 fw-bold text-uppercase" style="letter-spacing:0.08em; color:var(--ch-ivy-deep);"><i class="bi bi-house-door me-2"></i>House Rules</h4>
                 <ul class="small text-muted mb-0 ps-3">
+                    <li class="mb-1">Check-in from 3:00 PM · Check-out by 12:00 PM</li>
+                    <li class="mb-1">Minimum stay: {{ \App\Models\Setting::getValue('min_stay_nights', 2) }} nights</li>
+                    <li class="mb-1">Maximum occupancy: {{ \App\Models\Setting::getValue('max_adults', 12) }} adults</li>
+                    <li>No pets or indoor smoking permitted</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const checks = document.querySelectorAll('.addon-check');
+    const baseTotal = parseFloat(document.getElementById('baseTotal').value);
+    const summaryEl = document.getElementById('addonsSummary');
+    const totalEl = document.getElementById('totalDisplay');
+    const form = document.getElementById('bookingForm');
+    const submitBtn = document.getElementById('submitPaymentBtn');
+
+    function recalc() {
+        let addonTotal = 0;
+        let html = '';
+        checks.forEach(function (cb) {
+            if (cb.checked) {
+                const price = parseFloat(cb.dataset.price);
+                addonTotal += price;
+                const name = cb.closest('.ch-addon-card').querySelector('strong').textContent;
+                html += '<div class="ch-breakdown-row text-primary"><span>+ ' + name + '</span><span>£' + price.toFixed(2) + '</span></div>';
+            }
+        });
+        summaryEl.innerHTML = html;
+        totalEl.textContent = '£' + (baseTotal + addonTotal).toFixed(2);
+    }
+
+    checks.forEach(function (cb) {
+        cb.addEventListener('change', recalc);
+    });
+
+    if (form && submitBtn) {
+        form.addEventListener('submit', function () {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.8';
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Redirecting to Stripe Secure Payment...';
+        });
+    }
+});
+</script>
+@endpush
+@endsection
                     <li>Check-in from 3:00 PM · Check-out by 12:00 PM</li>
                     <li>Minimum stay: {{ \App\Models\Setting::getValue('min_stay_nights', 2) }} nights</li>
                     <li>Maximum guests: {{ \App\Models\Setting::getValue('max_adults', 12) }} adults</li>
