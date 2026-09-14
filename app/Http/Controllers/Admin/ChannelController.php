@@ -103,6 +103,7 @@ class ChannelController extends Controller
                         'airbnbUserId' => $selectedUserId,
                     ]);
                     $listings = $this->extractAirbnbListings($listingsPayload);
+                    $this->storeAirbnbListingNames($selectedAccount, $listings);
                 } catch (\Throwable $e) {
                     $listingsError = $e->getMessage();
                 }
@@ -1050,7 +1051,11 @@ class ChannelController extends Controller
             'pricingRules' => PricingRule::query()->with(['property', 'room'])->orderByDesc('created_at')->limit(20)->get(),
             'pricingOverrides' => PricingOverride::query()->with(['room'])->orderByDesc('created_at')->limit(20)->get(),
             'reservations' => Reservation::query()->with(['room', 'guest'])->latest()->limit(20)->get(),
-            'properties' => Property::query()->withCount('rooms')->orderBy('name')->get(),
+            'properties' => Property::query()
+                ->withCount('rooms')
+                ->with(['mappings' => fn ($query) => $query->where('provider', 'beds24')])
+                ->orderBy('name')
+                ->get(),
             'rooms' => Room::query()->with('property')->orderBy('name')->get(),
             'testEndpoints' => Beds24Client::ALLOWED_TEST_ENDPOINTS,
         ];
@@ -1125,6 +1130,40 @@ class ChannelController extends Controller
                     'label' => trim(($mapping->property?->name ?? 'Property').' (Beds24 '.$mapping->external_property_id.')'),
                 ];
             });
+    }
+
+    /**
+     * Keep the live Airbnb listing title beside the local property name.
+     *
+     * @param  array<int, array<string, mixed>>  $listings
+     */
+    private function storeAirbnbListingNames(ChannelAccount $account, array $listings): void
+    {
+        foreach ($listings as $listing) {
+            $roomId = $listing['room_id'] ?? null;
+            $name = trim((string) ($listing['name'] ?? ''));
+
+            if ($roomId === null || $name === '') {
+                continue;
+            }
+
+            $mapping = ChannelMapping::query()
+                ->where('channel_account_id', $account->id)
+                ->where('provider', 'beds24')
+                ->where('external_room_id', (string) $roomId)
+                ->first();
+
+            if (! $mapping) {
+                continue;
+            }
+
+            $mapping->update([
+                'metadata' => array_merge($mapping->metadata ?? [], [
+                    'airbnb_listing_name' => $name,
+                    'airbnb_listing_id' => $listing['airbnb_listing_id'] ?? null,
+                ]),
+            ]);
+        }
     }
 
     /**

@@ -70,6 +70,11 @@ class Property extends Model
         return $this->hasMany(Room::class);
     }
 
+    public function mappings(): HasMany
+    {
+        return $this->hasMany(ChannelMapping::class);
+    }
+
     public function amenities(): BelongsToMany
     {
         return $this->belongsToMany(Amenity::class, 'property_amenities');

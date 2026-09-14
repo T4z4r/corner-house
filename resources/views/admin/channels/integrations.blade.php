@@ -409,6 +409,18 @@
                                                             {{ $property->city ?? 'No city' }}
                                                             · {{ $property->rooms_count }} room{{ $property->rooms_count === 1 ? '' : 's' }}
                                                         </div>
+                                                        @foreach ($property->mappings as $propertyMapping)
+                                                            @php
+                                                                $beds24ListedName = data_get($propertyMapping->metadata, 'beds24_property_name');
+                                                                $airbnbListedName = data_get($propertyMapping->metadata, 'airbnb_listing_name');
+                                                            @endphp
+                                                            @if ($beds24ListedName && $beds24ListedName !== $property->name)
+                                                                <div class="small text-muted">Beds24 / Booking.com listed as: <strong>{{ $beds24ListedName }}</strong></div>
+                                                            @endif
+                                                            @if ($airbnbListedName && $airbnbListedName !== $property->name)
+                                                                <div class="small text-muted">Airbnb listed as: <strong>{{ $airbnbListedName }}</strong></div>
+                                                            @endif
+                                                        @endforeach
                                                     </div>
                                                     <form method="POST" action="{{ route('admin.channels.properties.publish', $property) }}">
                                                         @csrf
