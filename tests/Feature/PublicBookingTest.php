@@ -191,6 +191,48 @@ class PublicBookingTest extends TestCase
         $this->assertSame(1, Reservation::query()->count());
     }
 
+    public function test_confirmation_page_renders_premium_summary_for_a_paid_booking(): void
+    {
+        $reservation = Reservation::factory()->create();
+
+        $this->withSession(['booking.reservation_id' => $reservation->id])
+            ->get(route('booking.confirmation'))
+            ->assertOk()
+            ->assertSee('Booking confirmed')
+            ->assertSee($reservation->reference)
+            ->assertSee('Your stay')
+            ->assertSee('Payment summary')
+            ->assertSee('Total')
+            ->assertSee($reservation->guest->full_name)
+            ->assertSee('Confirmed');
+    }
+
+    public function test_confirmation_page_renders_pending_state_for_an_unpaid_booking(): void
+    {
+        $reservation = Reservation::factory()->create([
+            'status' => 'hold',
+            'payment_status' => 'unpaid',
+            'base_amount' => 250,
+            'total_amount' => 250,
+            'paid_amount' => 0,
+        ]);
+
+        $this->withSession(['booking.reservation_id' => $reservation->id])
+            ->get(route('booking.confirmation'))
+            ->assertOk()
+            ->assertDontSee('Booking confirmed')
+            ->assertSee('Reservation received')
+            ->assertSee('is still pending');
+    }
+
+    public function test_confirmation_page_renders_empty_state_without_a_reservation(): void
+    {
+        $this->get(route('booking.confirmation'))
+            ->assertOk()
+            ->assertSee('Waiting for confirmation')
+            ->assertSee('could not find that booking');
+    }
+
     public function test_stripe_checkout_receives_customer_email_and_itemized_line_items(): void
     {
         $room = Room::factory()->create(['name' => 'The Garden Suite', 'base_rate' => 100, 'status' => 'active']);
