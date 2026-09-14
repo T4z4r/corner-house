@@ -287,14 +287,16 @@ class BookingService
     /**
      * Permanently delete a reservation.
      *
-     * Deleting is refused when the guest has already paid, so money is never
-     * silently removed; an admin should refund via the payments page first.
-     * Related records (payments, add-ons, guest links) are removed by the
-     * database's cascade rules.
+     * Deleting is refused when the guest has paid and the money has not been
+     * returned, so it is never silently removed; an admin should refund via
+     * the payments page first. Once a payment has been refunded, the booking
+     * (and its payments) may be deleted. Related records (payments, refunds,
+     * add-ons, guest links) are removed by the database's cascade rules.
      */
     public function delete(Reservation $reservation): void
     {
-        if (in_array($reservation->payment_status, ['paid', 'partial'], true) || $reservation->paid_amount > 0) {
+        if ($reservation->payment_status !== 'refunded'
+            && (in_array($reservation->payment_status, ['paid', 'partial'], true) || $reservation->paid_amount > 0)) {
             throw new \DomainException('This booking has payments. Refund the payments before deleting the booking.');
         }
 

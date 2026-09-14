@@ -12,7 +12,9 @@ use App\Models\KnowledgeBaseArticle;
 use App\Models\PlacesOfInterest;
 use App\Models\PricingOverride;
 use App\Models\PricingRule;
+use App\Models\Payment;
 use App\Models\Property;
+use App\Models\Refund;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\Setting;
@@ -828,6 +830,50 @@ class AdminResourcesTest extends TestCase
         $reservation = Reservation::factory()->create([
             'payment_status' => 'paid',
             'paid_amount' => 100,
+        ]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->delete(route('admin.reservations.destroy', $reservation))
+            ->assertRedirect()
+            ->assertSessionHasErrors('error');
+
+        $this->assertDatabaseHas('reservations', ['id' => $reservation->id]);
+    }
+
+    public function test_super_admin_can_delete_a_reservation_once_the_payment_has_been_refunded(): void
+    {
+        $reservation = Reservation::factory()->create([
+            'payment_status' => 'refunded',
+            'paid_amount' => 100,
+        ]);
+
+        $payment = Payment::factory()->for($reservation)->paid()->create([
+            'status' => 'refunded',
+            'amount' => 100,
+        ]);
+
+        Refund::create([
+            'payment_id' => $payment->id,
+            'reservation_id' => $reservation->id,
+            'amount' => 100,
+            'status' => 'succeeded',
+            'provider_refund_id' => 're_'.fake()->unique()->bothify('##########'),
+        ]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->delete(route('admin.reservations.destroy', $reservation))
+            ->assertRedirect(route('admin.reservations.index'));
+
+        $this->assertDatabaseMissing('reservations', ['id' => $reservation->id]);
+        $this->assertDatabaseMissing('payments', ['id' => $payment->id]);
+        $this->assertDatabaseCount('refunds', 0);
+    }
+
+    public function test_super_admin_cannot_delete_a_partially_paid_reservation(): void
+    {
+        $reservation = Reservation::factory()->create([
+            'payment_status' => 'partial',
+            'paid_amount' => 50,
         ]);
 
         $this->actingAs($this->actingAsSuperAdmin())
