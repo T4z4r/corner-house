@@ -133,10 +133,34 @@
         font-size: 0.8rem;
         font-weight: 700;
         letter-spacing: -0.01em;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
     }
 
     .calendar-day.is-outside .calendar-day-price {
         color: #8a9097;
+    }
+
+    .calendar-day-price-edit {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.4rem;
+        height: 1.4rem;
+        margin-left: 0.3rem;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(13, 110, 253, 0.1);
+        color: #0d6efd;
+        font-size: 0.68rem;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .calendar-day-price-edit:hover {
+        background: #0d6efd;
+        color: #fff;
     }
 
     .calendar-event {
@@ -417,6 +441,51 @@
                 </form>
             </div>
         </div>
+
+        <div class="modal fade" id="priceModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <form id="priceForm" class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="priceModalTitle">Set price on calendar</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="property_id" id="price_property" value="{{ $selectedPropertyId }}">
+                        <input type="hidden" name="override_id" id="priceId">
+                        <div class="mb-3">
+                            <label class="form-label">Room</label>
+                            <select name="room_id" id="priceRoom" class="form-select no-select2" required></select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Price per night (GBP)</label>
+                            <input type="number" name="rate" id="priceRate" class="form-control" step="0.01" min="0" placeholder="e.g. 750.00" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <label class="form-label">From date</label>
+                                <input type="date" name="start_date" id="priceStartDate" class="form-control" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">To date</label>
+                                <input type="date" name="end_date" id="priceEndDate" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="small text-muted mt-2 mb-1">The price applies to every night in this range. To change a single day, leave both dates on that day.</div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes <span class="text-muted">(optional)</span></label>
+                            <input type="text" name="notes" id="priceNotes" class="form-control" maxlength="500" placeholder="e.g. Peak weekend, maintenance weekend">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="me-auto d-flex gap-2" id="priceModifyActions" style="display:none !important;">
+                            <button type="button" class="btn btn-outline-danger btn-sm" id="priceDeleteButton"><i class="bi bi-trash me-1"></i>Remove price</button>
+                        </div>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-ch-primary" id="priceSaveButton">Save price</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     @endcan
 @endsection
 
@@ -432,6 +501,9 @@
         const blockUpdateTemplate = @json(route('admin.calendar.blocks.update', ['block' => '__ID__']));
         const blockToggleTemplate = @json(route('admin.calendar.blocks.toggle', ['block' => '__ID__']));
         const blockDestroyTemplate = @json(route('admin.calendar.blocks.destroy', ['block' => '__ID__']));
+        const priceStoreEndpoint = @json(route('admin.calendar.prices.store'));
+        const priceDestroyTemplate = @json(route('admin.calendar.prices.destroy', ['override' => '__ID__']));
+        const canManagePrices = @json(auth()->user()?->can('calendar.manage'));
         const roomsData = @json($allRooms->map(fn($r) => ['id' => $r->id, 'name' => $r->name, 'property_id' => $r->property_id]));
         const today = startOfDay(new Date());
         let visibleMonth = startOfMonth(parseMonthKey(initialMonth));
@@ -614,20 +686,30 @@
             return 'base rate';
         }
 
-        function priceLine(dayPrices) {
+        function priceEditButton(dayKey, roomId) {
+            if (! canManagePrices) {
+                return '';
+            }
+
+            return `<button type="button" class="calendar-day-price-edit" data-price-edit data-date="${escapeAttr(dayKey)}" data-room-id="${escapeAttr(roomId)}" title="Set price for this day" aria-label="Set price for this day"><i class="bi bi-pencil-fill"></i></button>`;
+        }
+
+        function priceLine(dayPrices, dayKey) {
             if (! dayPrices.length) {
                 return '';
             }
 
             if (dayPrices.length === 1) {
                 const only = dayPrices[0];
-                return `<div class="calendar-day-price" title="${escapeAttr(`${only.room_name} · ${formatMoney(only.price)} per night`)}">${formatMoney(only.price)}</div>`;
+
+                return `<div class="calendar-day-price" title="${escapeAttr(`${only.room_name} · ${formatMoney(only.price)} per night`)}">${formatMoney(only.price)} ${priceEditButton(dayKey, only.room_id)}</div>`;
             }
 
             const cheapest = Math.min(...dayPrices.map((item) => item.price));
+            const cheapestRoom = dayPrices.find((item) => item.price === cheapest) || dayPrices[0];
             const tooltip = dayPrices.map((item) => `${item.room_name}: ${formatMoney(item.price)}`).join('\n');
 
-            return `<div class="calendar-day-price" title="${escapeAttr(tooltip)}">from ${formatMoney(cheapest)}</div>`;
+            return `<div class="calendar-day-price" title="${escapeAttr(tooltip)}">from ${formatMoney(cheapest)} ${priceEditButton(dayKey, cheapestRoom.room_id)}</div>`;
         }
 
         function buildEventMap() {
@@ -669,7 +751,10 @@
                                         <span class="fw-semibold">${escapeAttr(item.room_name)}</span>
                                         <span class="small text-muted ms-2">${sourceLabel(item)}</span>
                                     </div>
-                                    <span class="fw-bold ms-2">${formatMoney(item.price)}</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold">${formatMoney(item.price)}</span>
+                                        ${priceEditButton(dateKey(date), item.room_id)}
+                                    </div>
                                 </div>
                             `).join('')}
                         </div>
@@ -756,7 +841,7 @@
                     </button>
                 `).join('');
                 const extraCount = dayEvents.length > 3 ? `<div class="calendar-day-meta">+${dayEvents.length - 3} more</div>` : '';
-                const dayPriceMarkup = priceLine(priceData.prices[dayKey] || []);
+                const dayPriceMarkup = priceLine(priceData.prices[dayKey] || [], dayKey);
 
                 cells.push(`
                     <div class="calendar-day ${isOutside ? 'is-outside' : ''} ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}" data-date="${dayKey}">
@@ -799,6 +884,10 @@
 
                     if (matched.extendedProps?.type === 'block' && matched.extendedProps?.block_id) {
                         openBlockEditor(matched);
+                    }
+
+                    if (matched.extendedProps?.type === 'rate' && canManagePrices) {
+                        openPriceEditor({ matchedEvent: matched });
                     }
                 });
             });
@@ -1111,6 +1200,148 @@
                         }
                     });
             });
+        }
+
+        /* ------------- Calendar price editing (rate overrides) ------------- */
+        const priceModalEl = document.getElementById('priceModal');
+        const priceForm = document.getElementById('priceForm');
+        const priceModalTitle = document.getElementById('priceModalTitle');
+        const priceModifyActions = document.getElementById('priceModifyActions');
+        const priceDeleteButton = document.getElementById('priceDeleteButton');
+        const priceRoom = document.getElementById('priceRoom');
+        const priceStartDate = document.getElementById('priceStartDate');
+        const priceEndDate = document.getElementById('priceEndDate');
+        const priceRate = document.getElementById('priceRate');
+        const priceNotes = document.getElementById('priceNotes');
+        let editingPriceId = null;
+
+        function prefillPriceFor(roomId, date) {
+            const dayPrices = (priceData.prices && priceData.prices[dateKey(date)]) || [];
+            const row = dayPrices.find((item) => String(item.room_id) === String(roomId));
+
+            return row ? row.price : '';
+        }
+
+        function openPriceEditor({ matchedEvent, roomId, date }) {
+            if (! priceForm) {
+                return;
+            }
+
+            editingPriceId = matchedEvent ? Number(matchedEvent.extendedProps.override_id) : null;
+            priceForm.reset();
+            document.getElementById('priceId').value = editingPriceId || '';
+            priceNotes.value = '';
+            priceRate.value = '';
+
+            let targetRoomId = roomId || '';
+
+            if (matchedEvent) {
+                targetRoomId = matchedEvent.extendedProps.room_id || '';
+                priceStartDate.value = dateKey(parseLocalDate(matchedEvent.start));
+                const endDate = parseLocalDate(matchedEvent.end);
+                endDate.setDate(endDate.getDate() - 1);
+                priceEndDate.value = dateKey(endDate);
+                priceRate.value = matchedEvent.extendedProps.rate ?? '';
+            } else {
+                const day = date ? parseLocalDate(date) : new Date();
+                priceStartDate.value = dateKey(day);
+                priceEndDate.value = dateKey(day);
+
+                if (! targetRoomId) {
+                    const dayPrices = (priceData.prices && priceData.prices[dateKey(day)]) || [];
+                    if (dayPrices.length === 1) {
+                        targetRoomId = dayPrices[0].room_id;
+                    }
+                }
+
+                const price = prefillPriceFor(targetRoomId, day);
+                if (price !== '') {
+                    priceRate.value = price;
+                }
+            }
+
+            populateRoomOptions(priceRoom, activePropertyId);
+            priceRoom.value = targetRoomId;
+            priceModalTitle.textContent = matchedEvent ? 'Edit price on calendar' : 'Set price on calendar';
+            priceModifyActions.style.display = editingPriceId ? 'flex' : 'none';
+            bootstrap.Modal.getOrCreateInstance(priceModalEl).show();
+        }
+
+        document.addEventListener('click', (event) => {
+            const trigger = event.target.closest('[data-price-edit]');
+
+            if (! trigger || ! canManagePrices) {
+                return;
+            }
+
+            openPriceEditor({ date: trigger.dataset.date, roomId: trigger.dataset.roomId });
+        });
+
+        if (priceForm) {
+            priceForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+
+                const propertyId = activePropertyId || document.getElementById('price_property').value;
+
+                if (! propertyId) {
+                    alert('Select a property first.');
+                    return;
+                }
+
+                const formData = new FormData(priceForm);
+                formData.set('property_id', propertyId);
+
+                fetch(priceStoreEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                    body: formData,
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.ok) {
+                            bootstrap.Modal.getInstance(priceModalEl).hide();
+                            priceForm.reset();
+                            editingPriceId = null;
+                            reloadAll();
+                        } else {
+                            alert(data.message || 'Unable to save price.');
+                        }
+                    });
+            });
+
+            if (priceDeleteButton) {
+                priceDeleteButton.addEventListener('click', () => {
+                    if (! editingPriceId) {
+                        return;
+                    }
+
+                    sweetConfirm('Remove this price override? The normal rate will apply for these dates.').then((ok) => {
+                        if (! ok) {
+                            return;
+                        }
+
+                        fetch(priceDestroyTemplate.replace('__ID__', editingPriceId), {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json',
+                            },
+                        })
+                            .then((response) => response.json())
+                            .then((data) => {
+                                if (data.ok) {
+                                    bootstrap.Modal.getInstance(priceModalEl).hide();
+                                    priceForm.reset();
+                                    editingPriceId = null;
+                                    reloadAll();
+                                }
+                            });
+                    });
+                });
+            }
         }
 
         reloadAll().then(syncUrl);

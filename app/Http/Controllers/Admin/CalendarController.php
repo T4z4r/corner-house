@@ -360,6 +360,59 @@ class CalendarController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    /**
+     * Set a per-night price for a date range on the calendar. Persisted as a
+     * PricingOverride (the top-priority rate source). Any enabled override for
+     * the same room overlapping the range is replaced so the calendar shows the
+     * new price as definitive.
+     */
+    public function storePrice(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'property_id' => ['required', 'exists:properties,id'],
+            'room_id' => ['required', 'exists:rooms,id'],
+            'start_date' => ['required', 'date'],
+            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'rate' => ['required', 'numeric', 'min:0', 'max:999999'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        PricingOverride::query()
+            ->where('room_id', $validated['room_id'])
+            ->where('is_enabled', true)
+            ->whereDate('start_date', '<=', $validated['end_date'])
+            ->whereDate('end_date', '>=', $validated['start_date'])
+            ->delete();
+
+        $override = PricingOverride::create([
+            'room_id' => $validated['room_id'],
+            'start_date' => $validated['start_date'],
+            'end_date' => $validated['end_date'],
+            'rate' => $validated['rate'],
+            'notes' => $validated['notes'] ?? null,
+            'is_enabled' => true,
+            'created_by' => auth()->id(),
+        ]);
+
+        $this->auditLogger->log('calendar.price_set', 'calendar', 'pricing_override', (string) $override->id, newValues: [
+            'room_id' => $override->room_id,
+            'start_date' => $override->start_date->toDateString(),
+            'end_date' => $override->end_date->toDateString(),
+            'rate' => $override->rate,
+        ]);
+
+        return response()->json(['ok' => true, 'override' => $override]);
+    }
+
+    public function destroyPrice(PricingOverride $override): JsonResponse
+    {
+        $this->auditLogger->log('calendar.price_removed', 'calendar', 'pricing_override', (string) $override->id);
+
+        $override->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
     private function reservationCalendarClass(Reservation $reservation): string
     {
         return match ($reservation->status) {

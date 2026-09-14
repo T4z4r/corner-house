@@ -254,6 +254,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar');
         Route::get('/calendar/events', [CalendarController::class, 'events'])->name('calendar.events');
         Route::get('/calendar/prices', [CalendarController::class, 'prices'])->name('calendar.prices');
+        Route::post('/calendar/prices', [CalendarController::class, 'storePrice'])->name('calendar.prices.store')->middleware('can:calendar.manage');
+        Route::delete('/calendar/prices/{override}', [CalendarController::class, 'destroyPrice'])->name('calendar.prices.destroy')->middleware('can:calendar.manage');
         Route::post('/calendar/blocks', [CalendarController::class, 'storeBlock'])->name('calendar.blocks.store')->middleware('can:calendar.manage');
         Route::post('/calendar/blocks/{block}', [CalendarController::class, 'updateBlock'])->name('calendar.blocks.update')->middleware('can:calendar.manage');
         Route::post('/calendar/blocks/{block}/toggle', [CalendarController::class, 'toggleBlock'])->name('calendar.blocks.toggle')->middleware('can:calendar.manage');
