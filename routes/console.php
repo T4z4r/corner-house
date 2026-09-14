@@ -3,7 +3,6 @@
 use App\Jobs\ExpireBookingHoldsJob;
 use App\Jobs\GenerateRevenueSnapshotJob;
 use App\Jobs\GenerateSeasonalPricingJob;
-use App\Jobs\PushBeds24RatesJob;
 use App\Jobs\SendCheckInNotificationJob;
 use App\Jobs\SendCheckoutNotificationJob;
 use App\Jobs\SendPreArrivalMessageJob;
@@ -75,19 +74,5 @@ if ($scheduleSetting('schedule_beds24_sync_messages_enabled', true)) {
         'twice_daily' => $schedule->twiceDaily(6, 18),
         'daily' => $schedule->dailyAt('06:00'),
         default => $schedule->everyFiveMinutes(),
-    };
-}
-
-if ($scheduleSetting('schedule_beds24_push_rates_enabled', true)) {
-    $frequency = $scheduleSetting('schedule_beds24_push_rates_frequency', 'hourly');
-    $schedule = Schedule::job(PushBeds24RatesJob::class);
-    match ($frequency) {
-        'every_five_minutes' => $schedule->everyFiveMinutes(),
-        'every_fifteen_minutes' => $schedule->everyFifteenMinutes(),
-        'every_thirty_minutes' => $schedule->everyThirtyMinutes(),
-        'hourly' => $schedule->hourly(),
-        'twice_daily' => $schedule->twiceDaily(6, 18),
-        'daily' => $schedule->dailyAt('06:00'),
-        default => $schedule->hourly(),
     };
 }

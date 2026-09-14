@@ -25,7 +25,6 @@ class CronJobsController extends Controller
         'GenerateSeasonalPricingJob' => 'Seasonal Pricing',
         'SyncBeds24BookingsJob' => 'Beds24 Bookings Sync',
         'SyncBeds24MessagesJob' => 'Beds24 Messages Sync',
-        'PushBeds24RatesJob' => 'Push Beds24 Rates',
     ];
 
     public function index(Request $request): View

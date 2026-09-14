@@ -244,7 +244,7 @@ class Beds24SyncReliabilityTest extends TestCase
         $this->assertSame('success', $account->last_message_sync_status);
     }
 
-    public function test_manual_channel_sync_runs_bookings_messages_and_rate_jobs_immediately(): void
+    public function test_manual_channel_sync_runs_bookings_and_messages_jobs_immediately(): void
     {
         $account = $this->beds24Account();
         $property = Property::factory()->create();
@@ -280,13 +280,35 @@ class Beds24SyncReliabilityTest extends TestCase
         $this->actingAs($this->superAdmin())
             ->post(route('admin.channels.sync'))
             ->assertRedirect()
-            ->assertSessionHas('status', 'Beds24 sync completed. Properties, rooms, bookings, calendar, messages and rates are now aligned.');
+            ->assertSessionHas('status', 'Beds24 sync completed. Properties, rooms, bookings, calendar and messages are now aligned.');
 
         $this->assertDatabaseHas('reservations', [
             'external_channel' => 'beds24',
             'external_booking_id' => '9011',
             'room_id' => $room->id,
         ]);
+    }
+
+    public function test_push_rates_job_is_disabled_and_never_overrides_prices(): void
+    {
+        $account = $this->beds24Account();
+        $property = Property::factory()->create();
+        $room = Room::factory()->create(['property_id' => $property->id, 'status' => 'active']);
+        ChannelMapping::create([
+            'channel_account_id' => $account->id,
+            'provider' => 'beds24',
+            'property_id' => $property->id,
+            'room_id' => $room->id,
+            'external_property_id' => '2001',
+            'external_room_id' => '77',
+            'status' => 'active',
+        ]);
+
+        Http::fake();
+
+        app(PushBeds24RatesJob::class)->handle();
+
+        Http::assertNothingSent();
     }
 
     public function test_channel_account_eligibility_does_not_depend_on_status(): void

@@ -49,7 +49,7 @@ class CronJobsAdminTest extends TestCase
             ->assertOk()
             ->assertSee('Cron Jobs')
             ->assertSee('Expire Booking Holds')
-            ->assertSee('Push Beds24 Rates');
+            ->assertDontSee('Push Beds24 Rates');
     }
 
     public function test_page_lists_runs_with_status_and_summary(): void

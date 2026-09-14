@@ -17,7 +17,7 @@ class ScheduleConfigurationTest extends TestCase
 
         $this->assertContainsScheduled(events: $events, expression: '*/5 * * * *', job: 'SyncBeds24BookingsJob');
         $this->assertContainsScheduled(events: $events, expression: '*/5 * * * *', job: 'SyncBeds24MessagesJob');
-        $this->assertContainsScheduled(events: $events, expression: '0 * * * *', job: 'PushBeds24RatesJob');
+        $this->assertNotContainsScheduled(events: $events, job: 'PushBeds24RatesJob');
         $this->assertContainsScheduled(events: $events, expression: '*/5 * * * *', job: 'ExpireBookingHoldsJob');
         $this->assertNotContainsScheduled(events: $events, job: 'GenerateSeasonalPricingJob');
     }
