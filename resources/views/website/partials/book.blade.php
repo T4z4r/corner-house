@@ -81,7 +81,25 @@
                             <label>Email<input name="email" type="email" required autocomplete="email"></label>
                         </div>
                         <div class="row">
-                            <label>Phone<input name="phone" type="tel" autocomplete="tel"></label>
+                            <label>Phone
+                                <span class="phone-row">
+                                    <select name="phone_code">
+                                        <option value="+44" selected>UK +44</option>
+                                        <option value="+353">Ireland +353</option>
+                                        <option value="+1">United States +1</option>
+                                        <option value="+1">Canada +1</option>
+                                        <option value="+61">Australia +61</option>
+                                        <option value="+64">New Zealand +64</option>
+                                        <option value="+33">France +33</option>
+                                        <option value="+49">Germany +49</option>
+                                        <option value="+34">Spain +34</option>
+                                        <option value="+31">Netherlands +31</option>
+                                        <option value="+971">United Arab Emirates +971</option>
+                                        <option value="+966">Saudi Arabia +966</option>
+                                    </select>
+                                    <input name="phone" type="tel" autocomplete="tel" placeholder="7700 900 123">
+                                </span>
+                            </label>
                             <label>Guests<select name="guests"><option>2</option><option>4</option><option>6</option><option>8</option><option>10</option><option selected>12</option><option>12 + 2 children</option></select></label>
                         </div>
                         <label>Occasion or message<textarea name="message" placeholder="Birthday, family get-together, walking weekend&hellip;"></textarea></label>

@@ -135,9 +135,15 @@ function renderMonths(){
   document.getElementById("prev-month").disabled = view <= new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
   document.getElementById("next-month").disabled = view >= maxView;
 }
-document.getElementById("prev-month").addEventListener("click", ()=>{ view=new Date(Date.UTC(view.getUTCFullYear(), view.getUTCMonth()-1, 1)); renderMonths(); });
-document.getElementById("next-month").addEventListener("click", ()=>{ view=new Date(Date.UTC(view.getUTCFullYear(), view.getUTCMonth()+1, 1)); renderMonths(); });
-document.getElementById("min-nights-label").textContent = CONFIG.minNights;
+const monthsEl = document.getElementById("months");
+if (monthsEl) {
+  const prevBtn = document.getElementById("prev-month");
+  const nextBtn = document.getElementById("next-month");
+  const minNightsLabel = document.getElementById("min-nights-label");
+  if (prevBtn) prevBtn.addEventListener("click", ()=>{ view=new Date(Date.UTC(view.getUTCFullYear(), view.getUTCMonth()-1, 1)); renderMonths(); });
+  if (nextBtn) nextBtn.addEventListener("click", ()=>{ view=new Date(Date.UTC(view.getUTCFullYear(), view.getUTCMonth()+1, 1)); renderMonths(); });
+  if (minNightsLabel) minNightsLabel.textContent = CONFIG.minNights;
+}
 
 function setError(msg){ const e=document.getElementById("q-err"); e.textContent=msg||""; e.hidden=!msg; }
 
@@ -189,7 +195,7 @@ if (enquiryForm) {
       checkOut: fmtISO(checkOut),
       name: f.get("name"),
       email: f.get("email"),
-      phone: f.get("phone"),
+      phone: [f.get("phone_code"), f.get("phone")].filter(Boolean).map(v=>v.trim()).join(" "),
       guests: f.get("guests"),
       message: f.get("message"),
       drinks: !!f.get("drinks"),
@@ -232,8 +238,10 @@ if (enquiryForm) {
   });
 }
 
-loadAvailability().then(renderMonths);
-renderMonths();
+if (document.getElementById("months")) {
+  loadAvailability().then(renderMonths);
+  renderMonths();
+}
 
 /* ---------- Floating chat widget ---------- */
 (function initChat(){

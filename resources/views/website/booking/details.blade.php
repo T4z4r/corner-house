@@ -154,6 +154,19 @@
   box-shadow: 0 0 0 3px rgba(31,56,38,0.12);
 }
 
+.ch-phone-row {
+  display: grid;
+  grid-template-columns: 155px 1fr;
+  gap: 0.5rem;
+}
+.ch-phone-code {
+  padding: 0.85rem 0.7rem;
+  cursor: pointer;
+}
+@media (max-width: 480px) {
+  .ch-phone-row { grid-template-columns: 1fr; }
+}
+
 /* Addon Selection Cards */
 .ch-addon-card {
   display: flex;
@@ -388,8 +401,24 @@
                         </div>
                         <div class="col-md-6 ch-form-group">
                             <label class="ch-form-label">Phone Number</label>
-                            <input type="tel" name="guest_phone" class="ch-form-control" value="{{ old('guest_phone') }}" placeholder="+44 7700 900123">
-                            <div class="small text-muted mt-1">Used for pre-arrival notification and key access.</div>
+                            <div class="ch-phone-row">
+                                <select name="phone_code" id="phoneCode" class="ch-form-control ch-phone-code" aria-label="Country dial code">
+                                    <option value="+44" selected>United Kingdom +44</option>
+                                    <option value="+353">Ireland +353</option>
+                                    <option value="+1">United States +1</option>
+                                    <option value="+1">Canada +1</option>
+                                    <option value="+61">Australia +61</option>
+                                    <option value="+64">New Zealand +64</option>
+                                    <option value="+33">France +33</option>
+                                    <option value="+49">Germany +49</option>
+                                    <option value="+34">Spain +34</option>
+                                    <option value="+31">Netherlands +31</option>
+                                    <option value="+971">United Arab Emirates +971</option>
+                                    <option value="+966">Saudi Arabia +966</option>
+                                </select>
+                                <input type="tel" name="guest_phone" id="guestPhone" class="ch-form-control" value="{{ old('guest_phone') }}" placeholder="7700 900 123" inputmode="tel" autocomplete="tel">
+                            </div>
+                            <div class="small text-muted mt-1">Dial code defaults to United Kingdom (+44). Used for pre-arrival notification and key access.</div>
                         </div>
                     </div>
                 </div>
@@ -499,7 +528,8 @@
 
                     <!-- Nightly Breakdown -->
                     <div class="p-2.5 rounded mb-3" style="background:var(--ch-stone-light); border:1px solid var(--ch-line);">
-                        <div class="small font-bold text-uppercase mb-1" style="font-size:0.7rem; letter-spacing:0.08em; color:var(--ch-ivy-deep);">Nightly Rate Breakdown</div>
+                        <div class="small font-bold text-uppercase mb-1" style="font-size:0.7rem; letter-spacing:0.08em; color:var(--ch-ivy-deep);">Nightly rate breakdown</div>
+                        <div class="small text-muted mb-2">Direct rate &mdash; this price includes our {{ \App\Models\Setting::getValue('direct_booking_discount', 10) }}% direct-booking discount.</div>
                         @foreach ($quote['per_night'] as $date => $rate)
                             <div class="d-flex justify-content-between small text-muted py-0.5">
                                 <span>{{ \Carbon\Carbon::parse($date)->format('D j M Y') }}</span>
@@ -516,7 +546,7 @@
 
                     @if ($quote['discount_amount'] > 0)
                         <div class="ch-breakdown-row discount">
-                            <span>Direct Discount ({{ \App\Models\Setting::getValue('direct_booking_discount', 10) }}%)</span>
+                            <span>Direct-booking discount ({{ \App\Models\Setting::getValue('direct_booking_discount', 10) }}%)</span>
                             <span>-£{{ number_format($quote['discount_amount'], 2) }}</span>
                         </div>
                     @endif
@@ -608,6 +638,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (form && submitBtn) {
         form.addEventListener('submit', function () {
+            const code = document.getElementById('phoneCode');
+            const phone = document.getElementById('guestPhone');
+            if (code && phone && phone.value && !phone.value.startsWith('+')) {
+                phone.value = (code.value + ' ' + phone.value).trim();
+            }
             submitBtn.disabled = true;
             submitBtn.style.opacity = '0.8';
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Redirecting to Stripe Secure Payment...';

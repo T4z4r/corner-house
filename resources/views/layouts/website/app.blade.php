@@ -23,18 +23,18 @@
 
 <header class="site-header">
     <div class="wrap">
-        <a class="brand" href="#home" aria-label="Corner House, Braunston - home">
+        <a class="brand" href="{{ url('/') }}#home" aria-label="Corner House, Braunston - home">
             <img src="{{ $site['logo'] ? asset('storage/'.$site['logo']) : asset('images/logo.png') }}" alt="{{ $propertyName }}">
         </a>
         <button class="nav-toggle" aria-expanded="false" aria-controls="nav">Menu</button>
         <nav class="nav" id="nav" aria-label="Main">
-            <a href="#home" data-nav="home">Home</a>
-            <a href="#about" data-nav="about">About</a>
-            <a href="#rooms" data-nav="rooms">The house</a>
-            <a href="#places" data-nav="places">Places of interest</a>
-            <a href="#spirits" data-nav="spirits">Serengeti Spirits</a>
-            <a href="#foundation" data-nav="foundation">Wright Foundation &amp; Sustainability</a>
-            <a href="#book" data-nav="book" class="btn btn-primary">Check availability</a>
+            <a href="{{ url('/') }}#home" data-nav="home">Home</a>
+            <a href="{{ url('/') }}#about" data-nav="about">About</a>
+            <a href="{{ url('/') }}#rooms" data-nav="rooms">The house</a>
+            <a href="{{ url('/') }}#places" data-nav="places">Places of interest</a>
+            <a href="{{ url('/') }}#spirits" data-nav="spirits">Serengeti Spirits</a>
+            <a href="{{ url('/') }}#foundation" data-nav="foundation">Wright Foundation &amp; Sustainability</a>
+            <a href="{{ url('/') }}#book" data-nav="book" class="btn btn-primary">Check availability</a>
         </nav>
     </div>
 </header>
@@ -58,28 +58,28 @@
         <div>
             <h4>The house</h4>
             <ul>
-                <li><a href="#about">About</a></li>
-                <li><a href="#rooms">The house</a></li>
-                <li><a href="#places">Places of interest</a></li>
-                <li><a href="#book">Make a booking</a></li>
+                <li><a href="{{ url('/') }}#about">About</a></li>
+                <li><a href="{{ url('/') }}#rooms">The house</a></li>
+                <li><a href="{{ url('/') }}#places">Places of interest</a></li>
+                <li><a href="{{ url('/') }}#book">Make a booking</a></li>
             </ul>
         </div>
         <div>
             <h4>Serengeti Spirits</h4>
             <ul>
-                <li><a href="#spirits">Spirits and drinks packages</a></li>
-                <li><a href="#foundation">Wright Foundation</a></li>
+                <li><a href="{{ url('/') }}#spirits">Spirits and drinks packages</a></li>
+                <li><a href="{{ url('/') }}#foundation">Wright Foundation</a></li>
                 <li><a href="{{ $site['spirits_website'] ?? 'https://www.serengetispirits.com' }}" target="_blank" rel="noopener">serengetispirits.com</a></li>
             </ul>
         </div>
         <div>
             <h4>Booking</h4>
             <ul>
-                <li><a href="#book">Make a booking</a></li>
-                <li><a href="#rules">Booking rules</a></li>
-                <li><a href="#house-rules">House rules</a></li>
-                <li><a href="#terms">Terms and conditions</a></li>
-                <li><a href="#refunds">Refund policy</a></li>
+                <li><a href="{{ url('/') }}#book">Make a booking</a></li>
+                <li><a href="{{ url('/') }}#rules">Booking rules</a></li>
+                <li><a href="{{ url('/') }}#house-rules">House rules</a></li>
+                <li><a href="{{ url('/') }}#terms">Terms and conditions</a></li>
+                <li><a href="{{ url('/') }}#refunds">Refund policy</a></li>
             </ul>
         </div>
         <p class="copyright">&copy; <span id="year"></span> {{ $propertyName }}, Braunston. Serengeti Spirits is a separate business; purchases are completed on its own website.</p>

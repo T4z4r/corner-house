@@ -638,7 +638,7 @@
 
                     @if ((float) $reservation->discount_amount > 0)
                         <div class="ch-breakdown-row discount">
-                            <span>Direct Discount ({{ \App\Models\Setting::getValue('direct_booking_discount', 10) }}%)</span>
+                            <span>Direct-booking discount ({{ \App\Models\Setting::getValue('direct_booking_discount', 10) }}%)</span>
                             <span>-&pound;{{ number_format((float) $reservation->discount_amount, 2) }}</span>
                         </div>
                     @endif
