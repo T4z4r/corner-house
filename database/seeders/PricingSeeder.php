@@ -13,10 +13,8 @@ class PricingSeeder extends Seeder
 {
     /**
      * Configure Corner House whole-house nightly pricing:
-     * - Weekday base rate £550, weekend £625 (until 31 Mar 2027)
-     * - Weekend £645 from 1 Apr 2027
-     * - Christmas (24-26 Dec) £750/day, recurring annually
-     * - Grand Prix weekend (2-4 Jul) £1,250/night, recurring annually
+    * - Weekday base rate £550, Friday-Sunday £625
+    * - Holiday weekend uplift is applied only on configured uplift days
      */
     public function run(): void
     {
@@ -30,46 +28,6 @@ class PricingSeeder extends Seeder
 
         // Base rate for every room = weekday whole-house rate.
         $rooms->each(fn (Room $room) => $room->update(['base_rate' => 550]));
-
-        $this->upsertRule($property, 'Weekend rate (currently £625)', [
-            'rule_type' => 'seasonal',
-            'start_date' => now()->startOfDay()->toDateString(),
-            'end_date' => '2027-03-31',
-            'adjustment_type' => 'amount',
-            'adjustment_value' => 75,
-            'apply_weekends_only' => true,
-            'recurring' => false,
-        ]);
-
-        $this->upsertRule($property, 'Weekend rate (from Apr 2027 £645)', [
-            'rule_type' => 'seasonal',
-            'start_date' => '2027-04-01',
-            'end_date' => null,
-            'adjustment_type' => 'amount',
-            'adjustment_value' => 95,
-            'apply_weekends_only' => true,
-            'recurring' => false,
-        ]);
-
-        $this->upsertRule($property, 'Christmas day rate (£750)', [
-            'rule_type' => 'event',
-            'start_date' => Carbon::createFromDate(now()->year, 12, 24)->toDateString(),
-            'end_date' => Carbon::createFromDate(now()->year, 12, 26)->toDateString(),
-            'adjustment_type' => 'amount',
-            'adjustment_value' => 200,
-            'apply_weekends_only' => false,
-            'recurring' => true,
-        ]);
-
-        $this->upsertRule($property, 'Grand Prix weekend rate (£1,250)', [
-            'rule_type' => 'event',
-            'start_date' => Carbon::createFromDate(now()->year, 7, 2)->toDateString(),
-            'end_date' => Carbon::createFromDate(now()->year, 7, 4)->toDateString(),
-            'adjustment_type' => 'amount',
-            'adjustment_value' => 700,
-            'apply_weekends_only' => false,
-            'recurring' => true,
-        ]);
 
         // Long-stay discounts applied to the whole stay, largest qualifying tier wins.
         foreach ([4 => 10, 7 => 25, 14 => 30, 28 => 35] as $minNights => $discountPct) {

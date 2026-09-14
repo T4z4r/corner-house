@@ -115,6 +115,35 @@ class PricingEngineTest extends TestCase
         $this->assertSame(75.0, $this->engine->calculateRateForDate($room, $date));
     }
 
+    public function test_manual_override_rate_is_full_amount_and_receives_uplift_on_uplift_days(): void
+    {
+        Setting::updateOrCreate(['key' => 'holiday_weekend_uplift_enabled'], [
+            'value' => '1',
+            'group' => 'pricing',
+            'label' => 'Uplift enabled',
+            'cast' => 'boolean',
+        ]);
+        Setting::updateOrCreate(['key' => 'holiday_weekend_uplift'], [
+            'value' => '5',
+            'group' => 'pricing',
+            'label' => 'Uplift',
+            'cast' => 'integer',
+        ]);
+
+        $room = $this->makeRoom(550);
+        $date = Carbon::parse('2026-05-23');
+
+        PricingOverride::create([
+            'room_id' => $room->id,
+            'start_date' => $date,
+            'end_date' => $date,
+            'rate' => 625,
+            'is_enabled' => true,
+        ]);
+
+        $this->assertSame(656.25, $this->engine->calculateRateForDate($room, $date));
+    }
+
     public function test_multiplier_adjustment_is_applied(): void
     {
         $room = $this->makeRoom(100);

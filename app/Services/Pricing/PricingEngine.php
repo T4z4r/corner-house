@@ -242,7 +242,17 @@ class PricingEngine
         // 1. Manual override (highest priority)
         $override = $this->findOverride($room, $date);
         if ($override) {
-            return (float) $override->rate;
+            $rate = (float) $override->rate;
+
+            if (
+                (bool) Setting::getValue('holiday_weekend_uplift_enabled', false)
+                && $this->isWeekendUpliftPeriod($date)
+            ) {
+                $upliftPct = (float) Setting::getValue('holiday_weekend_uplift', 5);
+                $rate *= 1 + ($upliftPct / 100);
+            }
+
+            return round($rate, 2);
         }
 
         $baseRate = (float) $room->base_rate;
@@ -327,12 +337,24 @@ class PricingEngine
         // 1. Manual override (highest priority)
         $override = $this->findOverride($room, $date);
         if ($override) {
+            $rate = (float) $override->rate;
+            $upliftApplied = false;
+
+            if (
+                (bool) Setting::getValue('holiday_weekend_uplift_enabled', false)
+                && $this->isWeekendUpliftPeriod($date)
+            ) {
+                $upliftPct = (float) Setting::getValue('holiday_weekend_uplift', 5);
+                $rate *= 1 + ($upliftPct / 100);
+                $upliftApplied = true;
+            }
+
             return [
-                'price' => (float) $override->rate,
+                'price' => round($rate, 2),
                 'category' => $category,
                 'source' => 'override',
                 'rule_type' => null,
-                'uplift_applied' => false,
+                'uplift_applied' => $upliftApplied,
                 'min_floor' => false,
                 'min_price' => 0.0,
                 'base_rate' => (float) $room->base_rate,
