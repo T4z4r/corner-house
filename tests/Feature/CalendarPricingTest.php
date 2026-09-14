@@ -294,6 +294,83 @@ class CalendarPricingTest extends TestCase
             ->assertSee('priceModal', false);
     }
 
+    public function test_booking_prices_return_per_night_rates_for_a_date_range(): void
+    {
+        $property = Property::factory()->create();
+        $room = Room::factory()->create([
+            'property_id' => $property->id,
+            'name' => 'Oak Suite',
+            'base_rate' => 650,
+        ]);
+
+        $this->getJson(route('booking.prices', [
+            'room_id' => $room->id,
+            'start' => '2026-01-05',
+            'end' => '2026-01-07',
+        ]))
+            ->assertOk()
+            ->assertJsonPath('room_id', $room->id)
+            ->assertJsonPath('base_amount', 1300.0)
+            ->assertJsonPath('nights', 2)
+            ->assertJsonStructure(['per_night', 'discount_amount', 'fees_amount']);
+    }
+
+    public function test_booking_prices_include_pricing_overrides(): void
+    {
+        $property = Property::factory()->create();
+        $room = Room::factory()->create([
+            'property_id' => $property->id,
+            'name' => 'Oak Suite',
+            'base_rate' => 650,
+        ]);
+
+        PricingOverride::query()->create([
+            'room_id' => $room->id,
+            'start_date' => '2026-01-06',
+            'end_date' => '2026-01-06',
+            'rate' => 999,
+            'is_enabled' => true,
+        ]);
+
+        $this->getJson(route('booking.prices', [
+            'room_id' => $room->id,
+            'start' => '2026-01-05',
+            'end' => '2026-01-07',
+        ]))
+            ->assertOk()
+            ->assertJsonPath('base_amount', 1649.0) // 650 + 999
+            ->assertJsonPath('per_night.2026-01-05', 650.0)
+            ->assertJsonPath('per_night.2026-01-06', 999.0);
+    }
+
+    public function test_booking_prices_falls_back_to_first_room_when_no_room_specified(): void
+    {
+        $property = Property::factory()->create();
+        Room::factory()->create([
+            'property_id' => $property->id,
+            'name' => 'Oak Suite',
+            'base_rate' => 500,
+        ]);
+
+        $response = $this->getJson(route('booking.prices', [
+            'start' => '2026-01-05',
+            'end' => '2026-01-06',
+        ]))
+            ->assertOk();
+
+        $this->assertSame(500.0, $response->json('base_amount'));
+    }
+
+    public function test_booking_prices_validates_dates(): void
+    {
+        $this->getJson(route('booking.prices', [
+            'start' => '2026-01-07',
+            'end' => '2026-01-05',
+        ]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['start', 'end']);
+    }
+
     public function test_calendar_prices_require_the_calendar_view_permission(): void
     {
         $role = Role::create(['name' => 'No Calendar Access', 'guard_name' => 'web']);

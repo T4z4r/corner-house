@@ -526,6 +526,43 @@ class BookingController extends Controller
         return response()->json(['rooms' => $rooms->values()]);
     }
 
+    /**
+     * Public JSON endpoint returning per-night rates and a quote summary for a
+     * date range. The website booking widget calls this to display live prices
+     * that reflect admin-set calendar overrides, pricing rules, and seasonal
+     * adjustments instead of static fallback rates.
+     */
+    public function prices(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'room_id' => ['nullable', 'exists:rooms,id'],
+            'start' => ['required', 'date'],
+            'end' => ['required', 'date', 'after:start'],
+        ]);
+
+        $room = $data['room_id']
+            ? Room::query()->where('status', 'active')->find($data['room_id'])
+            : Room::query()->where('status', 'active')->orderBy('id')->first();
+
+        if (! $room) {
+            return response()->json(['error' => 'No active room available.'], 404);
+        }
+
+        $start = Carbon::parse($data['start'])->startOfDay();
+        $end = Carbon::parse($data['end'])->startOfDay();
+
+        $quote = $this->pricing->calculateForRange($room, $start, $end, 12, null, true);
+
+        return response()->json([
+            'room_id' => $room->id,
+            'per_night' => $quote['per_night'],
+            'base_amount' => $quote['base_amount'],
+            'discount_amount' => $quote['discount_amount'],
+            'fees_amount' => $quote['fees_amount'],
+            'nights' => $quote['nights'],
+        ]);
+    }
+
     public function createHold(Request $request): JsonResponse
     {
         $data = $request->validate([

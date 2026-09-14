@@ -6,6 +6,7 @@ const CONFIG = Object.assign({
   enquiryEmail: "bookings@example.com",      // where enquiries go if no endpoint is set
   bookingEndpoint: "",                        // e.g. "/booking/enquiry" - POSTs JSON
   availabilityUrl: "",                        // e.g. "/availability.json" - returns [{start:"YYYY-MM-DD", end:"YYYY-MM-DD"}] (end exclusive)
+  pricingUrl: "",                             // per-night pricing API (admin-set overrides, rules)
   nightlyRate: 950,                           // per night, whole house - placeholder
   weekdayRate: 550,                           // Monday-Thursday night rate (direct base)
   weekendRate: 625,                           // Friday-Sunday night rate (direct base)
@@ -74,6 +75,7 @@ const today = parseISO(new Date().toISOString().slice(0,10));
 let blocked = new Set();          // ISO strings of nights that are booked
 let view = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
 let checkIn = null, checkOut = null;
+let livePriceData = null;
 
 function loadBlocked(ranges){
   blocked = new Set();
@@ -161,23 +163,48 @@ function pick(d, checkoutOnly){
     if(!rangeClear(checkIn,d)){ setError("Those dates include a night that is already booked. Please choose a shorter stay or different dates."); return; }
     checkOut=d;
   }
+  livePriceData = null;
   renderMonths(); renderQuote();
+  if(checkIn && checkOut && CONFIG.pricingUrl){ fetchLivePrices(); }
 }
+
+async function fetchLivePrices(){
+  if(!CONFIG.pricingUrl || !checkIn || !checkOut) return;
+  const url = new URL(CONFIG.pricingUrl, window.location.origin);
+  url.searchParams.set("start", fmtISO(checkIn));
+  url.searchParams.set("end", fmtISO(checkOut));
+  try{
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if(!res.ok) throw new Error();
+    const data = await res.json();
+    if(data && data.base_amount != null){ livePriceData = data; }
+  }catch(e){ /* stay with static fallback */ }
+  renderQuote();
+}
+
 function renderQuote(){
   document.getElementById("q-in").textContent = checkIn ? fmtLong(checkIn) : "Select a date";
   document.getElementById("q-out").textContent = checkOut ? fmtLong(checkOut) : (checkIn ? "Select a date" : "—");
   const lines=document.getElementById("q-lines");
   if(checkIn && checkOut){
     const n=Math.round((checkOut-checkIn)/86400000);
-    const isWeekend = d => [5,6,0].includes(d.getUTCDay());
-    let gross = 0;
-    for(let i=0;i<n;i++){ gross += isWeekend(addDays(checkIn,i)) ? CONFIG.weekendRate : CONFIG.weekdayRate; }
-    const discount = Math.round(gross * (CONFIG.directDiscount||0) / 100);
+    let gross, discount, clean;
+    if(livePriceData && livePriceData.base_amount != null){
+      gross = livePriceData.base_amount;
+      discount = livePriceData.discount_amount;
+      clean = livePriceData.fees_amount;
+    } else {
+      const isWeekend = d => [5,6,0].includes(d.getUTCDay());
+      gross = 0;
+      for(let i=0;i<n;i++){ gross += isWeekend(addDays(checkIn,i)) ? CONFIG.weekendRate : CONFIG.weekdayRate; }
+      discount = Math.round(gross * (CONFIG.directDiscount||0) / 100);
+      clean = CONFIG.cleaningFee;
+    }
     document.getElementById("q-nights").textContent = `${n} night${n>1?"s":""}`;
     document.getElementById("q-accom").textContent = gbp(gross);
     document.getElementById("q-discount").textContent = "−"+gbp(discount);
-    document.getElementById("q-clean").textContent = gbp(CONFIG.cleaningFee);
-    document.getElementById("q-total").textContent = gbp(gross - discount + CONFIG.cleaningFee);
+    document.getElementById("q-clean").textContent = gbp(clean);
+    document.getElementById("q-total").textContent = gbp(gross - discount + clean);
     document.getElementById("q-dep").textContent = gbp(CONFIG.securityDeposit);
     lines.hidden=false;
   } else lines.hidden=true;
