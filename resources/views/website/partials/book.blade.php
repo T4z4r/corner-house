@@ -35,13 +35,13 @@
                 <li class="platform">
                     <h3>Direct with us</h3>
                     <span class="tag alt">10% cheaper</span>
-                    <p>The same house at 10% below the platform rate. Direct bookings include instant Stripe checkout, photo ID verification and a refundable security deposit.</p>
-                    <a class="btn btn-primary" href="{{ route('booking.search') }}">Book Direct with Instant Checkout</a>
+                    <p>The same house at 10% below the platform rate. Direct bookings need a signed rental agreement, photo ID from the lead guest and a refundable security deposit.</p>
+                    <a class="btn btn-outline" href="#availability">Check dates &amp; Book</a>
                 </li>
             </ul>
 
-            <h2 id="availability" class="band">Availability &amp; Instant Booking</h2>
-            <p>Choose your check-in and check-out dates to book directly with instant online payment via Stripe Checkout.</p>
+            <h2 id="availability" class="band">Availability</h2>
+            <p>Choose your check-in and check-out dates, then enter your details below to proceed to instant Stripe Checkout.</p>
             <p class="notice" id="demo-notice">Availability shown is sample data until the live calendar feed is connected.</p>
 
             <div class="booking">
@@ -72,14 +72,8 @@
                         <div class="total"><span>Estimated total</span><span id="q-total"></span></div>
                         <div class="dep"><span>Refundable security deposit</span><span id="q-dep"></span></div>
                     </div>
-                    <p class="hint" id="q-hint">Whole-house booking for up to 12 adults and 2 children. Instant online payment via Stripe Checkout or manual enquiry.</p>
+                    <p class="hint" id="q-hint">Whole-house booking for up to 12 adults and 2 children. Instant online payment via Stripe Checkout.</p>
                     <p class="err" id="q-err" hidden></p>
-
-                    <a id="checkout-btn" class="btn btn-primary w-100 my-3" style="display:block; text-align:center; padding:0.9rem 1.2rem; background:var(--ch-primary, #2d4d3a); color:#fff; text-decoration:none; font-weight:600; border-radius:6px;" href="{{ route('booking.search') }}">
-                        <i class="bi bi-credit-card me-2"></i>Book Online &amp; Proceed to Checkout
-                    </a>
-
-                    <div style="text-align:center; margin:1.2rem 0 0.8rem 0; font-size:0.8rem; color:#777; font-weight:bold; letter-spacing:0.05em;">&mdash; OR SEND AN ENQUIRY &mdash;</div>
 
                     <form class="enquiry" id="enquiry">
                         <div class="row">
@@ -93,9 +87,9 @@
                         <label>Occasion or message<textarea name="message" placeholder="Birthday, family get-together, walking weekend&hellip;"></textarea></label>
                         <label class="check"><input type="checkbox" name="drinks">Add a Serengeti Spirits drinks package to my stay</label>
                         <label class="check"><input type="checkbox" name="agree" required>I have read the <a href="#rules">booking rules</a>, <a href="#house-rules">house rules</a> and <a href="#terms">terms and conditions</a></label>
-                        <button class="btn btn-primary" type="submit">Send booking enquiry</button>
+                        <button class="btn btn-primary" type="submit">Proceed to Stripe Checkout</button>
                     </form>
-                    <p class="alt-book">Submitting an enquiry does not guarantee or confirm a booking. Your selected dates will only be secured once the rental agreement has been signed and the initial payment has been received and cleared.</p>
+                    <p class="alt-book">Your selected dates will be reserved upon completing Stripe Checkout, subject to identity verification and signing the rental agreement.</p>
                 </aside>
             </div>
         </div>

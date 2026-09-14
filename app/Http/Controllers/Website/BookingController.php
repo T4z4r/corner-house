@@ -146,20 +146,65 @@ class BookingController extends Controller
         ]);
     }
 
-    public function holdAndPay(Request $request): RedirectResponse
+    public function holdAndPay(Request $request): RedirectResponse|JsonResponse
     {
-        $data = $request->validate([
-            'room_id' => ['required', 'exists:rooms,id'],
-            'check_in' => ['required', 'date'],
-            'check_out' => ['required', 'date', 'after:check_in'],
-            'guests_count' => ['required', 'integer', 'min:1'],
-            'guest_first_name' => ['required', 'string', 'max:255'],
-            'guest_last_name' => ['required', 'string', 'max:255'],
-            'guest_email' => ['required', 'email'],
-            'guest_phone' => ['nullable', 'string', 'max:50'],
-            'addon_ids' => ['nullable', 'array'],
-            'addon_ids.*' => ['integer', 'exists:add_ons,id'],
-        ]);
+        if (! $request->has('guest_first_name') && $request->has('name')) {
+            $parts = explode(' ', trim((string) $request->input('name')), 2);
+            $request->merge([
+                'guest_first_name' => $parts[0] ?? 'Guest',
+                'guest_last_name' => $parts[1] ?? ($parts[0] ?? 'Guest'),
+            ]);
+        }
+
+        if (! $request->has('guest_email') && $request->has('email')) {
+            $request->merge(['guest_email' => (string) $request->input('email')]);
+        }
+
+        if (! $request->has('guest_phone') && $request->has('phone')) {
+            $request->merge(['guest_phone' => (string) $request->input('phone')]);
+        }
+
+        if (! $request->has('check_in') && $request->has('checkIn')) {
+            $request->merge(['check_in' => (string) $request->input('checkIn')]);
+        }
+
+        if (! $request->has('check_out') && $request->has('checkOut')) {
+            $request->merge(['check_out' => (string) $request->input('checkOut')]);
+        }
+
+        if (! $request->has('guests_count')) {
+            $rawGuests = $request->input('guests', $request->input('guests_count', 12));
+            $guestsNum = (int) preg_replace('/[^0-9]/', '', (string) $rawGuests) ?: 12;
+            $request->merge(['guests_count' => $guestsNum]);
+        }
+
+        if (! $request->has('room_id')) {
+            $defaultRoomId = Room::query()->where('status', 'active')->value('id');
+            if ($defaultRoomId) {
+                $request->merge(['room_id' => $defaultRoomId]);
+            }
+        }
+
+        try {
+            $data = $request->validate([
+                'room_id' => ['required', 'exists:rooms,id'],
+                'check_in' => ['required', 'date'],
+                'check_out' => ['required', 'date', 'after:check_in'],
+                'guests_count' => ['required', 'integer', 'min:1'],
+                'guest_first_name' => ['required', 'string', 'max:255'],
+                'guest_last_name' => ['required', 'string', 'max:255'],
+                'guest_email' => ['required', 'email'],
+                'guest_phone' => ['nullable', 'string', 'max:50'],
+                'addon_ids' => ['nullable', 'array'],
+                'addon_ids.*' => ['integer', 'exists:add_ons,id'],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => implode(' ', array_merge(...array_values($e->errors())))], 422);
+            }
+
+            throw $e;
+        }
 
         $room = Room::query()->findOrFail($data['room_id']);
         $checkIn = Carbon::parse($data['check_in']);
@@ -168,13 +213,23 @@ class BookingController extends Controller
         // 24-hour advance notice
         $minAdvanceDays = (int) Setting::getValue('min_advance_days', 1);
         if ($checkIn->lt(Carbon::today()->addDays($minAdvanceDays))) {
-            return back()->withInput()->withErrors(['error' => 'Bookings require at least '.$minAdvanceDays.' days advance notice.']);
+            $msg = 'Bookings require at least '.$minAdvanceDays.' days advance notice.';
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $msg], 422);
+            }
+
+            return back()->withInput()->withErrors(['error' => $msg]);
         }
 
         // Max occupancy
         $maxAdults = (int) Setting::getValue('max_adults', 12);
         if ((int) $data['guests_count'] > $maxAdults) {
-            return back()->withInput()->withErrors(['error' => 'Maximum '.$maxAdults.' adults allowed.']);
+            $msg = 'Maximum '.$maxAdults.' adults allowed.';
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $msg], 422);
+            }
+
+            return back()->withInput()->withErrors(['error' => $msg]);
         }
 
         $maxInfants = (int) Setting::getValue('max_infants', 2);
@@ -183,20 +238,40 @@ class BookingController extends Controller
         $cots = (int) ($data['cots'] ?? 0);
 
         if ($infants > $maxInfants) {
-            return back()->withInput()->withErrors(['error' => 'Maximum '.$maxInfants.' infants allowed.']);
+            $msg = 'Maximum '.$maxInfants.' infants allowed.';
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $msg], 422);
+            }
+
+            return back()->withInput()->withErrors(['error' => $msg]);
         }
         if ($cots > $maxCots) {
-            return back()->withInput()->withErrors(['error' => 'Maximum '.$maxCots.' cots allowed.']);
+            $msg = 'Maximum '.$maxCots.' cots allowed.';
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $msg], 422);
+            }
+
+            return back()->withInput()->withErrors(['error' => $msg]);
         }
 
         $quote = $this->pricing->calculateForRange($room, $checkIn, $checkOut, (int) $data['guests_count'], null, true);
 
         if ($checkIn->diffInDays($checkOut) < $quote['minimum_stay']) {
-            return back()->withInput()->withErrors(['error' => 'This stay does not meet the '.$quote['minimum_stay'].'-night minimum.']);
+            $msg = 'This stay does not meet the '.$quote['minimum_stay'].'-night minimum.';
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $msg], 422);
+            }
+
+            return back()->withInput()->withErrors(['error' => $msg]);
         }
 
         if (($quote['maximum_stay'] ?? null) !== null && $checkIn->diffInDays($checkOut) > $quote['maximum_stay']) {
-            return back()->withInput()->withErrors(['error' => 'This stay exceeds the '.$quote['maximum_stay'].'-night maximum.']);
+            $msg = 'This stay exceeds the '.$quote['maximum_stay'].'-night maximum.';
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $msg], 422);
+            }
+
+            return back()->withInput()->withErrors(['error' => $msg]);
         }
 
         // Add damage deposit to total
@@ -261,11 +336,19 @@ class BookingController extends Controller
 
             $request->session()->put('booking.reservation_id', $reservation->id);
 
+            if ($request->expectsJson()) {
+                return response()->json(['url' => $url, 'status' => 'ok']);
+            }
+
             return redirect()->away($url);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Direct booking Stripe payment error', [
                 'message' => $e->getMessage(),
             ]);
+
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $e->getMessage()], 422);
+            }
 
             return back()->withInput()->withErrors(['error' => $e->getMessage()]);
         }
