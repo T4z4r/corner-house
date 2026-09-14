@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Payment;
 use App\Models\PricingRule;
+use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\Setting;
@@ -26,17 +27,57 @@ class PublicBookingTest extends TestCase
         Setting::updateOrCreate(['key' => 'direct_booking_discount'], ['value' => '0', 'group' => 'booking', 'label' => 'Discount', 'cast' => 'decimal:2']);
     }
 
-    public function test_search_lists_available_rooms_with_server_price(): void
+    public function test_search_lists_the_whole_house_with_server_price(): void
     {
-        $room = Room::factory()->create(['base_rate' => 100, 'status' => 'active', 'capacity' => 2]);
+        $property = Property::factory()->create(['name' => 'Corner House', 'capacity' => 12]);
+        $room = Room::factory()->create([
+            'property_id' => $property->id,
+            'name' => 'Lion Bedroom',
+            'base_rate' => 100,
+            'status' => 'active',
+            'capacity' => 2,
+        ]);
         $checkIn = now()->addDays(10)->toDateString();
         $checkOut = now()->addDays(12)->toDateString();
 
         $this->get(route('booking.search', [
+            'property_id' => $property->id,
             'check_in' => $checkIn,
             'check_out' => $checkOut,
             'guests' => 2,
-        ]))->assertOk()->assertSee($room->name)->assertSee('200.00');
+        ]))
+            ->assertOk()
+            ->assertSee('Corner House')
+            ->assertSee('Whole house')
+            ->assertSee('200.00')
+            ->assertDontSee($room->name);
+    }
+
+    public function test_search_hides_the_whole_house_when_one_bedroom_is_unavailable(): void
+    {
+        $property = Property::factory()->create(['capacity' => 12]);
+        $firstRoom = Room::factory()->create(['property_id' => $property->id, 'status' => 'active']);
+        $secondRoom = Room::factory()->create(['property_id' => $property->id, 'status' => 'active']);
+        $checkIn = now()->addDays(10)->toDateString();
+        $checkOut = now()->addDays(12)->toDateString();
+
+        app(BookingService::class)->create([
+            'room_id' => $secondRoom->id,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'guests_count' => 12,
+            'status' => 'confirmed',
+        ]);
+
+        $this->get(route('booking.search', [
+            'property_id' => $property->id,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'guests' => 12,
+        ]))
+            ->assertOk()
+            ->assertSee('No rooms available for those dates.')
+            ->assertDontSee($firstRoom->name);
     }
 
     public function test_details_page_rejects_unavailable_room(): void

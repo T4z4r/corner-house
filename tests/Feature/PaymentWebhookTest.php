@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\PushBeds24BookingJob;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Services\Payment\PaymentGatewayInterface;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -51,6 +53,68 @@ class PaymentWebhookTest extends TestCase
             'status' => 'confirmed',
             'payment_status' => 'paid',
         ]);
+    }
+
+    public function test_paid_hold_reservation_is_pushed_to_beds24_on_payment_confirmation(): void
+    {
+        Queue::fake([PushBeds24BookingJob::class]);
+
+        $reservation = Reservation::factory()->create([
+            'status' => 'hold',
+            'payment_status' => 'unpaid',
+            'paid_amount' => 0,
+            'check_out' => now()->addDays(12)->toDateString(),
+        ]);
+        Payment::factory()->create([
+            'reservation_id' => $reservation->id,
+            'amount' => $reservation->total_amount,
+            'status' => 'pending',
+            'provider_session_id' => 'cs_test_push_hold',
+        ]);
+
+        $this->postJson('/webhooks/stripe', [
+            'type' => 'checkout.session.completed',
+            'data' => [
+                'object' => [
+                    'id' => 'cs_test_push_hold',
+                    'payment_status' => 'paid',
+                    'payment_intent' => 'pi_test_push_hold',
+                ],
+            ],
+        ])->assertOk();
+
+        Queue::assertPushed(PushBeds24BookingJob::class, fn (PushBeds24BookingJob $job): bool => $job->reservationId === $reservation->id);
+    }
+
+    public function test_paid_already_confirmed_reservation_is_pushed_to_beds24_on_payment_confirmation(): void
+    {
+        Queue::fake([PushBeds24BookingJob::class]);
+
+        $reservation = Reservation::factory()->create([
+            'status' => 'confirmed',
+            'payment_status' => 'unpaid',
+            'paid_amount' => 0,
+            'check_out' => now()->addDays(12)->toDateString(),
+        ]);
+        Payment::factory()->create([
+            'reservation_id' => $reservation->id,
+            'amount' => $reservation->total_amount,
+            'status' => 'pending',
+            'provider_session_id' => 'cs_test_push_confirmed',
+        ]);
+
+        $this->postJson('/webhooks/stripe', [
+            'type' => 'checkout.session.completed',
+            'data' => [
+                'object' => [
+                    'id' => 'cs_test_push_confirmed',
+                    'payment_status' => 'paid',
+                    'payment_intent' => 'pi_test_push_confirmed',
+                ],
+            ],
+        ])->assertOk();
+
+        Queue::assertPushed(PushBeds24BookingJob::class, fn (PushBeds24BookingJob $job): bool => $job->reservationId === $reservation->id);
     }
 
     public function test_browser_redirect_does_not_confirm_unpaid_session(): void

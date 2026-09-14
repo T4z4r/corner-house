@@ -2,6 +2,7 @@
 
 namespace App\Services\Payment;
 
+use App\Jobs\PushBeds24BookingJob;
 use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\Reservation;
@@ -273,12 +274,24 @@ class PaymentService
             ]);
 
             $reservation = Reservation::query()->whereKey($locked->reservation_id)->lockForUpdate()->firstOrFail();
+            $wasAlreadyConfirmed = $reservation->status === 'confirmed';
             $reservation->update([
                 'paid_amount' => $locked->amount,
                 'payment_status' => 'paid',
             ]);
 
             $this->bookingService->confirm($reservation);
+
+            // confirm() only dispatches the Beds24 push when it transitions the
+            // booking to confirmed. A booking confirmed before the payment
+            // arrived (e.g. confirmed by an admin first) would otherwise never be
+            // posted, so re-dispatch here to guarantee a confirmed payment syncs
+            // to Beds24. In the usual hold -> confirmed flow this is skipped to
+            // avoid a duplicate push.
+            if ($wasAlreadyConfirmed) {
+                PushBeds24BookingJob::dispatch($reservation->id);
+            }
+
             $this->systemNotifications->paymentMarkedPaid($locked->fresh(['reservation']), null);
             $this->auditLogger->log('payments.paid', 'payments', 'payment', (string) $locked->id);
 

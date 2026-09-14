@@ -515,7 +515,7 @@
                         <div class="d-flex align-items-center justify-content-center h-100 text-white fs-1"><i class="bi bi-house-heart"></i></div>
                     @endif
                     <div class="ch-summary-media-overlay"></div>
-                    <h3 class="ch-summary-media-title">{{ $room->name }}</h3>
+                    <h3 class="ch-summary-media-title">{{ $room->property?->name ?? 'Whole house' }}</h3>
                 </div>
 
                 <div class="ch-summary-body">

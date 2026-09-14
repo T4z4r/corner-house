@@ -68,10 +68,10 @@
                     @endif
                     <div class="ch-suite-body">
                         <div class="ch-suite-eyebrow">{{ $availableProperties->count() > 1 && $room->property ? $room->property->name : 'Direct rate' }}</div>
-                        <h3>{{ $room->name }}</h3>
-                        <p class="ch-suite-meta">Sleeps {{ $room->capacity }} · {{ $room->quote['nights'] }} night(s)</p>
+                        <h3>{{ $room->property?->name ?? 'Whole house' }}</h3>
+                        <p class="ch-suite-meta">Whole house · Sleeps {{ $room->house_capacity }} · {{ $room->quote['nights'] }} night(s)</p>
                         <p class="ch-price">£{{ number_format($room->quote['total'], 2) }}</p>
-                        <p class="text-muted small">Instant booking direct with our 10% direct-booking discount applied.</p>
+                        <p class="text-muted small">Instant direct booking for the whole house, with our 10% direct-booking discount applied.</p>
                         <a class="btn btn-ch-book" href="{{ route('booking.details', ['room' => $room, 'check_in' => $checkIn, 'check_out' => $checkOut, 'guests' => $guests]) }}"><i class="bi bi-credit-card me-1"></i>Book &amp; Checkout</a>
                     </div>
                 </article>

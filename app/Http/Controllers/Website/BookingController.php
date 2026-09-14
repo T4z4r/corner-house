@@ -53,14 +53,23 @@ class BookingController extends Controller
             $end = Carbon::parse($checkOut)->startOfDay();
 
             if ($end->gt($start)) {
-                $rooms = $this->availability->listAvailableRooms($property->id, $start, $end, max(1, $guests))
-                    ->map(function (Room $room) use ($start, $end, $guests): Room {
-                        $quote = $this->pricing->calculateForRange($room, $start, $end, $guests, null, true);
-                        $room->setAttribute('quote', $quote);
-                        $room->load(['property', 'images' => fn ($q) => $q->orderBy('sort_order')]);
+                $propertyRooms = Room::query()
+                    ->with('property')
+                    ->where('property_id', $property->id)
+                    ->where('status', 'active')
+                    ->get();
+                $houseRoom = $propertyRooms->first();
+                $houseAvailable = $propertyRooms->isNotEmpty()
+                    && $propertyRooms->every(fn (Room $room): bool => $this->availability->isRoomAvailable($room, $start, $end)['available']);
 
-                        return $room;
-                    });
+                if ($houseRoom && $houseAvailable && $guests <= (int) $property->capacity) {
+                    $quote = $this->pricing->calculateForRange($houseRoom, $start, $end, $guests, null, true);
+                    $houseRoom->setAttribute('quote', $quote);
+                    $houseRoom->setAttribute('house_name', $property->name);
+                    $houseRoom->setAttribute('house_capacity', $property->capacity);
+                    $houseRoom->load(['property', 'images' => fn ($q) => $q->orderBy('sort_order')]);
+                    $rooms = collect([$houseRoom]);
+                }
             }
         }
 
