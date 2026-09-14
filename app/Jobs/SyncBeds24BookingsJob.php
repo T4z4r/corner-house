@@ -17,10 +17,14 @@ class SyncBeds24BookingsJob implements ShouldQueue
 
     public function __construct()
     {
-        $this->connection = 'sync';
+        $this->connection = 'database';
     }
 
     public int $tries = 3;
+
+    public int $timeout = 600;
+
+    public array $backoff = [30, 120, 300];
 
     public function handle(Beds24SyncService $sync, Beds24AlertService $alerts): void
     {

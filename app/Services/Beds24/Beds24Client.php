@@ -147,8 +147,8 @@ class Beds24Client
      */
     private function prepareRequest(ChannelAccount $account, string $method, string $endpoint, array $data = []): array
     {
-        $http = Http::connectTimeout(5)
-            ->timeout(25)
+        $http = Http::connectTimeout((int) config('services.beds24.connect_timeout', 10))
+            ->timeout((int) config('services.beds24.timeout', 120))
             ->acceptJson();
 
         if ($endpoint === 'authentication/setup') {

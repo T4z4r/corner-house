@@ -45,6 +45,8 @@ return [
         'api_url' => env('BEDS24_API_URL', 'https://api.beds24.com/v2'),
         'refresh_token' => env('BEDS24_REFRESH_TOKEN'),
         'invite_code' => env('BEDS24_INVITE_CODE'),
+        'connect_timeout' => (int) env('BEDS24_CONNECT_TIMEOUT', 10),
+        'timeout' => (int) env('BEDS24_TIMEOUT', 120),
         'webhook_secret' => env('BEDS24_WEBHOOK_SECRET'),
     ],
 
