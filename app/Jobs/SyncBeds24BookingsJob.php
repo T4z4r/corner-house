@@ -15,6 +15,11 @@ class SyncBeds24BookingsJob implements ShouldQueue
 {
     use Queueable, TracksCronRun;
 
+    public function __construct()
+    {
+        $this->connection = 'sync';
+    }
+
     public int $tries = 3;
 
     public function handle(Beds24SyncService $sync, Beds24AlertService $alerts): void

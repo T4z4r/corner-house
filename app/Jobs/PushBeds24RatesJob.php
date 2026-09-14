@@ -16,6 +16,11 @@ class PushBeds24RatesJob implements ShouldQueue
 {
     use Queueable, TracksCronRun;
 
+    public function __construct()
+    {
+        $this->connection = 'sync';
+    }
+
     public int $tries = 3;
 
     public function handle(ChannelManager $channels, PricingEngine $pricing): void

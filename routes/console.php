@@ -52,7 +52,7 @@ if ($scheduleSetting('pricing_auto_generate_enabled', false)) {
 
 if ($scheduleSetting('schedule_beds24_sync_bookings_enabled', true)) {
     $frequency = $scheduleSetting('schedule_beds24_sync_bookings_frequency', 'every_five_minutes');
-    $schedule = Schedule::job(SyncBeds24BookingsJob::class)->onConnection('sync');
+    $schedule = Schedule::job(SyncBeds24BookingsJob::class);
     match ($frequency) {
         'every_five_minutes' => $schedule->everyFiveMinutes(),
         'every_fifteen_minutes' => $schedule->everyFifteenMinutes(),
@@ -66,7 +66,7 @@ if ($scheduleSetting('schedule_beds24_sync_bookings_enabled', true)) {
 
 if ($scheduleSetting('schedule_beds24_sync_messages_enabled', true)) {
     $frequency = $scheduleSetting('schedule_beds24_sync_messages_frequency', 'every_five_minutes');
-    $schedule = Schedule::job(SyncBeds24MessagesJob::class)->onConnection('sync');
+    $schedule = Schedule::job(SyncBeds24MessagesJob::class);
     match ($frequency) {
         'every_five_minutes' => $schedule->everyFiveMinutes(),
         'every_fifteen_minutes' => $schedule->everyFifteenMinutes(),
@@ -80,7 +80,7 @@ if ($scheduleSetting('schedule_beds24_sync_messages_enabled', true)) {
 
 if ($scheduleSetting('schedule_beds24_push_rates_enabled', true)) {
     $frequency = $scheduleSetting('schedule_beds24_push_rates_frequency', 'hourly');
-    $schedule = Schedule::job(PushBeds24RatesJob::class)->onConnection('sync');
+    $schedule = Schedule::job(PushBeds24RatesJob::class);
     match ($frequency) {
         'every_five_minutes' => $schedule->everyFiveMinutes(),
         'every_fifteen_minutes' => $schedule->everyFifteenMinutes(),
