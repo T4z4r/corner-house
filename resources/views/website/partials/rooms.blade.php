@@ -114,7 +114,7 @@
                 @endforeach
             </ul>
 
-            <div style="margin-top:3rem"><a class="btn btn-primary" href="{{ route('booking.search') }}">Check availability &amp; Book</a></div>
+            <div style="margin-top:3rem"><a class="btn btn-primary" href="#book">Check availability</a></div>
         </div>
     </div>
 </section>
