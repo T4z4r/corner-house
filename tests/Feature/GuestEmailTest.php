@@ -115,12 +115,12 @@ class GuestEmailTest extends TestCase
         $html = $mail->render();
 
         $this->assertStringContainsString('Corner House', $html);
-        $this->assertStringContainsString('https://cornerhousebraunston.uk', $html);
+        $this->assertStringNotContainsString('https://cornerhousebraunston.uk', $html);
         $this->assertStringContainsString('hello@cornerhousebraunston.uk', $html);
         $this->assertStringContainsString('Main Street, Braunston', $html);
         $this->assertStringContainsString('NN7 7ND', $html);
-        $this->assertStringContainsString('#1f6f43', $html);
-        $this->assertStringContainsString('#c9a227', $html);
+        $this->assertStringContainsString('#1f3826', $html);
+        $this->assertStringContainsString('#b4552b', $html);
         $this->assertStringContainsString('data:image/png;base64,', $html);
         $this->assertStringContainsString('Enjoy your stay.', $html);
     }
