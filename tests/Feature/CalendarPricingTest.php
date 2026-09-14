@@ -285,6 +285,15 @@ class CalendarPricingTest extends TestCase
             ->assertUnauthorized();
     }
 
+    public function test_admin_calendar_page_renders_when_authorized(): void
+    {
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.calendar'))
+            ->assertOk()
+            ->assertSee('Calendar')
+            ->assertSee('priceModal', false);
+    }
+
     public function test_calendar_prices_require_the_calendar_view_permission(): void
     {
         $role = Role::create(['name' => 'No Calendar Access', 'guard_name' => 'web']);
