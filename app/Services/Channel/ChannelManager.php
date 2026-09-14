@@ -258,8 +258,8 @@ class ChannelManager
             'check_out' => $checkOutDate,
             'guests_count' => (int) ($booking['numAdult'] ?? $booking['numAdults'] ?? $booking['guests'] ?? 1),
             'guest_email' => $booking['email'] ?? null,
-            'guest_first_name' => $booking['firstName'] ?? $booking['guestFirstName'] ?? 'Guest',
-            'guest_last_name' => $booking['lastName'] ?? $booking['guestLastName'] ?? '',
+            'guest_first_name' => $this->guestFirstName($booking),
+            'guest_last_name' => $this->guestLastName($booking),
             'guest_phone' => $booking['phone'] ?? $booking['guestPhone'] ?? null,
             'guest_country' => $booking['country'] ?? $booking['guestCountry'] ?? null,
             'status' => $cancelled ? 'cancelled' : 'confirmed',
@@ -268,6 +268,7 @@ class ChannelManager
             'external_channel' => $account->provider,
             'external_booking_id' => $externalId,
             'skip_sync' => true,
+            'skip_availability' => true,
             'notes' => $booking['notes'] ?? null,
         ]);
 
@@ -348,6 +349,39 @@ class ChannelManager
         }
 
         return array_values(array_filter($bookings, 'is_array'));
+    }
+
+    /**
+     * Beds24 may omit personal booking fields when the token lacks the
+     * bookings-personal scope. Keep the booking importable regardless.
+     *
+     * @param  array<string, mixed>  $booking
+     */
+    private function guestFirstName(array $booking): string
+    {
+        foreach (['firstName', 'guestFirstName', 'first_name', 'leadFirstName'] as $key) {
+            $value = trim((string) ($booking[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return 'Guest';
+    }
+
+    /**
+     * @param  array<string, mixed>  $booking
+     */
+    private function guestLastName(array $booking): string
+    {
+        foreach (['lastName', 'guestLastName', 'last_name', 'leadLastName'] as $key) {
+            $value = trim((string) ($booking[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
     }
 
     /**

@@ -80,6 +80,83 @@ class AdminResourcesTest extends TestCase
         $this->assertDatabaseHas('guests', ['first_name' => 'John', 'email' => 'john@example.com']);
     }
 
+    public function test_super_admin_can_edit_guest(): void
+    {
+        $guest = Guest::factory()->create(['first_name' => 'Jane', 'last_name' => 'Doe']);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->get(route('admin.guests.edit', $guest))
+            ->assertOk()
+            ->assertSee('Edit Guest');
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->put(route('admin.guests.update', $guest), [
+                'first_name' => 'Janet',
+                'last_name' => 'Doe',
+                'email' => 'janet@example.com',
+                'status' => 'active',
+            ])
+            ->assertRedirect(route('admin.guests.show', $guest));
+
+        $this->assertDatabaseHas('guests', [
+            'id' => $guest->id,
+            'first_name' => 'Janet',
+            'email' => 'janet@example.com',
+        ]);
+    }
+
+    public function test_user_without_guest_update_permission_cannot_edit_guest(): void
+    {
+        $role = Role::create(['name' => 'Guest Viewer Only', 'guard_name' => 'web']);
+        $role->givePermissionTo('guests.view');
+        $user = User::factory()->create();
+        $user->assignRole($role);
+        $guest = Guest::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('admin.guests.edit', $guest))
+            ->assertForbidden();
+
+        $this->actingAs($user)
+            ->put(route('admin.guests.update', $guest), [
+                'first_name' => 'Hacked',
+                'last_name' => 'Name',
+                'status' => 'active',
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('guests', [
+            'id' => $guest->id,
+            'first_name' => $guest->first_name,
+        ]);
+    }
+
+    public function test_super_admin_can_delete_guest(): void
+    {
+        $guest = Guest::factory()->create(['first_name' => 'Jane', 'last_name' => 'Doe']);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->delete(route('admin.guests.destroy', $guest))
+            ->assertRedirect(route('admin.guests.index'));
+
+        $this->assertDatabaseMissing('guests', ['id' => $guest->id]);
+    }
+
+    public function test_user_without_guest_delete_permission_cannot_delete_guest(): void
+    {
+        $role = Role::create(['name' => 'Guest No Delete', 'guard_name' => 'web']);
+        $role->givePermissionTo(['guests.view', 'guests.update']);
+        $user = User::factory()->create();
+        $user->assignRole($role);
+        $guest = Guest::factory()->create();
+
+        $this->actingAs($user)
+            ->delete(route('admin.guests.destroy', $guest))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('guests', ['id' => $guest->id]);
+    }
+
     public function test_guest_profile_shows_call_and_send_mail_actions(): void
     {
         $guest = Guest::factory()->create([

@@ -2250,6 +2250,48 @@ class Beds24IntegrationTest extends TestCase
         $this->assertSame('+447700900111', $reservation->guest?->phone);
     }
 
+    public function test_external_booking_import_overrides_local_availability_and_missing_guest_names(): void
+    {
+        $account = $this->beds24Account();
+        $room = Room::factory()->create(['status' => 'active']);
+        ChannelMapping::factory()->create([
+            'channel_account_id' => $account->id,
+            'property_id' => $room->property_id,
+            'room_id' => $room->id,
+            'provider' => 'beds24',
+            'external_room_id' => '77',
+        ]);
+
+        Reservation::factory()->create([
+            'property_id' => $room->property_id,
+            'room_id' => $room->id,
+            'status' => 'confirmed',
+            'check_in' => now()->addDays(10)->toDateString(),
+            'check_out' => now()->addDays(15)->toDateString(),
+        ]);
+
+        $result = app(ChannelManager::class)->ingestExternalBooking($account, [
+            'id' => 92797508,
+            'roomId' => 77,
+            'arrival' => now()->addDays(12)->toDateString(),
+            'departure' => now()->addDays(14)->toDateString(),
+            'status' => 'confirmed',
+            'channel' => 'airbnb',
+        ]);
+
+        $this->assertSame('created', $result['status']);
+        $this->assertDatabaseHas('reservations', [
+            'external_channel' => 'beds24',
+            'external_booking_id' => '92797508',
+            'status' => 'confirmed',
+        ]);
+        $this->assertDatabaseHas('guests', [
+            'first_name' => 'Guest',
+            'last_name' => '',
+            'source' => 'airbnb',
+        ]);
+    }
+
     public function test_confirmed_local_booking_is_pushed_to_beds24_and_cancelled_bookings_sync_back(): void
     {
         $account = ChannelAccount::factory()->create([

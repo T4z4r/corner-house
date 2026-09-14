@@ -64,7 +64,17 @@
                                     </span>
                                 </td>
                                 <td class="text-end">
-                                    <a href="{{ route('admin.guests.show', $guest) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                                    <a href="{{ route('admin.guests.show', $guest) }}" class="btn btn-sm btn-outline-primary" title="View"><i class="bi bi-eye"></i></a>
+                                    @can('guests.update')
+                                        <a href="{{ route('admin.guests.edit', $guest) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
+                                    @endcan
+                                    @can('guests.delete')
+                                        <form method="POST" action="{{ route('admin.guests.destroy', $guest) }}" class="d-inline" data-confirm="Delete this guest?">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                                        </form>
+                                    @endcan
                                 </td>
                             </tr>
                             @empty

@@ -49,6 +49,7 @@ class BookingService
         $checkIn = Carbon::parse($data['check_in']);
         $checkOut = Carbon::parse($data['check_out']);
         $room = Room::findOrFail($data['room_id']);
+        $skipAvailability = (bool) ($data['skip_availability'] ?? false);
         $hold = ! empty($data['hold_token'])
             ? BookingHold::query()->where('hold_token', $data['hold_token'])->first()
             : null;
@@ -57,18 +58,20 @@ class BookingService
             throw new \DomainException('Check-out must be after check-in.');
         }
 
-        $minimumStay = $this->pricing->minimumStayForRange($room, $checkIn, $checkOut);
+        if (! $skipAvailability) {
+            $minimumStay = $this->pricing->minimumStayForRange($room, $checkIn, $checkOut);
 
-        if ($checkIn->diffInDays($checkOut) < $minimumStay) {
-            throw new \DomainException('Minimum stay not met.');
+            if ($checkIn->diffInDays($checkOut) < $minimumStay) {
+                throw new \DomainException('Minimum stay not met.');
+            }
+
+            $maximumStay = $this->pricing->maximumStayForRange($room, $checkIn, $checkOut);
+            if ($maximumStay !== null && $checkIn->diffInDays($checkOut) > $maximumStay) {
+                throw new \DomainException('Maximum stay exceeded.');
+            }
         }
 
-        $maximumStay = $this->pricing->maximumStayForRange($room, $checkIn, $checkOut);
-        if ($maximumStay !== null && $checkIn->diffInDays($checkOut) > $maximumStay) {
-            throw new \DomainException('Maximum stay exceeded.');
-        }
-
-        $reservation = DB::transaction(function () use ($data, $room, $checkIn, $checkOut, $hold) {
+        $reservation = DB::transaction(function () use ($data, $room, $checkIn, $checkOut, $hold, $skipAvailability) {
             // Lock the room row: serialises concurrent bookings for this room.
             $lockedRoom = Room::query()
                 ->whereKey($room->getKey())
@@ -79,13 +82,14 @@ class BookingService
                 throw new \DomainException('Room not found.');
             }
 
-            // Re-check availability inside the locked transaction.
-            $this->availability->assertAvailable(
-                $lockedRoom,
-                $checkIn,
-                $checkOut,
-                ignoredHoldIds: $hold ? [$hold->id] : [],
-            );
+            if (! $skipAvailability) {
+                $this->availability->assertAvailable(
+                    $lockedRoom,
+                    $checkIn,
+                    $checkOut,
+                    ignoredHoldIds: $hold ? [$hold->id] : [],
+                );
+            }
 
             // Calculate the final price server-side; never trust the browser.
             $isDirectBooking = ($data['source'] ?? 'direct') === 'direct';
