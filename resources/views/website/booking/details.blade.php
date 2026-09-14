@@ -532,7 +532,7 @@
 
                     @if (! empty($quote['damage_deposit']) && $quote['damage_deposit'] > 0)
                         <div class="ch-breakdown-row py-2 my-2 border-top border-bottom small text-muted">
-                            <span><i class="bi bi-info-circle me-1"></i>Refundable Security Deposit</span>
+                            <span><i class="bi bi-info-circle me-1"></i>Damage deposit (refundable)</span>
                             <span class="fw-bold text-dark">£{{ number_format($quote['damage_deposit'], 2) }}</span>
                         </div>
                     @endif

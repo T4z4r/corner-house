@@ -1,12 +1,24 @@
 @extends('layouts.website.app')
 
-@section('title', 'Stripe Checkout — Complete Your Payment')
+@section('title', 'Complete Your Payment')
 
 @section('content')
-@include('website._page-hero', ['kicker' => 'Direct Booking · Step 3 of 3', 'title' => 'Complete Your Payment', 'subtitle' => 'Finalize your stay with instant 256-bit SSL encrypted Stripe payment processing.'])
+
+@php($guest = $reservation->guest?->exists ? $reservation->guest : null)
+@php($fullName = trim(($guest?->first_name ?? '').' '.($guest?->last_name ?? '')))
+@php($guestEmail = $guest?->email ?? '')
+@php($nights = $reservation->check_in && $reservation->check_out ? $reservation->check_in->diffInDays($reservation->check_out) : 1)
+
+<section class="ch-page-hero">
+    <div class="wrap">
+        <p class="ch-kicker">Direct Booking &middot; Step 3 of 3</p>
+        <h1>Complete Your Payment</h1>
+        <p class="ch-page-hero-sub">Secure your stay with instant, encrypted Stripe payment processing.</p>
+    </div>
+</section>
 
 <style>
-/* Corner House Premium Checkout Tokens */
+/* ===== Corner House Checkout Design System ===== */
 :root {
   --ch-ivy-deep: #1F3826;
   --ch-ivy: #2F5136;
@@ -20,30 +32,31 @@
   --ch-ink: #1E211C;
   --ch-ink-soft: #4F554B;
   --ch-line: rgba(31,56,38,.14);
+  --ch-serif: "Fraunces", Georgia, serif;
 }
 
 .ch-checkout-container {
-  padding-top: 2.5rem;
+  padding-top: 2.4rem;
   padding-bottom: 5rem;
 }
 
-/* Stepper */
+/* ---- Stepper ---- */
 .ch-stepper {
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: relative;
-  max-width: 780px;
-  margin: 0 auto 3rem auto;
+  max-width: 720px;
+  margin: 0 auto 2.8rem auto;
 }
 .ch-stepper::before {
   content: "";
   position: absolute;
   top: 22px;
-  left: 10%;
-  right: 10%;
+  left: 12%;
+  right: 12%;
   height: 2px;
-  background: var(--ch-ivy-deep);
+  background: var(--ch-line);
   z-index: 0;
 }
 .ch-step-item {
@@ -51,7 +64,7 @@
   z-index: 1;
   text-align: center;
   background: var(--ch-stone-light);
-  padding: 0 0.8rem;
+  padding: 0 .9rem;
 }
 .ch-step-circle {
   width: 44px;
@@ -60,13 +73,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: "Fraunces", Georgia, serif;
+  font-family: var(--ch-serif);
   font-weight: 600;
   font-size: 1.1rem;
   border: 2px solid var(--ch-line);
   background: #fff;
   color: var(--ch-ink-soft);
 }
+.ch-step-circle svg { width: 18px; height: 18px; }
 .ch-step-item.completed .ch-step-circle {
   background: var(--ch-ivy-deep);
   border-color: var(--ch-ivy-deep);
@@ -80,148 +94,348 @@
 }
 .ch-step-label {
   display: block;
-  font-size: 0.85rem;
+  font-size: .82rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: .05em;
   color: var(--ch-ink-soft);
-  margin-top: 0.5rem;
+  margin-top: .5rem;
   text-transform: uppercase;
 }
-.ch-step-item.active .ch-step-label {
-  color: var(--ch-ivy-deep);
-}
+.ch-step-item.active .ch-step-label { color: var(--ch-ivy-deep); }
 
-/* Form Card */
+/* ---- Layout grid ---- */
+.ch-checkout-grid {
+  display: grid;
+  grid-template-columns: minmax(0,1.5fr) minmax(320px,.9fr);
+  gap: 2.4rem;
+  align-items: start;
+}
+@media (max-width: 920px) { .ch-checkout-grid { grid-template-columns: 1fr; } }
+
+/* ---- Cards ---- */
 .ch-card-premium {
-  background: #ffffff;
+  background: #fff;
   border: 1px solid var(--ch-line);
-  border-radius: 12px;
-  padding: 2.2rem;
-  box-shadow: 0 16px 40px -16px rgba(31,56,38,0.1);
+  border-radius: 14px;
+  padding: 1.8rem 1.9rem;
+  box-shadow: 0 18px 44px -22px rgba(31,56,38,.16);
 }
-
-.ch-card-header-title {
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 1.5rem;
-  color: var(--ch-ivy-deep);
-  margin-bottom: 0.3rem;
+.ch-card-premium + .ch-card-premium { margin-top: 1.4rem; }
+.ch-card-head {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 1.1rem;
+  margin-bottom: 1.3rem;
+  border-bottom: 1px solid var(--ch-line);
 }
-
-/* Payment Method Highlight Box */
-.ch-payment-box {
-  background: linear-gradient(135deg, rgba(31,56,38,0.04) 0%, rgba(180,85,43,0.04) 100%);
-  border: 1.5px solid var(--ch-ivy-soft);
-  border-radius: 10px;
-  padding: 1.6rem;
+.ch-card-header-title {
+  font-family: var(--ch-serif);
+  font-size: 1.32rem;
+  color: var(--ch-ivy-deep);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  line-height: 1.15;
 }
-
-/* Submit Button */
-.btn-ch-pay {
-  background: linear-gradient(145deg, var(--ch-terracotta), var(--ch-terracotta-deep));
-  color: #ffffff;
-  font-family: var(--body);
-  font-weight: 700;
-  font-size: 1.15rem;
-  letter-spacing: 0.02em;
-  padding: 1.15rem 1.8rem;
-  border-radius: 8px;
-  border: none;
-  width: 100%;
-  cursor: pointer;
-  box-shadow: 0 10px 25px -5px rgba(180,85,43,0.4);
-  transition: all 0.25s ease;
+.ch-step-badge {
+  background: var(--ch-ivy-deep);
+  color: var(--ch-stone-light);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  text-decoration: none;
+  font-size: .85rem;
+  font-weight: 700;
+  flex: none;
 }
-.btn-ch-pay:hover {
-  background: linear-gradient(145deg, var(--ch-terracotta-deep), var(--ch-terracotta));
-  transform: translateY(-2px);
-  box-shadow: 0 14px 30px -4px rgba(180,85,43,0.5);
-  color: #ffffff;
+.ch-ref-pill {
+  border: 1px solid var(--ch-sage);
+  background: var(--ch-stone-light);
+  color: var(--ch-ivy-deep);
+  font-weight: 700;
+  font-size: .78rem;
+  letter-spacing: .04em;
+  padding: .3rem .7rem;
+  border-radius: 99px;
 }
 
-/* Order Summary Sidebar */
-.ch-summary-card {
-  background: #ffffff;
-  border: 1px solid var(--ch-line);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 16px 40px -16px rgba(31,56,38,0.12);
-  position: sticky;
-  top: 100px;
+/* ---- Contact summary ---- */
+.ch-contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.1rem 1.8rem;
 }
-.ch-summary-media {
-  height: 180px;
-  position: relative;
-  background: var(--ch-ivy-deep);
-  overflow: hidden;
+@media (max-width: 560px) { .ch-contact-grid { grid-template-columns: 1fr; } }
+.ch-contact-cell .ch-contact-label {
+  display: block;
+  font-size: .68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: var(--ch-ivy-deep);
+  margin-bottom: .15rem;
 }
-.ch-summary-media img {
+.ch-contact-cell strong { color: var(--ch-ink); font-size: .98rem; font-weight: 600; }
+
+/* ---- Form controls ---- */
+.ch-form-group { margin-bottom: 1.35rem; }
+.ch-form-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: .74rem;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--ch-ivy-deep);
+  margin-bottom: .45rem;
+}
+.ch-form-control {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  padding: .88rem 1rem;
+  font-family: var(--body);
+  font-size: .98rem;
+  color: var(--ch-ink);
+  background: var(--ch-stone-light);
+  border: 1px solid rgba(31,56,38,.22);
+  border-radius: 8px;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
 }
-.ch-summary-media-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(31,56,38,0.85) 0%, transparent 70%);
+.ch-form-control::placeholder { color: rgba(31,56,38,.38); }
+.ch-form-control:focus {
+  outline: none;
+  background: #fff;
+  border-color: var(--ch-ivy-deep);
+  box-shadow: 0 0 0 3px rgba(31,56,38,.12);
 }
+.ch-field-help { font-size: .8rem; color: var(--ch-ink-soft); margin-top: .5rem; }
+
+/* ---- Stripe Payment Element mount ---- */
+.ch-stripe-element {
+  background: var(--ch-stone-light);
+  border: 1px solid rgba(31,56,38,.22);
+  border-radius: 8px;
+  padding: .9rem 1rem;
+  min-height: 62px;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.ch-stripe-element:focus-within {
+  background: #fff;
+  border-color: var(--ch-ivy-deep);
+  box-shadow: 0 0 0 3px rgba(31,56,38,.12);
+}
+
+/* ---- Authorization checkbox ---- */
+.ch-check {
+  display: flex;
+  align-items: flex-start;
+  gap: .7rem;
+  cursor: pointer;
+  margin: 1.35rem 0 1.2rem;
+  user-select: none;
+}
+.ch-check input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  margin: 2px 0 0;
+  border: 2px solid var(--ch-ivy-soft);
+  border-radius: 5px;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+.ch-check input[type="checkbox"]::after {
+  content: "";
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(-45deg) translate(0, -1px);
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+.ch-check input[type="checkbox"]:checked { background: var(--ch-ivy-deep); border-color: var(--ch-ivy-deep); }
+.ch-check input[type="checkbox"]:checked::after { opacity: 1; }
+.ch-check-text { font-size: .88rem; color: var(--ch-ink-soft); line-height: 1.45; }
+.ch-check-text strong { color: var(--ch-ivy-deep); }
+
+/* ---- Alerts ---- */
+.ch-alert {
+  display: flex;
+  gap: .8rem;
+  align-items: flex-start;
+  padding: 1rem 1.15rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  font-size: .92rem;
+  line-height: 1.5;
+}
+.ch-alert svg { width: 20px; height: 20px; flex: none; margin-top: 2px; }
+.ch-alert-strong { display: block; font-weight: 700; margin-bottom: .15rem; }
+.ch-alert-warning { background: #FFF9E9; color: #664D03; border-left: 4px solid #C9A227; }
+.ch-alert-warning svg { color: #C9A227; }
+.ch-form-error {
+  display: flex;
+  gap: .6rem;
+  align-items: flex-start;
+  background: #FDEFEC;
+  color: #842029;
+  border-left: 4px solid var(--ch-terracotta);
+  border-radius: 8px;
+  padding: .8rem 1rem;
+  font-size: .9rem;
+  margin-bottom: 1rem;
+}
+.ch-form-error[hidden] { display: none; }
+.ch-form-error svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
+
+/* ---- Buttons ---- */
+.btn-ch-pay {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  width: 100%;
+  background: linear-gradient(145deg, var(--ch-terracotta), var(--ch-terracotta-deep));
+  color: #fff;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 1.06rem;
+  letter-spacing: .02em;
+  padding: 1.1rem 1.6rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 10px 26px -6px rgba(180,85,43,.45);
+  transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+}
+.btn-ch-pay svg { width: 20px; height: 20px; flex: none; }
+.btn-ch-pay:hover { background: linear-gradient(145deg, var(--ch-terracotta-deep), var(--ch-terracotta)); transform: translateY(-2px); box-shadow: 0 14px 32px -6px rgba(180,85,43,.55); color: #fff; }
+.btn-ch-pay:disabled { cursor: not-allowed; filter: saturate(.6) brightness(.96); transform: none; }
+.ch-pay-trust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem 1.1rem;
+  margin-top: 1.1rem;
+  color: var(--ch-ink-soft);
+  font-size: .78rem;
+}
+.ch-pay-trust span { display: inline-flex; align-items: center; gap: .35rem; }
+.ch-pay-trust svg { width: 14px; height: 14px; color: var(--ch-ivy-deep); }
+
+/* ---- Payment method chips ---- */
+.ch-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+  padding-top: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--ch-line);
+}
+.ch-chip {
+  background: #fff;
+  border: 1px solid var(--ch-line);
+  color: var(--ch-ivy-deep);
+  font-weight: 700;
+  font-size: .74rem;
+  padding: .22rem .65rem;
+  border-radius: 99px;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+}
+.ch-chip svg { width: 14px; height: 14px; }
+.ch-chip-recommended {
+  background: var(--ch-terracotta);
+  border-color: var(--ch-terracotta);
+  color: #fff;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-size: .7rem;
+  padding: .32rem .75rem;
+}
+
+/* ---- Hosted card variant ---- */
+.ch-card-hosted {
+  border-color: var(--ch-ivy);
+  background: linear-gradient(180deg, #fff 0%, var(--ch-stone-light) 100%);
+}
+.ch-hosted-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+.ch-hosted-title { display: flex; align-items: center; gap: .8rem; }
+.ch-hosted-title svg { width: 30px; height: 30px; color: var(--ch-terracotta); flex: none; }
+.ch-hosted-lead { font-size: .9rem; color: var(--ch-ink-soft); margin: 1rem 0 1.2rem; }
+.ch-hosted-lead strong { color: var(--ch-ivy-deep); }
+
+/* ---- Order summary sidebar ---- */
+.ch-summary-card {
+  background: #fff;
+  border: 1px solid var(--ch-line);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 18px 44px -22px rgba(31,56,38,.18);
+  position: sticky;
+  top: 104px;
+}
+.ch-summary-media { height: 180px; position: relative; background: var(--ch-ivy-deep); overflow: hidden; }
+.ch-summary-media img { width: 100%; height: 100%; object-fit: cover; }
+.ch-summary-media-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(31,56,38,.85) 0%, transparent 70%); }
 .ch-summary-media-title {
   position: absolute;
   bottom: 1rem;
-  left: 1.2rem;
-  right: 1.2rem;
-  color: #ffffff;
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 1.6rem;
+  left: 1.25rem;
+  right: 1.25rem;
+  color: #fff;
+  font-family: var(--ch-serif);
+  font-size: 1.55rem;
   margin: 0;
 }
-
-.ch-summary-body {
-  padding: 1.6rem;
-}
+.ch-summary-body { padding: 1.5rem 1.6rem; }
 .ch-date-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: .5rem;
   background: var(--ch-ivy-deep);
   color: var(--ch-stone-light);
-  padding: 0.45rem 0.9rem;
+  padding: .45rem .9rem;
   border-radius: 99px;
-  font-size: 0.85rem;
+  font-size: .84rem;
   font-weight: 600;
-  margin-bottom: 1rem;
+  margin-bottom: .9rem;
 }
+.ch-date-pill svg { width: 16px; height: 16px; }
+.ch-stay-note { font-size: .88rem; color: var(--ch-ink-soft); margin-bottom: .9rem; }
 .ch-breakdown-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.45rem 0;
-  font-size: 0.95rem;
+  padding: .42rem 0;
+  font-size: .93rem;
   color: var(--ch-ink);
 }
-.ch-breakdown-row.discount {
-  color: var(--ch-terracotta-deep);
-  font-weight: 700;
-}
-.ch-breakdown-row.total-row {
-  border-top: 2px solid var(--ch-ivy-deep);
-  margin-top: 0.8rem;
-  padding-top: 1rem;
-}
+.ch-breakdown-row.discount { color: var(--ch-terracotta-deep); font-weight: 700; }
+.ch-breakdown-row.deposit { font-size: .85rem; color: var(--ch-ink-soft); }
+.ch-breakdown-row.total-row { border-top: 2px solid var(--ch-ivy-deep); margin-top: .8rem; padding-top: 1rem; }
+.ch-summary-sub { font-size: .78rem; color: var(--ch-ink-soft); }
 .ch-total-price {
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 2.2rem;
+  font-family: var(--ch-serif);
+  font-size: 2.1rem;
   color: var(--ch-ivy-deep);
   line-height: 1;
 }
-
 .ch-badge-guarantee {
   background: var(--ch-stone-light);
   border: 1px solid var(--ch-sage);
@@ -229,26 +443,32 @@
   padding: 1rem;
   margin-top: 1.2rem;
   display: flex;
-  gap: 0.8rem;
+  gap: .8rem;
   align-items: flex-start;
 }
-.ch-badge-guarantee i {
-  color: var(--ch-terracotta);
-  font-size: 1.3rem;
-  flex-shrink: 0;
-}
+.ch-badge-guarantee svg { color: var(--ch-terracotta); width: 20px; height: 20px; flex: none; margin-top: 2px; }
+.ch-badge-guarantee .small { color: var(--ch-ink-soft); }
+.ch-badge-guarantee strong { color: var(--ch-ink); }
+
+/* Shared icon + generic helpers */
+.ch-icon { width: 1em; height: 1em; flex: none; }
+@media (max-width: 560px) { .ch-card-premium { padding: 1.4rem 1.15rem; } }
 </style>
 
 <div class="wrap ch-checkout-container">
 
-    <!-- 3-Step Progress Bar -->
+    <!-- Stepper -->
     <div class="ch-stepper">
         <div class="ch-step-item completed">
-            <div class="ch-step-circle"><i class="bi bi-check-lg"></i></div>
+            <div class="ch-step-circle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4 10-10"/></svg>
+            </div>
             <span class="ch-step-label">1. Dates</span>
         </div>
         <div class="ch-step-item completed">
-            <div class="ch-step-circle"><i class="bi bi-check-lg"></i></div>
+            <div class="ch-step-circle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4 10-10"/></svg>
+            </div>
             <span class="ch-step-label">2. Details</span>
         </div>
         <div class="ch-step-item active">
@@ -258,258 +478,324 @@
     </div>
 
     @if (request()->query('cancelled'))
-        <div class="alert alert-warning mb-4 rounded-3 shadow-sm border-0 d-flex align-items-center gap-3 p-3" style="background:#fff9e6; color:#664d03; border-left:4px solid #c9a227 !important;">
-            <i class="bi bi-info-circle-fill fs-3" style="color:#c9a227;"></i>
+        <div class="ch-alert ch-alert-warning" role="status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
             <div>
-                <strong class="d-block">Payment was cancelled on Stripe</strong>
-                <span>Your reservation reference <strong>{{ $reservation->reference }}</strong> is preserved. You can complete payment below.</span>
+                <span class="ch-alert-strong">Payment was cancelled on Stripe</span>
+                <span>Your reservation reference <strong>{{ $reservation->reference }}</strong> is preserved. You can complete payment below whenever you are ready.</span>
             </div>
         </div>
     @endif
 
-    <div class="row g-5">
-        <!-- Main Payment Column -->
-        <div class="col-lg-7">
+    <div class="ch-checkout-grid">
 
-            <!-- Guest Contact Summary -->
-            <div class="ch-card-premium mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom" style="border-color:var(--ch-line) !important;">
-                    <h2 class="ch-card-header-title" style="font-size:1.35rem; margin:0;">
-                        <i class="bi bi-person-check-fill" style="color:var(--ch-ivy-deep);"></i>
+        <!-- Main column -->
+        <div class="ch-checkout-main">
+
+            <!-- Guest contact -->
+            <div class="ch-card-premium">
+                <div class="ch-card-head">
+                    <h2 class="ch-card-header-title">
+                        <span class="ch-step-badge">1</span>
                         Lead Guest Contact Information
                     </h2>
-                    <span class="badge" style="background:var(--ch-stone-light); color:var(--ch-ivy-deep); border:1px solid var(--ch-sage); font-weight:600; font-size:0.8rem;">Ref: {{ $reservation->reference }}</span>
+                    <span class="ch-ref-pill">Ref: {{ $reservation->reference }}</span>
                 </div>
-                <div class="row g-3 text-muted small">
-                    <div class="col-sm-6">
-                        <span class="d-block text-uppercase fw-bold" style="font-size:0.72rem; letter-spacing:0.08em; color:var(--ch-ivy-deep);">Lead Guest</span>
-                        <strong class="text-dark fs-6">{{ $reservation->guest?->first_name }} {{ $reservation->guest?->last_name }}</strong>
+                <div class="ch-contact-grid">
+                    <div class="ch-contact-cell">
+                        <span class="ch-contact-label">Lead Guest</span>
+                        <strong>{{ $fullName ?: '—' }}</strong>
                     </div>
-                    <div class="col-sm-6">
-                        <span class="d-block text-uppercase fw-bold" style="font-size:0.72rem; letter-spacing:0.08em; color:var(--ch-ivy-deep);">Email Address</span>
-                        <strong class="text-dark fs-6">{{ $reservation->guest?->email }}</strong>
+                    <div class="ch-contact-cell">
+                        <span class="ch-contact-label">Email Address</span>
+                        <strong>{{ $guestEmail }}</strong>
                     </div>
-                    @if ($reservation->guest?->phone)
-                        <div class="col-sm-6">
-                            <span class="d-block text-uppercase fw-bold" style="font-size:0.72rem; letter-spacing:0.08em; color:var(--ch-ivy-deep);">Phone Number</span>
-                            <strong class="text-dark">{{ $reservation->guest->phone }}</strong>
+                    @if ($guest?->phone)
+                        <div class="ch-contact-cell">
+                            <span class="ch-contact-label">Phone Number</span>
+                            <strong>{{ $guest->phone }}</strong>
                         </div>
                     @endif
                 </div>
             </div>
 
-            <!-- Stripe Hosted Checkout Option -->
+            <!-- Hosted Stripe Checkout option -->
             @if ($checkoutUrl)
-                <div class="ch-card-premium mb-4" style="border-color:var(--ch-ivy); background:linear-gradient(180deg, #ffffff 0%, var(--ch-stone-light) 100%);">
-                    <div class="d-flex align-items-center justify-content-between mb-3 pb-3 border-bottom" style="border-color:var(--ch-line) !important;">
-                        <div class="d-flex align-items-center gap-3">
-                            <i class="bi bi-shield-lock-fill fs-2" style="color:var(--ch-terracotta);"></i>
+                <div class="ch-card-premium ch-card-hosted">
+                    <div class="ch-hosted-head">
+                        <div class="ch-hosted-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M12 2l7 3v6c0 5-3 8.5-7 10-4-1.5-7-5-7-10V5z"/><path d="M9 12l2 2 4-4"/>
+                            </svg>
                             <div>
-                                <h3 style="font-family:'Fraunces',serif; font-size:1.35rem; color:var(--ch-ivy-deep); margin:0;">Stripe Instant Checkout</h3>
-                                <span class="small text-muted">256-Bit Encrypted Payment Gateway</span>
+                                <h3 style="font-family:var(--ch-serif); font-size:1.28rem; color:var(--ch-ivy-deep); margin:0;">Stripe Instant Checkout</h3>
+                                <span style="font-size:.85rem; color:var(--ch-ink-soft);">Secure hosted gateway &middot; Apple Pay, Google Pay &amp; cards</span>
                             </div>
                         </div>
-                        <span class="badge" style="background:var(--ch-terracotta); color:#fff; font-size:0.75rem; letter-spacing:0.06em; text-transform:uppercase; padding:0.35rem 0.7rem;">Recommended</span>
+                        <span class="ch-chip ch-chip-recommended">Recommended</span>
                     </div>
-
-                    <p class="small text-muted mb-4">Click below to proceed to Stripe's secure payment checkout to complete your reservation for <strong>£{{ number_format($reservation->total_amount, 2) }}</strong>.</p>
-
+                    <p class="ch-hosted-lead">Prefer to pay on Stripe's secure page? Continue there to complete your reservation for <strong>&pound;{{ number_format($reservation->total_amount, 2) }}</strong>.</p>
                     <a href="{{ $checkoutUrl }}" class="btn-ch-pay">
-                        <i class="bi bi-shield-lock-fill me-1"></i>
-                        <span>Pay £{{ number_format($reservation->total_amount, 2) }} via Stripe Checkout</span>
-                        <i class="bi bi-arrow-right ms-1"></i>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3 8.5-7 10-4-1.5-7-5-7-10V5z"/></svg>
+                        <span>Pay &pound;{{ number_format($reservation->total_amount, 2) }} via Stripe Checkout</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
                     </a>
-
-                    <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 mt-4 pt-3 border-top" style="border-color:var(--ch-line) !important;">
-                        <span class="badge bg-white text-dark border px-2.5 py-1.5 small"><i class="bi bi-credit-card me-1"></i>Visa</span>
-                        <span class="badge bg-white text-dark border px-2.5 py-1.5 small"><i class="bi bi-credit-card me-1"></i>Mastercard</span>
-                        <span class="badge bg-white text-dark border px-2.5 py-1.5 small"><i class="bi bi-credit-card me-1"></i>American Express</span>
-                        <span class="badge bg-white text-dark border px-2.5 py-1.5 small"><i class="bi bi-apple me-1"></i>Apple Pay</span>
-                        <span class="badge bg-white text-dark border px-2.5 py-1.5 small"><i class="bi bi-google me-1"></i>Google Pay</span>
+                    <div class="ch-chip-row">
+                        <span class="ch-chip">Visa</span>
+                        <span class="ch-chip">Mastercard</span>
+                        <span class="ch-chip">American Express</span>
+                        <span class="ch-chip">Apple Pay</span>
+                        <span class="ch-chip">Google Pay</span>
                     </div>
                 </div>
             @endif
 
-            <!-- Direct Payment Form -->
+            <!-- Direct card payment with Stripe Payment Element -->
             <div class="ch-card-premium">
-                <h3 class="ch-card-header-title" style="font-size:1.35rem;">
-                    <i class="bi bi-credit-card-fill" style="color:var(--ch-ivy-deep);"></i>
-                    Direct Card Payment Entry
-                </h3>
-                <p class="small text-muted mb-4">Authorize payment directly on this page via Stripe.</p>
-
-                <form method="POST" action="{{ route('booking.checkout.confirm', $reservation) }}" id="directCardForm">
-                    @csrf
-
-                    <div class="mb-3">
-                        <label class="ch-form-label">Cardholder Name</label>
-                        <input type="text" name="cardholder_name" class="ch-form-control" value="{{ $reservation->guest?->first_name }} {{ $reservation->guest?->last_name }}" required placeholder="Name on card">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="ch-form-label">Card Number</label>
-                        <input type="text" name="card_number" class="ch-form-control" id="cardNumberInput" placeholder="4242 4242 4242 4242" required maxlength="19">
-                    </div>
-
-                    <div class="row g-3 mb-4">
-                        <div class="col-6">
-                            <label class="ch-form-label">Expiry Date</label>
-                            <input type="text" name="card_expiry" class="ch-form-control" id="cardExpiryInput" placeholder="MM / YY" required maxlength="7">
-                        </div>
-                        <div class="col-6">
-                            <label class="ch-form-label">CVC / CVV</label>
-                            <input type="password" name="card_cvc" class="ch-form-control" placeholder="CVC" required maxlength="4">
-                        </div>
-                    </div>
-
-                    <div class="form-check mb-4">
-                        <input class="form-check-input" type="checkbox" id="termsCheck" required checked>
-                        <label class="form-check-label small text-muted" for="termsCheck">
-                            I confirm the stay details and authorize the charge of <strong>£{{ number_format($reservation->total_amount, 2) }}</strong> via Stripe.
-                        </label>
-                    </div>
-
-                    <button type="submit" class="btn-ch-pay" id="confirmPayBtn">
-                        <i class="bi bi-shield-lock-fill"></i>
-                        <span>Confirm Payment of £{{ number_format($reservation->total_amount, 2) }}</span>
-                    </button>
-                </form>
-
-                <div class="d-flex align-items-center justify-content-center gap-3 mt-4 pt-3 border-top text-muted small" style="border-color:var(--ch-line) !important;">
-                    <span><i class="bi bi-lock-fill me-1" style="color:var(--ch-ivy-deep);"></i>256-Bit SSL Encryption</span>
-                    <span>·</span>
-                    <span><i class="bi bi-shield-check me-1" style="color:var(--ch-ivy-deep);"></i>PCI-DSS Compliant</span>
+                <div class="ch-card-head">
+                    <h2 class="ch-card-header-title">
+                        <span class="ch-step-badge">2</span>
+                        Pay with Card on This Page
+                    </h2>
                 </div>
+
+                @if ($paymentIntentSecret)
+                    <form id="directCardForm" method="POST" action="{{ route('booking.checkout.confirm', $reservation) }}" novalidate>
+                        @csrf
+
+                        <div class="ch-form-group">
+                            <label class="ch-form-label" for="payment-element-wrap">
+                                <span>Card Details</span>
+                                <span style="font-weight:600; color:var(--ch-ink-soft);">Powered by Stripe</span>
+                            </label>
+                            <div class="ch-stripe-element" id="payment-element-wrap" aria-label="Card payment form">
+                                <div id="payment-element"></div>
+                            </div>
+                            <div class="ch-field-help">Your card details are encrypted by Stripe and never touch our servers.</div>
+                        </div>
+
+                        <div id="cardErrors" class="ch-form-error" role="alert" hidden></div>
+
+                        <label class="ch-check" for="termsCheck">
+                            <input type="checkbox" id="termsCheck" required checked>
+                            <span class="ch-check-text">
+                                I confirm the stay details and authorise the charge of
+                                <strong>&pound;{{ number_format($reservation->total_amount, 2) }}</strong>
+                                via Stripe.
+                            </span>
+                        </label>
+
+                        <button type="submit" class="btn-ch-pay" id="confirmPayBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3 8.5-7 10-4-1.5-7-5-7-10V5z"/></svg>
+                            <span id="confirmPayText">Confirm Payment &middot; &pound;{{ number_format($reservation->total_amount, 2) }}</span>
+                        </button>
+
+                        <div class="ch-pay-trust">
+                            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>256-Bit SSL Encryption</span>
+                            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3 8.5-7 10-4-1.5-7-5-7-10V5z"/><path d="M9 12l2 2 4-4"/></svg>PCI-DSS Compliant</span>
+                            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3 8.5-7 10-4-1.5-7-5-7-10V5z"/><path d="M9 12l2 2 4-4"/></svg>Fraud Protection</span>
+                        </div>
+                    </form>
+                @else
+                    <div class="ch-alert ch-alert-warning" role="alert">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+                        <div>
+                            <span class="ch-alert-strong">In-page card payment is temporarily unavailable</span>
+                            <span>Please use the Stripe Checkout option above to complete your reservation securely.</span>
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
 
-        <!-- Sidebar Order Breakdown -->
-        <div class="col-lg-5">
+        <!-- Sidebar: order summary -->
+        <aside class="ch-checkout-side">
             <div class="ch-summary-card">
-                <!-- Media Header -->
                 <div class="ch-summary-media">
-                    @php $roomHero = $reservation->room?->images->first(); @endphp
+                    @php($roomHero = $reservation->room?->images->first())
                     @if ($roomHero)
                         <img src="{{ asset('storage/'.$roomHero->path) }}" alt="{{ $reservation->room?->name }}">
                     @else
-                        <div class="d-flex align-items-center justify-content-center h-100 text-white fs-1"><i class="bi bi-house-heart"></i></div>
+                        <div style="display:flex; align-items:center; justify-content:center; height:100%; color:#fff;">
+                            <svg viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>
+                        </div>
                     @endif
                     <div class="ch-summary-media-overlay"></div>
                     <h3 class="ch-summary-media-title">{{ $reservation->room?->name ?? 'Corner House Stay' }}</h3>
                 </div>
 
                 <div class="ch-summary-body">
-                    <!-- Stay Pill -->
                     <div class="ch-date-pill">
-                        <i class="bi bi-calendar-check"></i>
-                        <span>{{ $reservation->check_in?->format('d M Y') }} → {{ $reservation->check_out?->format('d M Y') }}</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+                        <span>{{ $reservation->check_in?->format('d M Y') }} &rarr; {{ $reservation->check_out?->format('d M Y') }}</span>
                     </div>
+                    <div class="ch-stay-note">{{ $nights }} night{{ $nights > 1 ? 's' : '' }} &middot; {{ $reservation->guests_count }} guest{{ $reservation->guests_count > 1 ? 's' : '' }}</div>
 
-                    @php
-                        $nights = $reservation->check_in && $reservation->check_out ? $reservation->check_in->diffInDays($reservation->check_out) : 1;
-                    @endphp
-                    <div class="small text-muted mb-3"><i class="bi bi-moon-stars me-1"></i>{{ $nights }} night(s) · {{ $reservation->guests_count }} guest(s)</div>
-
-                    <!-- Itemized Cost Summary -->
                     <div class="ch-breakdown-row">
                         <span>Accommodation Stay ({{ $nights }} night{{ $nights > 1 ? 's' : '' }})</span>
-                        <span>£{{ number_format((float) $reservation->base_amount, 2) }}</span>
+                        <span>&pound;{{ number_format((float) $reservation->base_amount, 2) }}</span>
                     </div>
 
                     @if ((float) $reservation->discount_amount > 0)
                         <div class="ch-breakdown-row discount">
                             <span>Direct Discount ({{ \App\Models\Setting::getValue('direct_booking_discount', 10) }}%)</span>
-                            <span>-£{{ number_format((float) $reservation->discount_amount, 2) }}</span>
+                            <span>-&pound;{{ number_format((float) $reservation->discount_amount, 2) }}</span>
                         </div>
                     @endif
 
                     @if ((float) $reservation->fees_amount > 0)
                         <div class="ch-breakdown-row">
                             <span>Cleaning Fee</span>
-                            <span>£{{ number_format((float) $reservation->fees_amount, 2) }}</span>
+                            <span>&pound;{{ number_format((float) $reservation->fees_amount, 2) }}</span>
                         </div>
                     @endif
 
                     @if ($reservation->relationLoaded('addons') && $reservation->addons->isNotEmpty())
                         @foreach ($reservation->addons as $addon)
-                            <div class="ch-breakdown-row text-primary">
+                            <div class="ch-breakdown-row" style="color:var(--ch-ivy-soft);">
                                 <span>+ {{ $addon->name }}</span>
-                                <span>£{{ number_format((float) ($addon->pivot->total_price ?? $addon->price), 2) }}</span>
+                                <span>&pound;{{ number_format((float) ($addon->pivot->total_price ?? $addon->price), 2) }}</span>
                             </div>
                         @endforeach
                     @endif
 
                     @if ((float) $reservation->damage_deposit > 0)
-                        <div class="ch-breakdown-row py-2 my-2 border-top border-bottom small text-muted">
-                            <span><i class="bi bi-info-circle me-1"></i>Refundable Security Deposit</span>
-                            <span class="fw-bold text-dark">£{{ number_format((float) $reservation->damage_deposit, 2) }}</span>
+                        <div class="ch-breakdown-row deposit" style="border-top:1px solid var(--ch-line); border-bottom:1px solid var(--ch-line); padding:.7rem 0; margin:.6rem 0;">
+                            <span>Refundable Security Deposit</span>
+                            <span style="font-weight:700; color:var(--ch-ink);">&pound;{{ number_format((float) $reservation->damage_deposit, 2) }}</span>
                         </div>
                     @endif
 
                     @if ((float) $reservation->tax_amount > 0)
-                        <div class="ch-breakdown-row text-muted small">
+                        <div class="ch-breakdown-row" style="font-size:.85rem; color:var(--ch-ink-soft);">
                             <span>Taxes &amp; VAT</span>
-                            <span>£{{ number_format((float) $reservation->tax_amount, 2) }}</span>
+                            <span>&pound;{{ number_format((float) $reservation->tax_amount, 2) }}</span>
                         </div>
                     @endif
 
-                    <!-- Grand Total -->
                     <div class="ch-breakdown-row total-row">
                         <div>
-                            <span class="d-block fw-bold text-dark fs-6" style="font-family:'Fraunces',serif;">Grand Total</span>
-                            <span class="small text-muted">Includes stay, deposit &amp; tax</span>
+                            <span class="ch-summary-sub" style="display:block; font-family:var(--ch-serif); font-size:1.02rem; color:var(--ch-ink); font-weight:700;">Grand Total</span>
+                            <span class="ch-summary-sub">Includes stay, deposit &amp; tax</span>
                         </div>
-                        <span class="ch-total-price">£{{ number_format((float) $reservation->total_amount, 2) }}</span>
+                        <span class="ch-total-price">&pound;{{ number_format((float) $reservation->total_amount, 2) }}</span>
                     </div>
 
-                    <!-- Direct Guarantee Banner -->
                     <div class="ch-badge-guarantee">
-                        <i class="bi bi-patch-check-fill"></i>
-                        <div class="small">
-                            <strong class="d-block text-dark mb-0.5">Lowest Direct Rate</strong>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                        <div style="font-size:.85rem;">
+                            <strong style="display:block; margin-bottom:.15rem;">Lowest Direct Rate</strong>
                             <span>You are saving {{ \App\Models\Setting::getValue('direct_booking_discount', 10) }}% off platform prices by booking direct with Corner House.</span>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </aside>
     </div>
 </div>
 
-@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const cardInput = document.getElementById('cardNumberInput');
-    const expiryInput = document.getElementById('cardExpiryInput');
+    const key = @json($stripeKey);
+    const secret = @json($paymentIntentSecret);
+    const returnUrl = @json($paymentReturnUrl);
+    const confirmUrl = @json(route('booking.checkout.confirm', $reservation));
+    const csrfToken = @json(csrf_token());
+
     const form = document.getElementById('directCardForm');
     const btn = document.getElementById('confirmPayBtn');
+    const btnText = document.getElementById('confirmPayText');
+    const errorsBox = document.getElementById('cardErrors');
 
-    if (cardInput) {
-        cardInput.addEventListener('input', function (e) {
-            let val = e.target.value.replace(/\D/g, '');
-            val = val.replace(/(.{4})/g, '$1 ').trim();
-            e.target.value = val.substring(0, 19);
-        });
+    function showError(msg) {
+        errorsBox.textContent = msg;
+        errorsBox.hidden = false;
+    }
+    function setLoading(loading) {
+        btn.disabled = loading;
+        if (loading) {
+            btnText.textContent = 'Processing Payment\u2026';
+        } else {
+            btnText.textContent = btnText.dataset.original;
+        }
     }
 
-    if (expiryInput) {
-        expiryInput.addEventListener('input', function (e) {
-            let val = e.target.value.replace(/\D/g, '');
-            if (val.length >= 2) {
-                val = val.substring(0, 2) + ' / ' + val.substring(2, 4);
+    if (!form || !key || !secret) {
+        return;
+    }
+
+    btnText.dataset.original = btnText.textContent;
+    btn.disabled = true;
+
+    const script = document.createElement('script');
+    script.src = 'https://js.stripe.com/v3/';
+    script.async = true;
+    script.onload = function () {
+        if (!window.Stripe) { return; }
+        const stripe = window.Stripe(key);
+        const elements = stripe.elements({
+            clientSecret: secret,
+            appearance: {
+                theme: 'flat',
+                variables: { colorPrimary: '#B4552B', colorBackground: '#F7F4EC', colorText: '#1E211C', borderRadius: '8px' },
+            },
+        });
+        const paymentElement = elements.create('payment', { layout: 'tabs' });
+        paymentElement.mount('#payment-element');
+        paymentElement.on('ready', function () { btn.disabled = false; });
+        paymentElement.on('change', function (e) { btn.disabled = !e.complete; });
+
+        form.addEventListener('submit', async function (ev) {
+            ev.preventDefault();
+            if (btn.disabled) { return; }
+            setLoading(true);
+            if (errorsBox) { errorsBox.hidden = true; }
+
+            try {
+                const result = await stripe.confirmPayment({
+                    elements: elements,
+                    confirmParams: {
+                        return_url: returnUrl,
+                        receipt_email: @json($guestEmail) || undefined,
+                    },
+                    redirect: 'if_required',
+                });
+
+                if (result.error) {
+                    throw new Error(result.error.message || 'Payment could not be processed.');
+                }
+
+                if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+                    try {
+                        await fetch(confirmUrl, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({ payment_intent_id: result.paymentIntent.id }),
+                        });
+                    } catch (e) {
+                        /* server-side confirmation is recovered on the return page */
+                    }
+                    window.location.assign(returnUrl);
+                    return;
+                }
+
+                /* 3-D Secure challenge is the only other outcome with redirect 'if_required' */
+                window.location.assign(returnUrl);
+            } catch (e) {
+                showError(e && e.message ? e.message : 'Payment could not be completed. Please try again.');
+                setLoading(false);
             }
-            e.target.value = val.substring(0, 7);
         });
-    }
-
-    if (form && btn) {
-        form.addEventListener('submit', function () {
-            btn.disabled = true;
-            btn.style.opacity = '0.8';
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing Payment...';
-        });
-    }
+    };
+    script.onerror = function () {
+        showError('Unable to load Stripe securely. Please use the Stripe Checkout option above.');
+        setLoading(false);
+    };
+    document.head.appendChild(script);
 });
 </script>
-@endpush
 @endsection
