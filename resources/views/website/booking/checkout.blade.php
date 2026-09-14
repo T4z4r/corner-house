@@ -104,60 +104,41 @@
                 </div>
             @endif
 
-            <!-- Direct Card Entry Form (Stripe Elements / Card Payment) -->
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body p-4">
-                    <h5 class="fw-bold mb-1 text-dark" style="font-family:'Cormorant Garamond',serif; font-size:1.35rem;">
-                        <i class="bi bi-credit-card-fill text-dark me-2"></i>Direct Payment Entry
-                    </h5>
-                    <p class="text-muted small mb-4">Insert your credit or debit card details below to confirm payment directly.</p>
+            <!-- Direct Card Entry Form (Stripe Payment Element) -->
+            @if ($paymentIntentSecret)
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-1 text-dark" style="font-family:'Cormorant Garamond',serif; font-size:1.35rem;">
+                            <i class="bi bi-credit-card-fill text-dark me-2"></i>Direct Payment Entry
+                        </h5>
+                        <p class="text-muted small mb-4">Enter your card details below to authorize payment directly on this page.</p>
 
-                    <form method="POST" action="{{ route('booking.checkout.confirm', $reservation) }}" id="directCardForm">
-                        @csrf
+                        <form id="directCardForm" method="POST" action="{{ route('booking.checkout.confirm', $reservation) }}">
+                            @csrf
 
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small text-dark">Cardholder Name</label>
-                            <input type="text" name="cardholder_name" class="form-control form-control-lg fs-6" value="{{ $reservation->guest?->first_name }} {{ $reservation->guest?->last_name }}" required placeholder="Name on card">
-                        </div>
+                            <div id="payment-element" class="mb-3 p-3 border rounded-3 bg-white" style="min-height: 46px;"></div>
+                            <div id="cardErrors" class="alert alert-danger d-none py-2 px-3 small mb-3" role="alert"></div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small text-dark">Card Number</label>
-                            <div class="input-group input-group-lg">
-                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-credit-card text-muted"></i></span>
-                                <input type="text" name="card_number" class="form-control border-start-0 fs-6" id="cardNumberInput" placeholder="4242 4242 4242 4242" required maxlength="19">
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" id="termsCheck" required checked>
+                                <label class="form-check-label small text-muted" for="termsCheck">
+                                    I confirm the stay details and authorize the charge of <strong>£{{ number_format($reservation->total_amount, 2) }}</strong> via Stripe.
+                                </label>
                             </div>
+
+                            <button type="submit" class="btn btn-ch-book btn-lg w-100 py-3 shadow fw-bold" id="confirmPayBtn" disabled>
+                                <i class="bi bi-shield-lock-fill me-2"></i>Authorize Payment of £{{ number_format($reservation->total_amount, 2) }}
+                            </button>
+                        </form>
+
+                        <div class="d-flex align-items-center justify-content-center gap-3 mt-4 pt-2 border-top text-muted small">
+                            <span><i class="bi bi-lock-fill text-success me-1"></i>256-Bit SSL Encrypted</span>
+                            <span>·</span>
+                            <span><i class="bi bi-shield-check me-1"></i>PCI DSS Level 1 Certified</span>
                         </div>
-
-                        <div class="row g-3 mb-4">
-                            <div class="col-6">
-                                <label class="form-label fw-semibold small text-dark">Expiry Date</label>
-                                <input type="text" name="card_expiry" class="form-control form-control-lg fs-6" id="cardExpiryInput" placeholder="MM / YY" required maxlength="7">
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label fw-semibold small text-dark">CVC / CVV</label>
-                                <input type="password" name="card_cvc" class="form-control form-control-lg fs-6" placeholder="CVC" required maxlength="4">
-                            </div>
-                        </div>
-
-                        <div class="form-check mb-4">
-                            <input class="form-check-input" type="checkbox" id="termsCheck" required checked>
-                            <label class="form-check-label small text-muted" for="termsCheck">
-                                I confirm the stay details and authorize the charge of <strong>£{{ number_format($reservation->total_amount, 2) }}</strong> via Stripe.
-                            </label>
-                        </div>
-
-                        <button type="submit" class="btn btn-ch-book btn-lg w-100 py-3 shadow fw-bold" id="confirmPayBtn">
-                            <i class="bi bi-shield-lock-fill me-2"></i>Confirm Payment of £{{ number_format($reservation->total_amount, 2) }}
-                        </button>
-                    </form>
-
-                    <div class="d-flex align-items-center justify-content-center gap-3 mt-4 pt-2 border-top text-muted small">
-                        <span><i class="bi bi-lock-fill text-success me-1"></i>256-Bit SSL Encrypted</span>
-                        <span>·</span>
-                        <span><i class="bi bi-shield-check me-1"></i>PCI DSS Level 1 Certified</span>
                     </div>
                 </div>
-            </div>
+            @endif
         </div>
 
         <!-- Sidebar Order Breakdown -->
@@ -245,37 +226,96 @@
 </div>
 
 @push('scripts')
+<script src="https://js.stripe.com/v3/"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const cardInput = document.getElementById('cardNumberInput');
-    const expiryInput = document.getElementById('cardExpiryInput');
-    const form = document.getElementById('directCardForm');
-    const btn = document.getElementById('confirmPayBtn');
+    // Add-on recalculation (unchanged).
+    var checks = document.querySelectorAll('.addon-check');
+    var baseTotal = parseFloat(document.getElementById('baseTotal').value);
+    var summaryEl = document.getElementById('addonsSummary');
+    var totalEl   = document.getElementById('totalDisplay');
 
-    if (cardInput) {
-        cardInput.addEventListener('input', function (e) {
-            let val = e.target.value.replace(/\D/g, '');
-            val = val.replace(/(.{4})/g, '$1 ').trim();
-            e.target.value = val.substring(0, 19);
-        });
-    }
-
-    if (expiryInput) {
-        expiryInput.addEventListener('input', function (e) {
-            let val = e.target.value.replace(/\D/g, '');
-            if (val.length >= 2) {
-                val = val.substring(0, 2) + ' / ' + val.substring(2, 4);
+    function recalc() {
+        var addonTotal = 0, html = '';
+        checks.forEach(function (cb) {
+            if (cb.checked) {
+                var price = parseFloat(cb.dataset.price);
+                addonTotal += price;
+                var name = cb.closest('label').querySelector('strong').textContent;
+                html += '<div class="d-flex justify-content-between py-1 text-primary"><span>' + name + '</span><span>\u00a3' + price.toFixed(2) + '</span></div>';
             }
-            e.target.value = val.substring(0, 7);
         });
+        if (summaryEl) summaryEl.innerHTML = html;
+        if (totalEl)   totalEl.textContent = '\u00a3' + (baseTotal + addonTotal).toFixed(2);
+    }
+    checks.forEach(function (cb) { cb.addEventListener('change', recalc); });
+
+    // Stripe Payment Element.
+    var stripeKey     = @json($stripeKey);
+    var clientSecret  = @json($paymentIntentSecret);
+    var returnUrl     = @json($paymentReturnUrl);
+    var confirmUrl    = @json(route('booking.checkout.confirm', $reservation->id));
+    var csrfToken     = document.querySelector('meta[name="csrf-token"]').content;
+    var form          = document.getElementById('directCardForm');
+    var btn           = document.getElementById('confirmPayBtn');
+    var errorEl       = document.getElementById('cardErrors');
+
+    if (!stripeKey || !clientSecret || !returnUrl || !form || !btn) return;
+
+    function showError(msg) {
+        if (errorEl) { errorEl.textContent = msg; errorEl.classList.remove('d-none'); }
+    }
+    function clearError() {
+        if (errorEl) { errorEl.textContent = ''; errorEl.classList.add('d-none'); }
     }
 
-    if (form && btn) {
-        form.addEventListener('submit', function () {
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing Payment...';
+    var stripe = Stripe(stripeKey);
+    var elements = stripe.elements({ clientSecret: clientSecret });
+    var paymentElement = elements.create('payment', { layout: 'tabs' });
+    paymentElement.mount('#payment-element');
+
+    paymentElement.on('change', function (event) {
+        if (event.error) { showError(event.error.message); btn.disabled = true; }
+        else { clearError(); btn.disabled = !event.complete; }
+    });
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var originalLabel = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Authorizing Payment\u2026';
+
+        stripe.confirmPayment({
+            elements: elements,
+            confirmParams: { return_url: returnUrl },
+            redirect: 'if_required'
+        }).then(function (result) {
+            if (result.error) {
+                showError(result.error.message);
+                btn.disabled = false;
+                btn.innerHTML = originalLabel;
+                return;
+            }
+
+            var paymentIntent = result.paymentIntent;
+            if (!paymentIntent || paymentIntent.status !== 'succeeded') {
+                btn.disabled = false;
+                btn.innerHTML = originalLabel;
+                return;
+            }
+
+            fetch(confirmUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                body: JSON.stringify({ payment_intent_id: paymentIntent.id })
+            }).then(function (resp) {
+                if (resp.ok) { window.location.href = returnUrl; return null; }
+                return resp.json();
+            }).then(function (data) {
+                if (data && data.error) { showError(data.error); btn.disabled = false; btn.innerHTML = originalLabel; }
+            }).catch(function () { btn.disabled = false; btn.innerHTML = originalLabel; });
         });
-    }
+    });
 });
 </script>
 @endpush

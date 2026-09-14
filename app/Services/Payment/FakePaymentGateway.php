@@ -7,6 +7,9 @@ class FakePaymentGateway implements PaymentGatewayInterface
     /** @var array<string, array<string, mixed>> */
     public array $sessions = [];
 
+    /** @var array<string, array<string, mixed>> */
+    public array $intents = [];
+
     public bool $paid = true;
 
     public function createCheckoutSession(array $payload): array
@@ -32,6 +35,28 @@ class FakePaymentGateway implements PaymentGatewayInterface
             'id' => $sessionId,
             'payment_status' => $this->paid ? 'paid' : 'unpaid',
             'payment_intent' => 'pi_test_'.$sessionId,
+        ];
+    }
+
+    public function createPaymentIntent(array $payload): array
+    {
+        $id = 'pi_test_'.uniqid();
+
+        $this->intents[$id] = $payload;
+
+        return [
+            'id' => $id,
+            'client_secret' => $id.'_secret',
+            'status' => $this->paid ? 'requires_confirmation' : 'requires_payment_method',
+        ];
+    }
+
+    public function retrievePaymentIntent(string $paymentIntentId): array
+    {
+        return [
+            'id' => $paymentIntentId,
+            'status' => $this->paid ? 'succeeded' : 'requires_payment_method',
+            'amount' => (int) round(((float) ($this->intents[$paymentIntentId]['amount'] ?? 0)) * 100),
         ];
     }
 

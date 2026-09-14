@@ -33,13 +33,17 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(PaymentGatewayInterface::class, function ($app): PaymentGatewayInterface {
+            if ($app->environment('testing')) {
+                return $app->make(FakePaymentGateway::class);
+            }
+
             $secret = Setting::getValue('stripe_secret');
             if (blank($secret)) {
                 $secret = config('services.stripe.secret', '');
             }
 
-            if ($app->environment('testing') || blank($secret)) {
-                return $app->make(FakePaymentGateway::class);
+            if (blank($secret)) {
+                throw new \RuntimeException('Stripe secret key is not configured. Set STRIPE_SECRET or the stripe_secret setting before accepting payments.');
             }
 
             return $app->make(StripePaymentGateway::class);

@@ -81,6 +81,80 @@ class PaymentWebhookTest extends TestCase
         ]);
     }
 
+    public function test_stripe_webhook_completes_payment_from_payment_intent(): void
+    {
+        $reservation = Reservation::factory()->create([
+            'status' => 'hold',
+            'payment_status' => 'unpaid',
+            'paid_amount' => 0,
+            'check_out' => now()->addDays(12)->toDateString(),
+        ]);
+        Payment::factory()->create([
+            'reservation_id' => $reservation->id,
+            'amount' => $reservation->total_amount,
+            'status' => 'pending',
+            'provider_payment_id' => 'pi_test_webhook_intent',
+        ]);
+
+        $this->postJson('/webhooks/stripe', [
+            'type' => 'payment_intent.succeeded',
+            'data' => [
+                'object' => [
+                    'id' => 'pi_test_webhook_intent',
+                    'status' => 'succeeded',
+                ],
+            ],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('payments', [
+            'id' => $this->paymentId('pi_test_webhook_intent'),
+            'status' => 'paid',
+            'provider_payment_id' => 'pi_test_webhook_intent',
+        ]);
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+        ]);
+    }
+
+    public function test_direct_payment_intent_must_be_succeeded_to_confirm(): void
+    {
+        $gateway = app(PaymentGatewayInterface::class);
+        $gateway->paid = false;
+
+        $reservation = Reservation::factory()->create([
+            'status' => 'hold',
+            'payment_status' => 'unpaid',
+            'paid_amount' => 0,
+            'check_out' => now()->addDays(12)->toDateString(),
+        ]);
+        Payment::factory()->create([
+            'reservation_id' => $reservation->id,
+            'status' => 'pending',
+            'provider_payment_id' => 'pi_test_unpaid_intent',
+        ]);
+
+        $this->postJson(route('booking.checkout.confirm', $reservation->id), [
+            'payment_intent_id' => 'pi_test_unpaid_intent',
+        ])->assertUnprocessable()->assertJsonStructure(['error']);
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'status' => 'hold',
+            'payment_status' => 'unpaid',
+        ]);
+        $this->assertDatabaseHas('payments', [
+            'provider_payment_id' => 'pi_test_unpaid_intent',
+            'status' => 'pending',
+        ]);
+    }
+
+    private function paymentId(string $providerPaymentId): int
+    {
+        return Payment::query()->where('provider_payment_id', $providerPaymentId)->value('id');
+    }
+
     public function test_finance_manager_can_refund_paid_payment(): void
     {
         $this->seed(RoleAndPermissionSeeder::class);

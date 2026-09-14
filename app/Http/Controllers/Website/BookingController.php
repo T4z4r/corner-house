@@ -358,8 +358,9 @@ class BookingController extends Controller
             ]);
         }
 
+        // Build Stripe Checkout Session URL for the hosted option.
         $checkoutUrl = null;
-        if ($latestPayment) {
+        if ($latestPayment && ! blank($latestPayment->metadata['checkout_url'] ?? null)) {
             $checkoutUrl = $this->payments->checkoutUrl($latestPayment);
         }
 
@@ -378,48 +379,65 @@ class BookingController extends Controller
             }
         }
 
+        // Prepare a Payment Intent so guests can enter card details directly.
+        $paymentIntentSecret = null;
+        $paymentIntentId = null;
+        try {
+            $intentPayment = $this->payments->createIntent($reservation);
+            $paymentIntentSecret = $this->payments->clientSecret($intentPayment);
+            $paymentIntentId = $intentPayment->provider_payment_id;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to prepare Stripe payment intent', [
+                'message' => $e->getMessage(),
+            ]);
+        }
+
         $stripeKey = Setting::getValue('stripe_key');
         if (blank($stripeKey)) {
             $stripeKey = config('services.stripe.key', '');
         }
 
+        $paymentReturnUrl = $paymentIntentId
+            ? route('booking.confirmation', ['payment_intent' => $paymentIntentId])
+            : null;
+
         return view('website.booking.checkout', [
             'reservation' => $reservation,
             'checkoutUrl' => $checkoutUrl,
             'stripeKey' => $stripeKey,
+            'paymentIntentSecret' => $paymentIntentSecret,
+            'paymentReturnUrl' => $paymentReturnUrl,
         ]);
     }
 
-    public function confirmDirectPayment(Request $request, Reservation $reservation): RedirectResponse
+    public function confirmDirectPayment(Request $request, Reservation $reservation): RedirectResponse|JsonResponse
     {
-        $reservation->load(['payments', 'guest', 'room']);
+        $data = $request->validate([
+            'payment_intent_id' => ['required', 'string'],
+        ]);
 
-        $payment = $reservation->payments()->latest()->first();
+        try {
+            $payment = $this->payments->confirmFromIntent($data['payment_intent_id']);
 
-        if (! $payment) {
-            $payment = $this->payments->startCheckout(
-                $reservation,
-                route('booking.confirmation').'?session_id={CHECKOUT_SESSION_ID}',
-                route('booking.checkout', $reservation->id).'?cancelled=1',
-            );
-        }
-
-        if ($payment->provider_session_id) {
-            try {
-                $this->payments->markPaid($payment);
-            } catch (\Throwable) {
-                $payment->update(['status' => 'paid', 'paid_at' => now()]);
-                $reservation->update(['paid_amount' => $reservation->total_amount, 'payment_status' => 'paid', 'status' => 'confirmed']);
+            if ($payment->reservation_id !== $reservation->id) {
+                throw new \DomainException('Payment does not belong to this reservation.');
             }
-        } else {
-            $payment->update(['status' => 'paid', 'paid_at' => now()]);
-            $reservation->update(['paid_amount' => $reservation->total_amount, 'payment_status' => 'paid', 'status' => 'confirmed']);
+        } catch (\Throwable $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $e->getMessage()], 422);
+            }
+
+            return back()->withErrors(['error' => $e->getMessage()]);
         }
 
         $request->session()->put('booking.reservation_id', $reservation->id);
 
+        if ($request->expectsJson()) {
+            return response()->json(['status' => 'ok']);
+        }
+
         return redirect()->route('booking.confirmation', [
-            'session_id' => $payment->provider_session_id ?? 'paid',
+            'payment_intent' => $payment->provider_payment_id,
         ]);
     }
 
@@ -434,6 +452,17 @@ class BookingController extends Controller
             } catch (\Throwable) {
                 $reservation = Reservation::query()
                     ->whereHas('payments', fn ($q) => $q->where('provider_session_id', $sessionId))
+                    ->first();
+            }
+        }
+
+        if (! $reservation && $intentId = $request->query('payment_intent')) {
+            try {
+                $payment = $this->payments->confirmFromIntent($intentId);
+                $reservation = $payment->reservation;
+            } catch (\Throwable) {
+                $reservation = Reservation::query()
+                    ->whereHas('payments', fn ($q) => $q->where('provider_payment_id', $intentId))
                     ->first();
             }
         }

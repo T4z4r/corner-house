@@ -108,6 +108,78 @@ class PaymentService
         return $payment->metadata['checkout_url'] ?? null;
     }
 
+    public function createIntent(Reservation $reservation): Payment
+    {
+        $payment = $reservation->payments()
+            ->where('provider', 'stripe')
+            ->where('status', 'pending')
+            ->latest()
+            ->first()
+            ?? Payment::create([
+                'reservation_id' => $reservation->id,
+                'guest_id' => $reservation->guest_id,
+                'provider' => 'stripe',
+                'amount' => $reservation->total_amount,
+                'currency' => $reservation->property?->currency ?? 'GBP',
+                'status' => 'pending',
+            ]);
+
+        if ($payment->provider_payment_id && ! blank($this->clientSecret($payment))) {
+            return $payment->fresh();
+        }
+
+        $intent = $this->gateway->createPaymentIntent([
+            'amount' => (float) $reservation->total_amount,
+            'currency' => $payment->currency,
+            'description' => 'Corner House booking '.$reservation->reference,
+            'customer_email' => $reservation->guest?->email,
+            'metadata' => [
+                'reservation_id' => (string) $reservation->id,
+                'payment_id' => (string) $payment->id,
+                'reference' => $reservation->reference,
+            ],
+        ]);
+
+        $payment->update([
+            'provider_payment_id' => $intent['id'],
+            'amount' => $reservation->total_amount,
+            'metadata' => array_merge($payment->metadata ?? [], [
+                'intent_status' => $intent['status'],
+                'client_secret' => $intent['client_secret'],
+            ]),
+        ]);
+
+        return $payment->fresh();
+    }
+
+    public function clientSecret(Payment $payment): ?string
+    {
+        $secret = $payment->metadata['client_secret'] ?? null;
+
+        return is_string($secret) ? $secret : null;
+    }
+
+    public function confirmFromIntent(string $paymentIntentId): Payment
+    {
+        $payment = Payment::query()->where('provider_payment_id', $paymentIntentId)->first();
+
+        if (! $payment) {
+            throw new \DomainException('Unknown payment intent.');
+        }
+
+        if ($payment->isPaid()) {
+            return $payment;
+        }
+
+        $intent = $this->gateway->retrievePaymentIntent($paymentIntentId);
+
+        if (($intent['status'] ?? '') !== 'succeeded') {
+            throw new \DomainException('Payment has not been completed.');
+        }
+
+        return $this->markPaid($payment, $paymentIntentId);
+    }
+
     public function confirmFromSession(string $sessionId): Payment
     {
         $payment = Payment::query()->where('provider_session_id', $sessionId)->firstOrFail();
@@ -126,10 +198,19 @@ class PaymentService
         $event = $this->gateway->parseWebhook($payload, $signature);
         $type = $event['type'] ?? '';
 
-        if ($type !== 'checkout.session.completed') {
+        if ($type === 'checkout.session.completed') {
+            $this->handleCheckoutSessionCompleted($event);
+
             return;
         }
 
+        if ($type === 'payment_intent.succeeded') {
+            $this->handlePaymentIntentSucceeded($event);
+        }
+    }
+
+    private function handleCheckoutSessionCompleted(array $event): void
+    {
         $session = $event['data']['object'] ?? [];
         $sessionId = $session['id'] ?? null;
 
@@ -147,6 +228,28 @@ class PaymentService
 
         if (($session['payment_status'] ?? '') === 'paid' || ($session['status'] ?? '') === 'complete') {
             $this->markPaid($payment, is_string($session['payment_intent'] ?? null) ? $session['payment_intent'] : null);
+        }
+    }
+
+    private function handlePaymentIntentSucceeded(array $event): void
+    {
+        $intent = $event['data']['object'] ?? [];
+        $intentId = $intent['id'] ?? null;
+
+        if (! $intentId) {
+            return;
+        }
+
+        $payment = Payment::query()->where('provider_payment_id', $intentId)->first();
+
+        if (! $payment) {
+            Log::warning('Stripe webhook for unknown payment intent', ['payment_intent' => $intentId]);
+
+            return;
+        }
+
+        if (($intent['status'] ?? '') === 'succeeded') {
+            $this->markPaid($payment, $intentId);
         }
     }
 

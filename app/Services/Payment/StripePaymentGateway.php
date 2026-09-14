@@ -73,6 +73,40 @@ class StripePaymentGateway implements PaymentGatewayInterface
         ];
     }
 
+    public function createPaymentIntent(array $payload): array
+    {
+        $params = [
+            'amount' => (int) round(((float) $payload['amount']) * 100),
+            'currency' => strtolower((string) $payload['currency']),
+            'description' => (string) ($payload['description'] ?? ''),
+            'automatic_payment_methods' => ['enabled' => true],
+            'metadata' => $payload['metadata'] ?? [],
+        ];
+
+        if (! empty($payload['customer_email'])) {
+            $params['receipt_email'] = (string) $payload['customer_email'];
+        }
+
+        $intent = $this->client->paymentIntents->create($params);
+
+        return [
+            'id' => $intent->id,
+            'client_secret' => (string) $intent->client_secret,
+            'status' => (string) $intent->status,
+        ];
+    }
+
+    public function retrievePaymentIntent(string $paymentIntentId): array
+    {
+        $intent = $this->client->paymentIntents->retrieve($paymentIntentId);
+
+        return [
+            'id' => $intent->id,
+            'status' => (string) $intent->status,
+            'amount' => (int) $intent->amount,
+        ];
+    }
+
     public function refund(string $paymentIntentId, int $amountPence): array
     {
         $refund = $this->client->refunds->create([

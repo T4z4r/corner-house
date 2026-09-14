@@ -240,14 +240,15 @@ class PublicBookingTest extends TestCase
         $this->get(route('booking.checkout', $reservation->id))
             ->assertOk()
             ->assertSee('Complete Your Payment')
-            ->assertSee('The Garden Suite');
+            ->assertSee('The Garden Suite')
+            ->assertSee('payment-element');
 
-        $this->post(route('booking.checkout.confirm', $reservation->id), [
-            'cardholder_name' => 'Sarah Connor',
-            'card_number' => '4242 4242 4242 4242',
-            'card_expiry' => '12 / 28',
-            'card_cvc' => '123',
-        ])->assertRedirect(route('booking.confirmation', ['session_id' => Payment::query()->first()->provider_session_id]));
+        $payment = Payment::query()->where('reservation_id', $reservation->id)->first();
+        $this->assertNotNull($payment->provider_payment_id);
+
+        $this->postJson(route('booking.checkout.confirm', $reservation->id), [
+            'payment_intent_id' => $payment->provider_payment_id,
+        ])->assertOk()->assertJson(['status' => 'ok']);
 
         $this->assertDatabaseHas('reservations', [
             'id' => $reservation->id,
