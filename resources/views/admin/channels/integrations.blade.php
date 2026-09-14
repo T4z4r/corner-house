@@ -445,6 +445,13 @@
                                 <span class="small text-muted">Send existing local pricing changes to Beds24</span>
                             </div>
                             <div class="card-body">
+                                @can('channels.configure')
+                                    <form method="POST" action="{{ route('admin.channels.pricing.defaults.publish') }}" class="mb-3">
+                                        @csrf
+                                        <button class="btn btn-sm btn-ch-primary" type="submit">Post default prices to Beds24</button>
+                                        <span class="small text-muted ms-2">Posts 550 Monday-Thursday and 625 Friday-Sunday for the next 90 days, plus configured uplift days.</span>
+                                    </form>
+                                @endcan
                                 <div class="row g-3">
                                     <div class="col-lg-6">
                                         <div class="border rounded-3 p-3 h-100 bg-light">

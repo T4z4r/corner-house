@@ -32,6 +32,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -406,6 +407,15 @@ class ChannelController extends Controller
         }
 
         return back()->with('status', 'Rate override could not be posted to Beds24.');
+    }
+
+    public function publishDefaultPricing(Beds24PricingPublisher $publisher): RedirectResponse
+    {
+        $posted = $publisher->postDefaultRates(now()->startOfDay(), now()->addDays(90)->startOfDay());
+
+        return back()->with('status', $posted
+            ? 'Weekday and Friday-to-Sunday default prices posted to Beds24.'
+            : 'Default prices could not be posted to Beds24.');
     }
 
     public function publishProperty(Property $property, Beds24PropertyPublisher $publisher): RedirectResponse

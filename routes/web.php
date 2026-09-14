@@ -302,6 +302,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::get('/channels/bookings/export', [ChannelController::class, 'exportBookings'])->name('channels.bookings.export');
         Route::post('/channels/pricing/rules/{rule}/publish', [ChannelController::class, 'publishPricingRule'])->name('channels.pricing.rules.publish')->middleware('can:channels.configure');
         Route::post('/channels/pricing/overrides/{override}/publish', [ChannelController::class, 'publishPricingOverride'])->name('channels.pricing.overrides.publish')->middleware('can:channels.configure');
+        Route::post('/channels/pricing/defaults/publish', [ChannelController::class, 'publishDefaultPricing'])->name('channels.pricing.defaults.publish')->middleware('can:channels.configure');
         Route::post('/channels/airbnb/actions', [ChannelController::class, 'airbnbAction'])->name('channels.airbnb.actions')->middleware('can:channels.configure');
         Route::post('/channels', [ChannelController::class, 'store'])->name('channels.store')->middleware('can:channels.configure');
         Route::get('/channels/{account}/edit', [ChannelController::class, 'edit'])->name('channels.edit')->middleware('can:channels.configure');
