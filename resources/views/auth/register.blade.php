@@ -47,6 +47,7 @@
                            id="password"
                            name="password"
                            required>
+                    <div class="form-text small">At least 8 characters with uppercase, lowercase, numbers, and symbols.</div>
                     @error('password')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror

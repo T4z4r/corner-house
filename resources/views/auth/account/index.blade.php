@@ -60,7 +60,7 @@
                             <label class="form-label">Confirm new password</label>
                             <input type="password" name="password_confirmation" class="form-control" required>
                         </div>
-                        <div class="form-text mb-3">Password must be at least 8 characters.</div>
+                        <div class="form-text mb-3">Password must be at least 8 characters and include uppercase, lowercase, numbers, and symbols.</div>
                         <button class="btn btn-ch-primary">Update password</button>
                     </form>
                 </div>

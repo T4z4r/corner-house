@@ -5,6 +5,7 @@ namespace App\Services\Booking;
 use App\Jobs\PushBeds24BookingJob;
 use App\Jobs\PushChannelAvailabilityJob;
 use App\Jobs\SendBookingConfirmationJob;
+use App\Jobs\SendNewDirectBookingNotificationJob;
 use App\Models\BookingHold;
 use App\Models\Guest;
 use App\Models\Reservation;
@@ -307,6 +308,10 @@ class BookingService
         SendBookingConfirmationJob::dispatch($reservation->id);
         PushChannelAvailabilityJob::dispatch($reservation->id);
         PushBeds24BookingJob::dispatch($reservation->id);
+
+        if ($reservation->source === 'direct') {
+            SendNewDirectBookingNotificationJob::dispatch($reservation->id);
+        }
     }
 
     /**

@@ -45,7 +45,7 @@ class AccountController extends Controller
                     $fail('The current password is incorrect.');
                 }
             }],
-            'password' => ['required', 'string', Password::min(8), 'confirmed'],
+            'password' => ['required', 'string', Password::defaults(), 'confirmed'],
         ]);
 
         $user->update(['password' => Hash::make($request->string('password'))]);

@@ -16,6 +16,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 use Stripe\StripeClient;
 
 class AppServiceProvider extends ServiceProvider
@@ -62,6 +63,18 @@ class AppServiceProvider extends ServiceProvider
         Model::preventLazyLoading(! app()->isProduction());
 
         Paginator::useBootstrapFive();
+
+        Password::defaults(function () {
+            $rule = Password::min(8)
+                ->letters()
+                ->mixedCase()
+                ->numbers()
+                ->symbols();
+
+            return app()->isProduction()
+                ? $rule->uncompromised()
+                : $rule;
+        });
 
         $this->app->make(MailConfigurationService::class)->apply();
 

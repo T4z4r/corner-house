@@ -61,7 +61,7 @@ class AdminMissingModulesTest extends TestCase
             ->post(route('admin.users.store'), [
                 'name' => 'Pat Manager',
                 'email' => 'pat@example.com',
-                'password' => 'password123',
+                'password' => 'P@ssword123!',
                 'role' => 'Property Manager',
             ])->assertRedirect(route('admin.users.index'));
 

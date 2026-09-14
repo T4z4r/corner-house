@@ -11,6 +11,7 @@
     <div class="col-md-6">
         <label class="form-label">Password @if(isset($user))<span class="text-muted">(leave blank to keep)</span>@endif</label>
         <input type="password" name="password" class="form-control" @unless(isset($user)) required @endunless>
+        <div class="form-text">At least 8 characters with uppercase, lowercase, numbers, and symbols.</div>
     </div>
     <div class="col-md-6">
         <label class="form-label">Role</label>

@@ -56,11 +56,24 @@ class AuthTest extends TestCase
         $this->post(route('register'), [
             'name' => 'Jane Doe',
             'email' => 'jane@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'P@ssword123!',
+            'password_confirmation' => 'P@ssword123!',
         ])->assertRedirect(route('admin.dashboard'));
 
         $this->assertDatabaseHas('users', ['email' => 'jane@example.com']);
         $this->assertAuthenticated();
+    }
+
+    public function test_registration_fails_if_password_does_not_meet_strong_policy(): void
+    {
+        // Missing symbol, uppercase, etc.
+        $this->post(route('register'), [
+            'name' => 'Jane Doe',
+            'email' => 'jane@example.com',
+            'password' => 'weakpass',
+            'password_confirmation' => 'weakpass',
+        ])->assertSessionHasErrors('password');
+
+        $this->assertDatabaseMissing('users', ['email' => 'jane@example.com']);
     }
 }

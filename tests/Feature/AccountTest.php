@@ -72,12 +72,12 @@ class AccountTest extends TestCase
         $this->actingAs($user)
             ->put(route('account.password.update'), [
                 'current_password' => 'old-password',
-                'password' => 'new-password',
-                'password_confirmation' => 'new-password',
+                'password' => 'N3w-P@ssword123!',
+                'password_confirmation' => 'N3w-P@ssword123!',
             ])->assertRedirect()
             ->assertSessionHas('status', 'Password updated.');
 
-        $this->assertTrue(Hash::check('new-password', $user->fresh()->password));
+        $this->assertTrue(Hash::check('N3w-P@ssword123!', $user->fresh()->password));
     }
 
     public function test_password_change_fails_with_wrong_current_password(): void
@@ -87,8 +87,8 @@ class AccountTest extends TestCase
         $this->actingAs($user)
             ->put(route('account.password.update'), [
                 'current_password' => 'wrong-password',
-                'password' => 'new-password',
-                'password_confirmation' => 'new-password',
+                'password' => 'N3w-P@ssword123!',
+                'password_confirmation' => 'N3w-P@ssword123!',
             ])->assertSessionHasErrors('current_password');
 
         $this->assertTrue(Hash::check('old-password', $user->fresh()->password));
@@ -108,6 +108,20 @@ class AccountTest extends TestCase
         $this->assertTrue(Hash::check('old-password', $user->fresh()->password));
     }
 
+    public function test_password_change_fails_without_mixed_case_or_symbols(): void
+    {
+        $user = User::factory()->create(['password' => bcrypt('old-password')]);
+
+        $this->actingAs($user)
+            ->put(route('account.password.update'), [
+                'current_password' => 'old-password',
+                'password' => 'simplepassword123',
+                'password_confirmation' => 'simplepassword123',
+            ])->assertSessionHasErrors('password');
+
+        $this->assertTrue(Hash::check('old-password', $user->fresh()->password));
+    }
+
     public function test_password_change_requires_matching_confirmation(): void
     {
         $user = User::factory()->create(['password' => bcrypt('old-password')]);
@@ -115,7 +129,7 @@ class AccountTest extends TestCase
         $this->actingAs($user)
             ->put(route('account.password.update'), [
                 'current_password' => 'old-password',
-                'password' => 'new-password',
+                'password' => 'N3w-P@ssword123!',
                 'password_confirmation' => 'different-password',
             ])->assertSessionHasErrors('password');
 
