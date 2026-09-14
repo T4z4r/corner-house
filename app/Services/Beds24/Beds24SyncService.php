@@ -322,7 +322,7 @@ class Beds24SyncService
     }
 
     /**
-     * @return array{overrides: int, blocks: int}
+    * @return array{overrides: int, blocks: int}
      */
     public function syncCalendar(ChannelAccount $account): array
     {
@@ -570,33 +570,21 @@ class Beds24SyncService
      */
     private function applyCalendar(Room $room, array $days, Carbon $from, Carbon $to): array
     {
-        $overrides = 0;
         $closed = [];
+
+        // Beds24 calendar prices are channel prices, not local booking rates.
+        // Remove old imported overrides so they cannot replace the platform's
+        // weekday/weekend defaults.
+        PricingOverride::query()
+            ->where('room_id', $room->id)
+            ->where('notes', 'beds24-sync')
+            ->whereDate('start_date', '<=', $to->toDateString())
+            ->whereDate('end_date', '>=', $from->toDateString())
+            ->delete();
 
         foreach ($days as $day) {
             if ($this->isClosedCalendarDay($day)) {
                 $closed[] = $day['date'];
-            }
-
-            if (isset($day['price']) && (float) $day['price'] > 0) {
-                PricingOverride::query()->updateOrCreate(
-                    [
-                        'room_id' => $room->id,
-                        'start_date' => $day['date'],
-                        'end_date' => $day['date'],
-                        'notes' => 'beds24-sync',
-                    ],
-                    [
-                        'rate' => $day['price'],
-                        'minimum_stay' => $day['minStay'],
-                        'is_enabled' => true,
-                    ],
-                );
-                $overrides++;
-
-                if ((float) $room->base_rate <= 0) {
-                    $room->update(['base_rate' => $day['price']]);
-                }
             }
         }
 
@@ -621,7 +609,7 @@ class Beds24SyncService
             $blocks++;
         }
 
-        return ['overrides' => $overrides, 'blocks' => $blocks];
+        return ['overrides' => 0, 'blocks' => $blocks];
     }
 
     /**
