@@ -73,9 +73,25 @@ Alex
 Corner House
 BODY;
 
+        $paymentConfirmationBody = <<<'BODY'
+Hello {{guest_name}},
+
+Great news — your payment has gone through and your booking at {{property}} is now confirmed.
+
+Booking reference: {{reference}}
+Stay: {{check_in}} to {{check_out}} ({{nights}} nights)
+Room: {{room}}
+Amount paid: £{{total}}
+
+We can't wait to welcome you. If you have any questions before your stay, just reply to this email.
+
+Warm regards,
+{{property}}
+BODY;
+
         $templates = [
             ['booking_confirmation', 'Booking confirmation', 'Welcome to {{property}} - your booking {{reference}}', $bookingConfirmationBody],
-            ['payment_confirmation', 'Payment confirmation', 'Payment received for {{reference}}', 'Hello {{guest_name}}, we have received payment of £{{total}} for booking {{reference}}.'],
+            ['payment_confirmation', 'Payment confirmation', 'Payment received — booking {{reference}} confirmed', $paymentConfirmationBody],
             ['payment_refund', 'Payment refund', 'Refund issued for {{reference}}', 'Hello {{guest_name}}, we have issued a refund of £{{refund_amount}} for booking {{reference}}.{{reason_line}}If this refund appears in error, please contact us.'],
             ['pre_arrival', 'Pre-arrival', 'Your stay at {{property}} starts tomorrow', 'Hello {{guest_name}}, we look forward to welcoming you tomorrow. Check-in is {{check_in}} for {{room}}.'],
             ['check_in', 'Check-in instructions', 'Check-in details for {{reference}}', 'Hello {{guest_name}}, today is check-in day for {{room}}. We will be ready for your arrival.'],

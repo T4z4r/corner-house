@@ -103,6 +103,7 @@ class NotificationService
             '{{reference}}' => $reservation->reference,
             '{{check_in}}' => $reservation->check_in->format('d M Y'),
             '{{check_out}}' => $reservation->check_out->format('d M Y'),
+            '{{nights}}' => (string) $reservation->check_in->diffInDays($reservation->check_out),
             '{{room}}' => $reservation->room?->name ?? '',
             '{{property}}' => $reservation->property?->name ?? '',
             '{{total}}' => number_format((float) $reservation->total_amount, 2),

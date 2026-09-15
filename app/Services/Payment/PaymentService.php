@@ -3,6 +3,7 @@
 namespace App\Services\Payment;
 
 use App\Jobs\PushBeds24BookingJob;
+use App\Jobs\SendBookingConfirmationJob;
 use App\Jobs\SendPaymentRefundEmailJob;
 use App\Models\Payment;
 use App\Models\Refund;
@@ -291,6 +292,13 @@ class PaymentService
             // avoid a duplicate push.
             if ($wasAlreadyConfirmed) {
                 PushBeds24BookingJob::dispatch($reservation->id);
+
+                // The reservation was already confirmed (e.g. by an admin) before this
+                // payment arrived, so confirm() above skipped afterConfirm() and its
+                // guest email. Dispatch it here too — sendForEvent() is idempotent per
+                // reservation/template, so a normal hold -> paid -> confirmed flow (which
+                // already sends this via afterConfirm()) is not double-emailed.
+                SendBookingConfirmationJob::dispatch($reservation->id);
             }
 
             $this->systemNotifications->paymentMarkedPaid($locked->fresh(['reservation']), null);

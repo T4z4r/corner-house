@@ -15,7 +15,7 @@ class PaymentController extends Controller
 
     public function index(Request $request): View
     {
-        $query = Payment::query()->with(['reservation.guest'])->latest();
+        $query = Payment::query()->with(['reservation.guest', 'guest'])->latest();
 
         if ($status = $request->query('status')) {
             $query->where('status', $status);

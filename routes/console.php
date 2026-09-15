@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Schedule;
 $scheduleSetting = static function (string $key, mixed $default): mixed {
     try {
         return Setting::getValue($key, $default);
-    } catch (\Throwable) {
+    } catch (Throwable) {
         return $default;
     }
 };
