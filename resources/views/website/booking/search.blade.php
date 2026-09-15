@@ -2,88 +2,73 @@
 @section('title', 'Availability')
 @section('description', 'Check availability and rates for Corner House, Braunston, and book your stay direct.')
 @section('content')
-@include('website._page-hero', ['kicker' => 'Bookings', 'title' => 'Find a stay', 'subtitle' => 'Choose dates. We will show what is free, with the house rate.'])
-<div class="container ch-section">
-    @if ($availableProperties->count() > 1)
-        <div class="d-flex flex-wrap gap-2 mb-4">
-            @foreach ($availableProperties as $option)
-                <a class="btn {{ (int) $property?->id === (int) $option->id ? 'btn-ch-book' : 'btn-outline-secondary' }}"
-                   href="{{ route('booking.search', array_filter(['property_id' => $option->getRouteKey(), 'check_in' => $checkIn, 'check_out' => $checkOut, 'guests' => $guests])) }}">
-                    {{ $option->name }}
-                </a>
-            @endforeach
+<section class="page" id="page-book" data-page="book">
+    <div class="section" style="padding-bottom:0">
+        <div class="wrap">
+            <p class="kicker">Bookings</p>
+            <h1>Find a stay</h1>
+            <p class="lede">Choose dates. We will show what is free, with the house rate.</p>
         </div>
-    @endif
-
-    <form method="GET" class="ch-booking-card ch-booking-bar ch-booking-bar-premium mb-5">
-        @if ($property)
-            <input type="hidden" name="property_id" value="{{ $property->getRouteKey() }}">
-        @endif
-        <div class="row g-3 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label">Arrive</label>
-                <input type="date" name="check_in" class="form-control" value="{{ $checkIn }}" required>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Depart</label>
-                <input type="date" name="check_out" class="form-control" value="{{ $checkOut }}" required>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">Guests</label>
-                <input type="number" name="guests" class="form-control" min="1" value="{{ $guests }}">
-            </div>
-            <div class="col-md-4">
-                <button class="btn btn-ch-book w-100">Search</button>
-            </div>
-        </div>
-    </form>
-
-    <div class="row g-4">
-        @forelse ($rooms as $room)
-            @php
-                $images = $room->images->sortBy('sort_order')->values();
-                $hero = $images->first();
-                $thumbs = $images->slice(1, 3);
-            @endphp
-            <div class="col-md-6">
-                <article class="ch-suite-card ch-result-card">
-                    <div class="ch-result-ribbon">Available</div>
-                    @if ($images->isNotEmpty())
-                        <div class="ch-suite-gallery">
-                            <div class="ch-suite-gallery-hero">
-                                <img src="{{ asset('storage/'.$hero->path) }}" alt="{{ $hero->alt ?: $room->name }}">
-                            </div>
-                            @foreach ($thumbs as $thumb)
-                                <div class="ch-suite-gallery-thumb">
-                                    <img src="{{ asset('storage/'.$thumb->path) }}" alt="{{ $thumb->alt ?: $room->name }}">
-                                </div>
-                            @endforeach
-                            @if ($images->count() > 4)
-                                <div class="ch-suite-gallery-count"><i class="bi bi-images me-1"></i>{{ $images->count() }}</div>
-                            @endif
-                        </div>
-                    @else
-                        <div class="ch-suite-no-image">
-                            <i class="bi bi-house"></i>
-                        </div>
-                    @endif
-                    <div class="ch-suite-body">
-                        <div class="ch-suite-eyebrow">{{ $availableProperties->count() > 1 && $room->property ? $room->property->name : 'Direct rate' }}</div>
-                        <h3>{{ $room->property?->name ?? 'Whole house' }}</h3>
-                        <p class="ch-suite-meta">Whole house · Sleeps {{ $room->house_capacity }} · {{ $room->quote['nights'] }} night(s)</p>
-                        <p class="ch-price">£{{ number_format($room->quote['total'], 2) }}</p>
-                        <p class="text-muted small">Instant direct booking for the whole house, with our 10% direct-booking discount applied.</p>
-                        <a class="btn btn-ch-book" href="{{ route('booking.details', ['room' => $room, 'check_in' => $checkIn, 'check_out' => $checkOut, 'guests' => $guests]) }}"><i class="bi bi-credit-card me-1"></i>Book &amp; Checkout</a>
-                    </div>
-                </article>
-            </div>
-        @empty
-            @if ($checkIn)
-                <p class="text-muted">No rooms available for those dates.</p>
-            @else
-                <p class="text-muted">Choose dates to see availability and prices.</p>
-            @endif
-        @endforelse
     </div>
-</div>
+
+    <div class="section">
+        <div class="wrap">
+            @if ($availableProperties->count() > 1)
+                <div class="tabs">
+                    @foreach ($availableProperties as $option)
+                        <a class="tab"
+                           @if ((int) $property?->id === (int) $option->id) aria-selected="true" @else aria-selected="false" @endif
+                           href="{{ route('booking.search', array_filter(['property_id' => $option->getRouteKey(), 'check_in' => $checkIn, 'check_out' => $checkOut, 'guests' => $guests])) }}">
+                            {{ $option->name }}
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+
+            <form method="GET" class="book-search">
+                @if ($property)
+                    <input type="hidden" name="property_id" value="{{ $property->getRouteKey() }}">
+                @endif
+                <div class="book-search-fields">
+                    <label>Arrive
+                        <input type="date" name="check_in" value="{{ $checkIn }}" required>
+                    </label>
+                    <label>Depart
+                        <input type="date" name="check_out" value="{{ $checkOut }}" required>
+                    </label>
+                    <label>Guests
+                        <input type="number" name="guests" min="1" value="{{ $guests }}">
+                    </label>
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </div>
+            </form>
+
+            <div class="stays">
+                @forelse ($rooms as $room)
+                    @php
+                        $images = $room->images->sortBy('sort_order')->values();
+                        $hero = $images->first();
+                    @endphp
+                    <article class="stay">
+                        <div class="photo">@if($hero)<img src="{{ asset('storage/'.$hero->path) }}" alt="{{ $hero->alt ?: $room->name }}" loading="lazy">@endif</div>
+                        <div>
+                            <p class="eyebrow">{{ $availableProperties->count() > 1 && $room->property ? $room->property->name : 'Direct rate' }}</p>
+                            <h3>{{ $room->property?->name ?? 'Whole house' }}</h3>
+                            <p class="meta">Whole house &middot; Sleeps {{ $room->house_capacity }} &middot; {{ $room->quote['nights'] }} night(s)</p>
+                            <p class="price">&pound;{{ number_format($room->quote['total'], 2) }}</p>
+                            <p class="note">Instant direct booking for the whole house, with our 10% direct-booking discount applied.</p>
+                            <a class="btn btn-primary" href="{{ route('booking.details', ['room' => $room, 'check_in' => $checkIn, 'check_out' => $checkOut, 'guests' => $guests]) }}">Book &amp; Checkout</a>
+                        </div>
+                    </article>
+                @empty
+                    @if ($checkIn)
+                        <p class="small" style="margin-top:.5rem">No rooms available for those dates.</p>
+                    @else
+                        <p class="small" style="margin-top:.5rem">Choose dates to see availability and prices.</p>
+                    @endif
+                @endforelse
+            </div>
+        </div>
+    </div>
+</section>
 @endsection

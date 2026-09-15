@@ -240,6 +240,29 @@ form.enquiry .check{display:flex;align-items:flex-start;gap:.6rem;font-weight:40
 form.enquiry .check input{width:auto;margin-top:.25rem}
 .alt-book{margin-top:1rem;font-size:.9rem;color:var(--ink-soft)}
 
+/* ---------- Booking search (inline availability page) ---------- */
+.kicker{font-size:.78rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--terracotta-deep);margin:0 0 .8rem;max-width:none}
+.section .wrap > h1{margin-bottom:.5rem}
+.book-search{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:1.6rem;margin:2rem 0 0}
+.book-search-fields{display:grid;grid-template-columns:1fr 1fr .7fr auto;gap:1rem;align-items:end}
+.book-search label{display:grid;gap:.35rem;font-size:.88rem;font-weight:700}
+.book-search label small{color:var(--ink-soft);font-weight:400}
+.book-search input{font:inherit;font-weight:400;color:var(--ink);padding:.7rem .8rem;border:1px solid var(--line);border-radius:4px;background:#fff;width:100%}
+.book-search input:focus{outline:2px solid var(--terracotta);outline-offset:0;border-color:var(--terracotta)}
+.book-search .btn{margin:0;padding:.7rem 1.5rem}
+@media (max-width:900px){.book-search-fields{grid-template-columns:1fr 1fr}}
+@media (max-width:540px){.book-search-fields{grid-template-columns:1fr}.book-search .btn{width:100%}}
+.stays{display:grid;gap:1.5rem;margin-top:2rem}
+.stay{display:grid;grid-template-columns:minmax(240px,320px) 1fr;gap:1.8rem;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:1.4rem;align-items:center}
+.stay .photo{aspect-ratio:4/3;margin:0}
+.stay .eyebrow{font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--terracotta-deep);margin:0}
+.stay h3{margin:.45rem 0 .35rem;font-size:clamp(1.35rem,2vw,1.6rem)}
+.stay .meta{font-size:.95rem;color:var(--ink-soft);margin:0 0 .4rem}
+.stay .price{font-family:var(--display);font-size:1.6rem;line-height:1.15;color:var(--ivy-deep);margin:0 0 .25rem}
+.stay .note{font-size:.92rem;color:var(--ink-soft);margin:0 0 1rem;max-width:var(--measure)}
+.stay .btn{margin:0}
+@media (max-width:820px){.stay{grid-template-columns:1fr}}
+
 /* ---------- Booking: platforms, rules, legal ---------- */
 .platforms{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem;list-style:none;padding:0;margin:2rem 0 0}
 .platform{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:1.6rem;display:flex;flex-direction:column;gap:.6rem}
