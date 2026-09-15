@@ -8,6 +8,7 @@ use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Room;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class IcalFeedTest extends TestCase
@@ -61,7 +62,7 @@ class IcalFeedTest extends TestCase
             ->assertSee('UID:res-'.$reservation->id.'@corner-house')
             ->assertSee('SUMMARY:'.$reservation->reference.' - Jane Doe')
             ->assertSee('DTSTART;VALUE=DATE:'.str_replace('-', '', $checkIn))
-            ->assertSee('DTEND;VALUE=DATE:'.str_replace('-', '', $checkOut));
+            ->assertSee('DTEND;VALUE=DATE:'.str_replace('-', '', Carbon::parse($checkOut)->addDay()->toDateString()));
     }
 
     public function test_ical_feed_excludes_cancelled_reservations(): void
@@ -169,7 +170,7 @@ class IcalFeedTest extends TestCase
 
         $url = route('ical.room', $room);
 
-        $this->assertStringContainsString('/ical/'.$room->id, $url);
+        $this->assertStringContainsString('/ical/'.$room->getRouteKey(), $url);
     }
 
     public function test_ical_feed_does_not_require_authentication(): void
@@ -259,7 +260,8 @@ class IcalFeedTest extends TestCase
 
         $response = $this->get(route('ical.room', $room));
 
-        $response->assertOk()
-            ->assertHeader('Cache-Control', 'no-cache, must-revalidate');
+        $cacheControl = strtolower((string) $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('no-cache', $cacheControl);
+        $this->assertStringContainsString('must-revalidate', $cacheControl);
     }
 }

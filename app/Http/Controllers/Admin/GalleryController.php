@@ -40,7 +40,7 @@ class GalleryController extends Controller
         $this->auditLogger->log('gallery.created', 'gallery', 'image', (string) $image->id, newValues: ['path' => $path]);
 
         return response()->json([
-            'id' => $image->id,
+            'id' => $image->getRouteKey(),
             'path' => $path,
             'url' => Storage::disk('public')->url($path),
             'alt' => $image->alt,
@@ -79,10 +79,16 @@ class GalleryController extends Controller
     {
         $request->validate([
             'ids' => ['required', 'array'],
-            'ids.*' => ['integer', 'exists:gallery_images,id'],
+            'ids.*' => ['string'],
         ]);
 
-        foreach ($request->ids as $index => $id) {
+        foreach ($request->ids as $index => $key) {
+            $id = GalleryImage::decodeHashId((string) $key);
+
+            if ($id === null) {
+                continue;
+            }
+
             GalleryImage::where('id', $id)->update(['sort_order' => $index]);
         }
 

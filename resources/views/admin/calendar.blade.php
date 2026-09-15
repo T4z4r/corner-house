@@ -1077,7 +1077,7 @@
         const blockToggleButton = document.getElementById('blockToggleButton');
 
         function setModalMode(editing) {
-            editingBlockId = editing ? Number(document.getElementById('blockId').value) : null;
+            editingBlockId = editing ? document.getElementById('blockId').value : null;
             blockModalTitle.textContent = editing ? 'Edit calendar block' : 'Add calendar block';
             blockModifyActions.style.display = editing ? 'flex' : 'none';
             document.getElementById('blockSaveButton').textContent = editing ? 'Update block' : 'Save block';
@@ -1227,7 +1227,7 @@
                 return;
             }
 
-            editingPriceId = matchedEvent ? Number(matchedEvent.extendedProps.override_id) : null;
+            editingPriceId = matchedEvent ? matchedEvent.extendedProps.override_id : null;
             priceForm.reset();
             document.getElementById('priceId').value = editingPriceId || '';
             priceNotes.value = '';

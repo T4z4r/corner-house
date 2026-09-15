@@ -69,10 +69,14 @@ Route::post('/booking/enquiry', [WebsiteController::class, 'enquiry'])->name('bo
 Route::get('/booking/availability', [WebsiteController::class, 'availability'])->name('booking.availability');
 Route::get('/booking/prices', [BookingController::class, 'prices'])->name('booking.prices');
 
-Route::get('/control-hub-q91x', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('/control-hub-q91x', [LoginController::class, 'login']);
-Route::get('/register', [RegisterController::class, 'showRegisterForm'])->name('register');
-Route::post('/register', [RegisterController::class, 'register']);
+Route::middleware('throttle:5,1')->group(function (): void {
+    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [LoginController::class, 'login']);
+    Route::get('/register', [RegisterController::class, 'showRegisterForm'])->name('register');
+    Route::post('/register', [RegisterController::class, 'register']);
+});
+
+Route::redirect('/control-hub-q91x', '/login');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
 Route::middleware(['auth'])->name('account.')->group(function (): void {

@@ -8,7 +8,7 @@
         <div class="d-flex flex-wrap gap-2 mb-4">
             @foreach ($availableProperties as $option)
                 <a class="btn {{ (int) $property?->id === (int) $option->id ? 'btn-ch-book' : 'btn-outline-secondary' }}"
-                   href="{{ route('booking.search', array_filter(['property_id' => $option->id, 'check_in' => $checkIn, 'check_out' => $checkOut, 'guests' => $guests])) }}">
+                   href="{{ route('booking.search', array_filter(['property_id' => $option->getRouteKey(), 'check_in' => $checkIn, 'check_out' => $checkOut, 'guests' => $guests])) }}">
                     {{ $option->name }}
                 </a>
             @endforeach
@@ -17,7 +17,7 @@
 
     <form method="GET" class="ch-booking-card ch-booking-bar ch-booking-bar-premium mb-5">
         @if ($property)
-            <input type="hidden" name="property_id" value="{{ $property->id }}">
+            <input type="hidden" name="property_id" value="{{ $property->getRouteKey() }}">
         @endif
         <div class="row g-3 align-items-end">
             <div class="col-md-3">

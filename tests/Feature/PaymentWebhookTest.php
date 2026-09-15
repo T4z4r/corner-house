@@ -205,7 +205,7 @@ class PaymentWebhookTest extends TestCase
             'provider_payment_id' => 'pi_test_unpaid_intent',
         ]);
 
-        $this->postJson(route('booking.checkout.confirm', $reservation->id), [
+        $this->postJson(route('booking.checkout.confirm', $reservation->getRouteKey()), [
             'payment_intent_id' => 'pi_test_unpaid_intent',
         ])->assertUnprocessable()->assertJsonStructure(['error']);
 

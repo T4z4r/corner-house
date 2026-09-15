@@ -37,9 +37,16 @@ class BookingController extends Controller
         $activeProperty = Property::query()->where('status', 'active')->orderByDesc('is_primary')->first();
 
         $requestedPropertyId = $request->query('property_id');
-        $property = $activeProperty && $requestedPropertyId
-            ? Property::query()->where('status', 'active')->find($requestedPropertyId)
-            : null;
+        $property = null;
+
+        if ($activeProperty && $requestedPropertyId) {
+            $decodedPropertyId = Property::decodeHashId((string) $requestedPropertyId);
+
+            if ($decodedPropertyId !== null) {
+                $property = Property::query()->where('status', 'active')->find($decodedPropertyId);
+            }
+        }
+
         $property ??= $activeProperty;
 
         $rooms = collect();
@@ -332,20 +339,20 @@ class BookingController extends Controller
             $payment = $this->payments->startCheckout(
                 $reservation,
                 route('booking.confirmation').'?session_id={CHECKOUT_SESSION_ID}',
-                route('booking.checkout', $reservation->id).'?cancelled=1',
+                route('booking.checkout', $reservation->getRouteKey()).'?cancelled=1',
             );
 
             $url = $this->payments->checkoutUrl($payment);
 
             $request->session()->put('booking.reservation_id', $reservation->id);
 
-            $checkoutRoute = route('booking.checkout', $reservation->id);
+            $checkoutRoute = route('booking.checkout', $reservation->getRouteKey());
 
             if ($request->expectsJson()) {
                 return response()->json(['url' => $checkoutRoute, 'stripe_url' => $url, 'status' => 'ok']);
             }
 
-            return redirect()->route('booking.checkout', $reservation->id);
+            return redirect()->route('booking.checkout', $reservation->getRouteKey());
         } catch (\Throwable $e) {
             Log::error('Direct booking Stripe payment error', [
                 'message' => $e->getMessage(),
@@ -382,7 +389,7 @@ class BookingController extends Controller
                 $payment = $this->payments->startCheckout(
                     $reservation,
                     route('booking.confirmation').'?session_id={CHECKOUT_SESSION_ID}',
-                    route('booking.checkout', $reservation->id).'?cancelled=1',
+                    route('booking.checkout', $reservation->getRouteKey()).'?cancelled=1',
                 );
                 $checkoutUrl = $this->payments->checkoutUrl($payment);
             } catch (\Throwable $e) {

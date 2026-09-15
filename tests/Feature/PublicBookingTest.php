@@ -320,9 +320,9 @@ class PublicBookingTest extends TestCase
 
         $reservation = Reservation::query()->first();
         $this->assertNotNull($reservation);
-        $response->assertRedirect(route('booking.checkout', $reservation->id));
+        $response->assertRedirect(route('booking.checkout', $reservation->getRouteKey()));
 
-        $this->get(route('booking.checkout', $reservation->id))
+        $this->get(route('booking.checkout', $reservation->getRouteKey()))
             ->assertOk()
             ->assertSee('Complete Your Payment')
             ->assertSee('The Garden Suite')
@@ -331,7 +331,7 @@ class PublicBookingTest extends TestCase
         $payment = Payment::query()->where('reservation_id', $reservation->id)->first();
         $this->assertNotNull($payment->provider_payment_id);
 
-        $this->postJson(route('booking.checkout.confirm', $reservation->id), [
+        $this->postJson(route('booking.checkout.confirm', $reservation->getRouteKey()), [
             'payment_intent_id' => $payment->provider_payment_id,
         ])->assertOk()->assertJson(['status' => 'ok']);
 

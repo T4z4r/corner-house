@@ -130,8 +130,8 @@ class LinkedPropertiesTest extends TestCase
     public function test_search_page_offers_both_listings_and_lists_the_selected_one(): void
     {
         [$main, $partner] = $this->linkedProperties();
-        Room::factory()->create(['property_id' => $main->id, 'name' => 'Main Suite', 'status' => 'active']);
-        Room::factory()->create(['property_id' => $partner->id, 'name' => 'Partner Suite', 'status' => 'active']);
+        $mainRoom = Room::factory()->create(['property_id' => $main->id, 'name' => 'Main Suite', 'status' => 'active']);
+        $partnerRoom = Room::factory()->create(['property_id' => $partner->id, 'name' => 'Partner Suite', 'status' => 'active']);
         [$checkIn, $checkOut] = $this->nights();
 
         $this->get(route('booking.search'))
@@ -140,14 +140,24 @@ class LinkedPropertiesTest extends TestCase
             ->assertSee($partner->name);
 
         $this->get(route('booking.search', [
-            'property_id' => $partner->id,
+            'property_id' => $partner->getRouteKey(),
             'check_in' => $checkIn->toDateString(),
             'check_out' => $checkOut->toDateString(),
             'guests' => 1,
         ]))
             ->assertOk()
-            ->assertSee('Partner Suite')
-            ->assertDontSee('Main Suite');
+            ->assertSee(route('booking.details', [
+                'room' => $partnerRoom,
+                'check_in' => $checkIn->toDateString(),
+                'check_out' => $checkOut->toDateString(),
+                'guests' => 1,
+            ]))
+            ->assertDontSee(route('booking.details', [
+                'room' => $mainRoom,
+                'check_in' => $checkIn->toDateString(),
+                'check_out' => $checkOut->toDateString(),
+                'guests' => 1,
+            ]));
     }
 
     public function test_price_rule_scoped_to_the_linked_property_applies_to_the_main_room(): void
@@ -252,7 +262,7 @@ class LinkedPropertiesTest extends TestCase
             ->assertOk()
             ->assertSee('Also booking via '.$partner->name, false)
             ->assertSee('Listed here too for returning guests.')
-            ->assertSee(route('booking.search', ['property_id' => $partner->id]), false);
+            ->assertSee(route('booking.search', ['property_id' => $partner->getRouteKey()]), false);
     }
 
     public function test_admin_calendar_events_merge_reservations_from_the_linked_property(): void

@@ -36,7 +36,7 @@
         <div class="card-body">
             @forelse ($images as $image)
                 <div class="d-flex align-items-start gap-3 p-3 mb-3 border rounded gallery-item position-relative"
-                     data-id="{{ $image->id }}">
+                     data-id="{{ $image->getRouteKey() }}">
                     {{-- Drag handle --}}
                     <div class="text-muted fs-5 cursor-grab gallery-drag-handle" title="Drag to reorder">
                         <i class="bi bi-grip-vertical"></i>
@@ -62,10 +62,10 @@
                         <div class="d-flex align-items-center gap-3">
                             <div class="form-check form-switch">
                                 <input class="form-check-input gallery-active-toggle" type="checkbox"
-                                       data-id="{{ $image->id }}" {{ $image->is_active ? 'checked' : '' }}>
+                                       data-id="{{ $image->getRouteKey() }}" {{ $image->is_active ? 'checked' : '' }}>
                                 <label class="form-check-label small">Visible on website</label>
                             </div>
-                            <button class="btn btn-sm btn-outline-primary gallery-save-btn" data-id="{{ $image->id }}">
+                            <button class="btn btn-sm btn-outline-primary gallery-save-btn" data-id="{{ $image->getRouteKey() }}">
                                 <i class="bi bi-check-lg"></i> Save
                             </button>
                         </div>

@@ -41,6 +41,8 @@ return [
 
     'debug' => (bool) env('APP_DEBUG', false),
 
+    'allow_public_registration' => env('APP_ALLOW_PUBLIC_REGISTRATION', false),
+
     /*
     |--------------------------------------------------------------------------
     | Application URL

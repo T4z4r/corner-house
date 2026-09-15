@@ -51,22 +51,25 @@ class AuthTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_user_can_register(): void
+    public function test_public_registration_is_disabled_by_default(): void
     {
+        $this->get(route('register'))->assertForbidden();
+
         $this->post(route('register'), [
             'name' => 'Jane Doe',
             'email' => 'jane@example.com',
             'password' => 'P@ssword123!',
             'password_confirmation' => 'P@ssword123!',
-        ])->assertRedirect(route('admin.dashboard'));
+        ])->assertForbidden();
 
-        $this->assertDatabaseHas('users', ['email' => 'jane@example.com']);
-        $this->assertAuthenticated();
+        $this->assertDatabaseMissing('users', ['email' => 'jane@example.com']);
+        $this->assertGuest();
     }
 
     public function test_registration_fails_if_password_does_not_meet_strong_policy(): void
     {
-        // Missing symbol, uppercase, etc.
+        config()->set('app.allow_public_registration', true);
+
         $this->post(route('register'), [
             'name' => 'Jane Doe',
             'email' => 'jane@example.com',
@@ -75,5 +78,24 @@ class AuthTest extends TestCase
         ])->assertSessionHasErrors('password');
 
         $this->assertDatabaseMissing('users', ['email' => 'jane@example.com']);
+    }
+
+    public function test_login_is_rate_limited_after_repeated_failures(): void
+    {
+        User::factory()->create(['email' => 'john@example.com', 'password' => bcrypt('secret123')]);
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->from(route('login'))->post(route('login'), [
+                'email' => 'john@example.com',
+                'password' => 'wrong-password',
+            ]);
+        }
+
+        $this->from(route('login'))->post(route('login'), [
+            'email' => 'john@example.com',
+            'password' => 'wrong-password',
+        ])->assertTooManyRequests();
+
+        $this->assertGuest();
     }
 }

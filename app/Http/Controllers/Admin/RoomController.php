@@ -125,7 +125,7 @@ class RoomController extends Controller
         Storage::disk('public')->delete($image->path);
         $image->delete();
 
-        return redirect()->route('admin.rooms.edit', $image->room_id)->with('status', 'Image removed.');
+        return redirect()->route('admin.rooms.edit', $image->room)->with('status', 'Image removed.');
     }
 
     public function uploadImage(Request $request): JsonResponse

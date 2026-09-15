@@ -8,7 +8,6 @@ use App\Services\Audit\AuditLogger;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
@@ -19,11 +18,15 @@ class RegisterController extends Controller
 
     public function showRegisterForm(): View
     {
+        abort_unless(config('app.allow_public_registration', false), 403, 'Public registration is disabled.');
+
         return view('auth.register');
     }
 
     public function register(Request $request): RedirectResponse
     {
+        abort_unless(config('app.allow_public_registration', false), 403, 'Public registration is disabled.');
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
@@ -36,13 +39,8 @@ class RegisterController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        $user->assignRole('Support Staff');
-
         event(new Registered($user));
 
-        Auth::login($user);
-        $this->auditLogger->logLogin($user);
-
-        return redirect()->route('admin.dashboard');
+        return redirect()->route('login')->with('status', 'Registration successful. Please sign in.');
     }
 }

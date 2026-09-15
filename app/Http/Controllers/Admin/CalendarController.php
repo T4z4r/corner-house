@@ -189,7 +189,7 @@ class CalendarController extends Controller
                 'className' => 'fc-event--block fc-event--block-rates',
                 'extendedProps' => [
                     'type' => 'rate',
-                    'override_id' => $override->id,
+                    'override_id' => $override->getRouteKey(),
                     'rate' => (float) $override->rate,
                     'minimum_stay' => $override->minimum_stay,
                     'room_id' => $override->room_id,
@@ -211,7 +211,7 @@ class CalendarController extends Controller
                 'className' => $this->blockCalendarClass($block),
                 'extendedProps' => [
                     'type' => 'block',
-                    'block_id' => $block->id,
+                    'block_id' => $block->getRouteKey(),
                     'block_type' => $block->type,
                     'block_title' => $block->title,
                     'block_value' => $block->value,

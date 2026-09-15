@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasHashId;
 use Database\Factories\EnquiryFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 class Enquiry extends Model
 {
     /** @use HasFactory<EnquiryFactory> */
-    use HasFactory;
+    use HasFactory, HasHashId;
 
     public const TYPE_BOOKING = 'booking';
 

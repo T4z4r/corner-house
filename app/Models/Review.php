@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasHashId;
 use Database\Factories\ReviewFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class Review extends Model
 {
     /** @use HasFactory<ReviewFactory> */
-    use HasFactory;
+    use HasFactory, HasHashId;
 
     public const STATUS_APPROVED = 'approved';
 

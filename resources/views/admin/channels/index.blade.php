@@ -81,14 +81,14 @@
                                     <div class="col-8"><input name="invite_code" class="form-control form-control-sm" placeholder="Beds24 invite code" required></div>
                                     <div class="col-4"><button class="btn btn-sm btn-outline-primary w-100">Exchange code</button></div>
                                 </form>
-                                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" data-inspect-token="{{ $account->id }}">Inspect token</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" data-inspect-token="{{ $account->getRouteKey() }}">Inspect token</button>
                                 @if (! empty($account->settings['scopes']))
                                     <div class="small text-muted mt-1">Scopes: {{ implode(', ', $account->settings['scopes']) }}</div>
                                 @endif
                                 <div class="d-flex justify-content-end mt-2">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary d-none" data-copy-target="tokenDetails-{{ $account->id }}">Copy</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary d-none" data-copy-target="tokenDetails-{{ $account->getRouteKey() }}">Copy</button>
                                 </div>
-                                <pre class="small bg-light p-2 rounded mt-1 d-none" id="tokenDetails-{{ $account->id }}"></pre>
+                                <pre class="small bg-light p-2 rounded mt-1 d-none" id="tokenDetails-{{ $account->getRouteKey() }}"></pre>
                             @endif
                         @endcan
                     </div>
@@ -172,7 +172,7 @@
                         <div class="col-md-3">
                             <select name="account_id" id="beds24Account" class="form-select" required>
                                 @foreach ($accounts as $account)
-                                    <option value="{{ $account->id }}">{{ $account->name }}</option>
+                                    <option value="{{ $account->getRouteKey() }}">{{ $account->name }}</option>
                                 @endforeach
                             </select>
                         </div>
