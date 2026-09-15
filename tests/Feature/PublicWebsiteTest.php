@@ -255,6 +255,18 @@ class PublicWebsiteTest extends TestCase
             ->assertSee('hero-garden.jpg', false);
     }
 
+    public function test_home_page_video_placeholder_shows_thumbnail_when_no_video_uploaded(): void
+    {
+        Property::factory()->create(['name' => 'Corner House']);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('video-placeholder', false)
+            ->assertSee('images/front_enhanced.png', false)
+            ->assertSee('class="play"', false)
+            ->assertDontSee('Property video tour goes here');
+    }
+
     public function test_home_page_spirits_section_has_reference_structure(): void
     {
         Property::factory()->create(['name' => 'Corner House']);

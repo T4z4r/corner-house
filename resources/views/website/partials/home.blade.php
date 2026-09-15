@@ -66,8 +66,8 @@
                     @endif
                 @else
                     <div class="video-placeholder">
+                        <img src="{{ asset('images/front_enhanced.png') }}" alt="Corner House video tour" loading="lazy">
                         <span class="play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
-                        <p>Property video tour goes here. Add a YouTube or Vimeo embed, or a self-hosted MP4, in the website settings.</p>
                     </div>
                 @endif
             </div>
