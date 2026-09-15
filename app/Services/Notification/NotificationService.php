@@ -94,6 +94,57 @@ class NotificationService
     }
 
     /**
+     * Manually deliver a template for testing.
+     *
+     * Unlike sendForEvent(), this ignores the per-event enabled settings and
+     * the per-reservation idempotency guard so the same template can be
+     * exercised repeatedly. Tokens are rendered against a real reservation
+     * when provided, otherwise against sample placeholder values.
+     */
+    public function sendTest(CommunicationTemplate $template, string $recipient, ?Reservation $reservation = null): Communication
+    {
+        $replacements = $reservation
+            ? array_merge($this->replacements($reservation), $this->testReplacements())
+            : $this->testReplacements();
+
+        $communication = Communication::create([
+            'guest_id' => $reservation?->guest_id,
+            'reservation_id' => $reservation?->id,
+            'communication_template_id' => $template->id,
+            'channel' => $template->channel,
+            'direction' => 'outbound',
+            'recipient' => $recipient,
+            'subject' => $this->interpolate($template->subject ?? '', $replacements),
+            'body' => $this->interpolate($template->body, $replacements),
+            'status' => 'pending',
+            'metadata' => ['source' => 'test'],
+        ]);
+
+        return $this->mailer->send($communication);
+    }
+
+    /**
+     * Sample values for every token a template could use, regardless of event.
+     *
+     * @return array<string, string>
+     */
+    private function testReplacements(): array
+    {
+        return [
+            '{{guest_name}}' => 'Sample Guest',
+            '{{reference}}' => 'CH-000001',
+            '{{check_in}}' => 'Fri 01 Jan 2027',
+            '{{check_out}}' => 'Mon 04 Jan 2027',
+            '{{nights}}' => '3',
+            '{{room}}' => 'Lion',
+            '{{property}}' => 'Corner House',
+            '{{total}}' => '2,850.00',
+            '{{refund_amount}}' => '0.00',
+            '{{reason_line}}' => '',
+        ];
+    }
+
+    /**
      * @return array<string, string>
      */
     private function replacements(Reservation $reservation): array

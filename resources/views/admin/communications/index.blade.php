@@ -48,6 +48,9 @@
                         </div>
                         <div class="d-flex gap-1">
                             <button class="btn btn-outline-secondary btn-sm" title="View" data-bs-toggle="modal" data-bs-target="#viewTemplate{{ $template->id }}"><i class="bi bi-eye"></i></button>
+                            @can('communications.send')
+                                <button class="btn btn-outline-primary btn-sm" title="Send a test email" data-bs-toggle="modal" data-bs-target="#testTemplate{{ $template->id }}"><i class="bi bi-send"></i> Test</button>
+                            @endcan
                             @can('communications.manage_templates')
                                 <button class="btn btn-outline-secondary btn-sm" title="Edit" data-bs-toggle="modal" data-bs-target="#editTemplate{{ $template->id }}"><i class="bi bi-pencil"></i></button>
                                 <button class="btn btn-outline-danger btn-sm" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteTemplate{{ $template->id }}"><i class="bi bi-trash"></i></button>

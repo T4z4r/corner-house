@@ -131,6 +131,27 @@ class CommunicationController extends Controller
         );
     }
 
+    public function testTemplate(Request $request, CommunicationTemplate $template): RedirectResponse
+    {
+        $data = $request->validate([
+            'recipient' => ['required', 'email'],
+            'reservation_id' => ['nullable', 'exists:reservations,id'],
+        ]);
+
+        $communication = $this->notifications->sendTest(
+            $template,
+            $data['recipient'],
+            $data['reservation_id'] ? \App\Models\Reservation::query()->find($data['reservation_id']) : null,
+        );
+
+        $this->auditLogger->log('communications.template_tested', 'communications', 'template', (string) $template->id);
+
+        return back()->with(
+            'status',
+            $communication->status === 'sent' ? "Test '{$template->name}' sent." : "Test '{$template->name}' failed — check the error below.",
+        );
+    }
+
     public function updateTemplate(Request $request, CommunicationTemplate $template): RedirectResponse
     {
         $data = $request->validate([
