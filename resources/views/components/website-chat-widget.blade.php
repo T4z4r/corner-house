@@ -29,12 +29,12 @@
             <div class="chat-msg ai">Ask about availability, pricing, amenities, or house rules.</div>
         </div>
 
-        <form class="chat-form" data-chat-form data-mode-panel="ask">
+        <form class="chat-form" data-chat-form data-mode-panel="ask" data-skip-loading-state>
             <input type="text" data-chat-input placeholder="Ask a question…" maxlength="2000" autocomplete="off" required>
             <button class="btn btn-primary" type="submit">Send</button>
         </form>
 
-        <form class="chat-form chat-message-form" data-message-form data-mode-panel="message" hidden>
+        <form class="chat-form chat-message-form" data-message-form data-mode-panel="message" hidden data-skip-loading-state>
             <input type="text" data-msg-name placeholder="Your name" required>
             <input type="email" data-msg-email placeholder="Your email" required>
             <textarea data-msg-body rows="3" placeholder="Your message" maxlength="5000" required></textarea>

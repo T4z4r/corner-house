@@ -365,7 +365,7 @@
     @can('calendar.manage')
         <div class="modal fade" id="blockModal" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
-                <form id="blockForm" class="modal-content">
+                <form id="blockForm" class="modal-content" data-skip-loading-state>
                     <div class="modal-header">
                         <h5 class="modal-title" id="blockModalTitle">Add calendar block</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -444,7 +444,7 @@
 
         <div class="modal fade" id="priceModal" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
-                <form id="priceForm" class="modal-content">
+                <form id="priceForm" class="modal-content" data-skip-loading-state>
                     <div class="modal-header">
                         <h5 class="modal-title" id="priceModalTitle">Set price on calendar</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

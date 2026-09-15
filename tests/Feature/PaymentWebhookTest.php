@@ -3,12 +3,17 @@
 namespace Tests\Feature;
 
 use App\Jobs\PushBeds24BookingJob;
+use App\Mail\GuestCommunicationMail;
 use App\Models\Payment;
 use App\Models\Reservation;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\Payment\PaymentGatewayInterface;
+use Database\Seeders\CommunicationTemplateSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
+use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -243,5 +248,72 @@ class PaymentWebhookTest extends TestCase
 
         $this->assertDatabaseHas('refunds', ['payment_id' => $payment->id, 'status' => 'succeeded']);
         $this->assertDatabaseHas('payments', ['id' => $payment->id, 'status' => 'refunded']);
+    }
+
+    public function test_refunding_a_paid_payment_sends_a_refund_email_to_the_guest(): void
+    {
+        $this->seed([RoleAndPermissionSeeder::class, SettingsSeeder::class, CommunicationTemplateSeeder::class]);
+        Mail::fake();
+
+        $user = User::factory()->create();
+        $user->assignRole(Role::findByName('Finance Manager'));
+
+        $reservation = Reservation::factory()->create([
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+            'check_out' => now()->addDays(12)->toDateString(),
+        ]);
+        $payment = Payment::factory()->paid()->create([
+            'reservation_id' => $reservation->id,
+            'amount' => 150,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('admin.payments.refund', $payment), [
+                'amount' => 150,
+                'reason' => 'Guest cancelled',
+            ])->assertRedirect();
+
+        Mail::assertSent(GuestCommunicationMail::class, function (GuestCommunicationMail $mail) use ($reservation): bool {
+            return $mail->hasTo($reservation->guest->email)
+                && str_contains($mail->emailSubject, $reservation->reference)
+                && str_contains($mail->emailBody, '£150.00')
+                && str_contains($mail->emailBody, 'Reason: Guest cancelled');
+        });
+
+        $this->assertDatabaseHas('communications', [
+            'reservation_id' => $reservation->id,
+            'recipient' => $reservation->guest->email,
+            'status' => 'sent',
+        ]);
+    }
+
+    public function test_refund_email_can_be_disabled_by_setting(): void
+    {
+        $this->seed([RoleAndPermissionSeeder::class, SettingsSeeder::class, CommunicationTemplateSeeder::class]);
+        Mail::fake();
+
+        Setting::query()->where('key', 'email_payment_refund_enabled')->firstOrFail()->update(['value' => '0']);
+
+        $user = User::factory()->create();
+        $user->assignRole(Role::findByName('Finance Manager'));
+
+        $reservation = Reservation::factory()->create([
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+            'check_out' => now()->addDays(12)->toDateString(),
+        ]);
+        $payment = Payment::factory()->paid()->create([
+            'reservation_id' => $reservation->id,
+            'amount' => 150,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('admin.payments.refund', $payment), [
+                'amount' => 150,
+            ])->assertRedirect();
+
+        Mail::assertNothingSent();
+        $this->assertDatabaseCount('communications', 0);
     }
 }

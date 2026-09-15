@@ -86,7 +86,10 @@
         if (message === null) return;
         e.preventDefault();
         window.sweetConfirm(message).then(function (confirmed) {
-            if (confirmed) form.submit();
+            if (confirmed) {
+                window.setFormSubmitting?.(form, e.submitter);
+                form.submit();
+            }
         });
     });
 </script>

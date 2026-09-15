@@ -370,7 +370,7 @@
     <div class="row g-5">
         <!-- Main Form Column -->
         <div class="col-lg-7">
-            <form method="POST" action="{{ route('booking.pay') }}" id="bookingForm">
+            <form method="POST" action="{{ route('booking.pay') }}" id="bookingForm" data-skip-loading-state>
                 @csrf
                 <input type="hidden" name="room_id" value="{{ $room->id }}">
                 <input type="hidden" name="check_in" value="{{ $checkIn->toDateString() }}">

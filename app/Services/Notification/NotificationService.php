@@ -13,7 +13,7 @@ class NotificationService
 {
     public function __construct(private readonly MailDispatchService $mailer) {}
 
-    public function sendForEvent(string $event, Reservation $reservation): ?Communication
+    public function sendForEvent(string $event, Reservation $reservation, array $extraReplacements = []): ?Communication
     {
         if (! $this->shouldSendEvent($event)) {
             Log::info('Email notification disabled for event', ['event' => $event]);
@@ -58,7 +58,7 @@ class NotificationService
             return null;
         }
 
-        $replacements = $this->replacements($reservation);
+        $replacements = array_merge($this->replacements($reservation), $extraReplacements);
 
         $communication = Communication::create([
             'guest_id' => $reservation->guest_id,
@@ -106,6 +106,7 @@ class NotificationService
             '{{room}}' => $reservation->room?->name ?? '',
             '{{property}}' => $reservation->property?->name ?? '',
             '{{total}}' => number_format((float) $reservation->total_amount, 2),
+            '{{reason_line}}' => '',
         ];
     }
 
@@ -126,6 +127,7 @@ class NotificationService
         return match ($event) {
             'booking_confirmation' => (bool) Setting::getValue('email_booking_confirmation_enabled', true),
             'payment_confirmation' => (bool) Setting::getValue('email_payment_confirmation_enabled', true),
+            'payment_refund' => (bool) Setting::getValue('email_payment_refund_enabled', true),
             'pre_arrival' => (bool) Setting::getValue('email_pre_arrival_enabled', true),
             'check_in' => (bool) Setting::getValue('email_check_in_enabled', true),
             'check_out' => (bool) Setting::getValue('email_check_out_enabled', true),

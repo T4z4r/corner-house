@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initChatWidget();
     initNotificationWidget();
     initDeviceSwitcher();
+    initFormLoadingStates();
     try {
         $('select.form-select:not(.no-select2)').each(function () {
             if (!$(this).data('select2')) {
@@ -131,6 +132,74 @@ document.addEventListener('DOMContentLoaded', function () {
             setTimeout(finish, 1500);
         }
     })();
+
+    function findSubmitButton(form, submitter) {
+        if (submitter && (submitter.tagName === 'BUTTON' || submitter.tagName === 'INPUT') && submitter.type === 'submit') {
+            return submitter;
+        }
+        return Array.from(form.elements).find(function (el) {
+            return (el.tagName === 'BUTTON' || el.tagName === 'INPUT') && el.type === 'submit';
+        });
+    }
+
+    // Disables the triggering submit button and shows a spinner; used directly by
+    // the data-confirm handler too, since confirmed submits bypass the submit event.
+    function setFormSubmitting(form, submitter) {
+        const button = findSubmitButton(form, submitter);
+        if (!button || button.disabled) {
+            return;
+        }
+
+        button.disabled = true;
+        button.classList.add('disabled');
+
+        if (button.tagName === 'INPUT') {
+            button.dataset.chOriginalValue = button.value;
+            button.value = 'Please wait…';
+            return;
+        }
+
+        button.dataset.chOriginalHtml = button.innerHTML;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' + button.innerHTML;
+    }
+    window.setFormSubmitting = setFormSubmitting;
+
+    function initFormLoadingStates() {
+        document.addEventListener('submit', function (event) {
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement)) {
+                return;
+            }
+            // data-confirm forms submit programmatically after the dialog resolves,
+            // which never fires this event, so they set their own loading state.
+            if (form.hasAttribute('data-skip-loading-state') || form.hasAttribute('data-confirm')) {
+                return;
+            }
+            if (typeof form.checkValidity === 'function' && !form.checkValidity()) {
+                return;
+            }
+            setFormSubmitting(form, event.submitter);
+        });
+
+        // Restore buttons left disabled when a page is served from the back/forward cache.
+        window.addEventListener('pageshow', function (event) {
+            if (!event.persisted) {
+                return;
+            }
+            document.querySelectorAll('[data-ch-original-html], [data-ch-original-value]').forEach(function (button) {
+                button.disabled = false;
+                button.classList.remove('disabled');
+                if (button.dataset.chOriginalHtml !== undefined) {
+                    button.innerHTML = button.dataset.chOriginalHtml;
+                    delete button.dataset.chOriginalHtml;
+                }
+                if (button.dataset.chOriginalValue !== undefined) {
+                    button.value = button.dataset.chOriginalValue;
+                    delete button.dataset.chOriginalValue;
+                }
+            });
+        });
+    }
 
     function initNotificationWidget() {
         const widget = document.querySelector('[data-notifications-widget]');

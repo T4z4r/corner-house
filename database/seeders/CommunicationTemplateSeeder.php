@@ -76,6 +76,7 @@ BODY;
         $templates = [
             ['booking_confirmation', 'Booking confirmation', 'Welcome to {{property}} - your booking {{reference}}', $bookingConfirmationBody],
             ['payment_confirmation', 'Payment confirmation', 'Payment received for {{reference}}', 'Hello {{guest_name}}, we have received payment of £{{total}} for booking {{reference}}.'],
+            ['payment_refund', 'Payment refund', 'Refund issued for {{reference}}', 'Hello {{guest_name}}, we have issued a refund of £{{refund_amount}} for booking {{reference}}.{{reason_line}}If this refund appears in error, please contact us.'],
             ['pre_arrival', 'Pre-arrival', 'Your stay at {{property}} starts tomorrow', 'Hello {{guest_name}}, we look forward to welcoming you tomorrow. Check-in is {{check_in}} for {{room}}.'],
             ['check_in', 'Check-in instructions', 'Check-in details for {{reference}}', 'Hello {{guest_name}}, today is check-in day for {{room}}. We will be ready for your arrival.'],
             ['check_out', 'Check-out', 'Check-out for {{reference}}', 'Hello {{guest_name}}, check-out is today. We hope you enjoyed your stay.'],

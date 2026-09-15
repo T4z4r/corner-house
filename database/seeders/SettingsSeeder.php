@@ -48,6 +48,7 @@ class SettingsSeeder extends Seeder
             ['group' => 'notifications', 'key' => 'email_notifications_enabled', 'value' => '1', 'label' => 'Enable email notifications', 'cast' => 'boolean'],
             ['group' => 'notifications', 'key' => 'email_booking_confirmation_enabled', 'value' => '1', 'label' => 'Booking confirmation emails', 'cast' => 'boolean'],
             ['group' => 'notifications', 'key' => 'email_payment_confirmation_enabled', 'value' => '1', 'label' => 'Payment confirmation emails', 'cast' => 'boolean'],
+            ['group' => 'notifications', 'key' => 'email_payment_refund_enabled', 'value' => '1', 'label' => 'Payment refund emails', 'cast' => 'boolean'],
             ['group' => 'notifications', 'key' => 'email_pre_arrival_enabled', 'value' => '1', 'label' => 'Pre-arrival emails', 'cast' => 'boolean'],
             ['group' => 'notifications', 'key' => 'email_check_in_enabled', 'value' => '1', 'label' => 'Check-in emails', 'cast' => 'boolean'],
             ['group' => 'notifications', 'key' => 'email_check_out_enabled', 'value' => '1', 'label' => 'Check-out emails', 'cast' => 'boolean'],

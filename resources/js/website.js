@@ -270,6 +270,53 @@ if (document.getElementById("months")) {
   renderMonths();
 }
 
+/* ---------- Generic form loading states (disable + spinner on submit) ---------- */
+(function initFormLoadingStates(){
+  function findSubmitButton(form, submitter){
+    if(submitter && (submitter.tagName === "BUTTON" || submitter.tagName === "INPUT") && submitter.type === "submit"){
+      return submitter;
+    }
+    return Array.from(form.elements).find(el => (el.tagName === "BUTTON" || el.tagName === "INPUT") && el.type === "submit");
+  }
+
+  document.addEventListener("submit", function(event){
+    const form = event.target;
+    if(!(form instanceof HTMLFormElement)) return;
+    if(form.hasAttribute("data-skip-loading-state")) return;
+    if(typeof form.checkValidity === "function" && !form.checkValidity()) return;
+
+    const button = findSubmitButton(form, event.submitter);
+    if(!button || button.disabled) return;
+
+    button.disabled = true;
+    button.classList.add("disabled");
+    if(button.tagName === "INPUT"){
+      button.dataset.chOriginalValue = button.value;
+      button.value = "Please wait…";
+    } else {
+      button.dataset.chOriginalHtml = button.innerHTML;
+      button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' + button.innerHTML;
+    }
+  });
+
+  // Restore buttons left disabled when a page is served from the back/forward cache.
+  window.addEventListener("pageshow", function(event){
+    if(!event.persisted) return;
+    document.querySelectorAll("[data-ch-original-html], [data-ch-original-value]").forEach(function(button){
+      button.disabled = false;
+      button.classList.remove("disabled");
+      if(button.dataset.chOriginalHtml !== undefined){
+        button.innerHTML = button.dataset.chOriginalHtml;
+        delete button.dataset.chOriginalHtml;
+      }
+      if(button.dataset.chOriginalValue !== undefined){
+        button.value = button.dataset.chOriginalValue;
+        delete button.dataset.chOriginalValue;
+      }
+    });
+  });
+})();
+
 /* ---------- Floating chat widget ---------- */
 (function initChat(){
   const root = document.querySelector("[data-chat-widget]");

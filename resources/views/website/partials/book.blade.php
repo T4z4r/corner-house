@@ -75,7 +75,7 @@
                     <p class="hint" id="q-hint">Whole-house booking for up to 12 adults and 2 children. Instant online payment via Stripe Checkout.</p>
                     <p class="err" id="q-err" hidden></p>
 
-                    <form class="enquiry" id="enquiry">
+                    <form class="enquiry" id="enquiry" data-skip-loading-state>
                         <div class="row">
                             <label>Name<input name="name" required autocomplete="name"></label>
                             <label>Email<input name="email" type="email" required autocomplete="email"></label>

@@ -3,6 +3,7 @@
 namespace App\Services\Payment;
 
 use App\Jobs\PushBeds24BookingJob;
+use App\Jobs\SendPaymentRefundEmailJob;
 use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\Reservation;
@@ -332,6 +333,8 @@ class PaymentService
 
         $this->systemNotifications->paymentRefunded($payment->fresh(['reservation']), $refund, $userId);
         $this->auditLogger->log('payments.refunded', 'payments', 'payment', (string) $payment->id);
+
+        SendPaymentRefundEmailJob::dispatch($refund->id);
 
         return $refund;
     }

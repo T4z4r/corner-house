@@ -653,7 +653,7 @@
                     </div>
                     <div class="card-body">
                         @can('channels.configure')
-                            <form id="beds24TestForm" class="row g-2">
+                            <form id="beds24TestForm" class="row g-2" data-skip-loading-state>
                                 @csrf
                                 <div class="col-md-3">
                                     <select name="account_id" id="beds24Account" class="form-select" required>

@@ -22,12 +22,12 @@
         <div class="ch-chat-body" data-chat-body>
             <div class="ch-chat-msg ai">Ask about availability, pricing, amenities, or house rules.</div>
         </div>
-        <form class="ch-chat-form" data-chat-form>
+        <form class="ch-chat-form" data-chat-form data-skip-loading-state>
             <input type="text" class="form-control" data-chat-input placeholder="Ask a question..." maxlength="2000" required>
             <button class="btn btn-ch-primary" type="submit">Send</button>
         </form>
         @if ($showMessage)
-            <form class="ch-chat-form d-none flex-column align-items-stretch gap-2 p-2" data-message-form>
+            <form class="ch-chat-form d-none flex-column align-items-stretch gap-2 p-2" data-message-form data-skip-loading-state>
                 <input type="text" class="form-control" data-msg-name placeholder="Your name" required>
                 <input type="email" class="form-control" data-msg-email placeholder="Your email" required>
                 <textarea class="form-control" data-msg-body rows="3" placeholder="Your message" maxlength="5000" required></textarea>

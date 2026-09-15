@@ -560,7 +560,7 @@
                 </div>
 
                 @if ($paymentIntentSecret)
-                    <form id="directCardForm" method="POST" action="{{ route('booking.checkout.confirm', $reservation) }}" novalidate>
+                    <form id="directCardForm" method="POST" action="{{ route('booking.checkout.confirm', $reservation) }}" novalidate data-skip-loading-state>
                         @csrf
 
                         <div class="ch-form-group">
