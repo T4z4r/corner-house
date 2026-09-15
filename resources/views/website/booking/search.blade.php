@@ -2,7 +2,7 @@
 @section('title', 'Availability')
 @section('description', 'Check availability and rates for Corner House, Braunston, and book your stay direct.')
 @section('content')
-<section class="page" id="page-book" data-page="book">
+<section>
     <div class="section" style="padding-bottom:0">
         <div class="wrap">
             <p class="kicker">Bookings</p>
