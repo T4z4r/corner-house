@@ -505,15 +505,14 @@
         const priceDestroyTemplate = @json(route('admin.calendar.prices.destroy', ['override' => '__ID__']));
         const canManagePrices = @json(auth()->user()?->can('calendar.manage'));
         const roomsData = @json($allRooms->map(fn($r) => ['id' => $r->id, 'name' => $r->name, 'property_id' => $r->property_id]));
+        const linkedPropertyIds = @json($linkedPropertyIds);
         const today = startOfDay(new Date());
         let visibleMonth = startOfMonth(parseMonthKey(initialMonth));
         let selectedDate = isSameMonth(today, visibleMonth) ? today : new Date(visibleMonth);
         let events = [];
         let activePropertyId = propertyId || '';
         const selectedRoom = selectedRoomId || '';
-        const selectedRoomBelongsToProperty = selectedRoom !== '' && roomsData.some((room) => (
-            String(room.property_id) === String(activePropertyId) && String(room.id) === String(selectedRoom)
-        ));
+        const selectedRoomBelongsToProperty = selectedRoom !== '' && roomMatchesPropertyScope(selectedRoom, activePropertyId);
         let activeRoomId = selectedRoomBelongsToProperty ? selectedRoom : '';
         let editingBlockId = null;
         let priceData = { rooms: {}, prices: {} };
@@ -566,6 +565,16 @@
 
         function dateKey(date) {
             return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        function propertyScopeIds(propertyId) {
+            return (linkedPropertyIds[String(propertyId)] || [propertyId]).map(String);
+        }
+
+        function roomMatchesPropertyScope(roomId, propertyId) {
+            return roomsData.some((room) => (
+                propertyScopeIds(propertyId).includes(String(room.property_id)) && String(room.id) === String(roomId)
+            ));
         }
 
         function isSameMonth(a, b) {
@@ -976,8 +985,8 @@
         }
 
         function populateRoomOptions(selectEl, propertyId) {
-            const pid = propertyId ? String(propertyId) : '';
-            const matchingRooms = roomsData.filter((room) => pid === '' || String(room.property_id) === pid);
+            const propertyIds = propertyId ? propertyScopeIds(propertyId) : [];
+            const matchingRooms = roomsData.filter((room) => propertyIds.length === 0 || propertyIds.includes(String(room.property_id)));
 
             selectEl.innerHTML = '<option value="">All rooms</option>';
             matchingRooms.forEach((room) => {
@@ -1003,9 +1012,7 @@
             const nextRoomId = roomFilter ? roomFilter.value : '';
 
             activePropertyId = nextPropertyId;
-            const roomStillApplies = roomsData.some((room) => (
-                String(room.property_id) === String(nextPropertyId) && String(room.id) === String(nextRoomId)
-            ));
+            const roomStillApplies = roomMatchesPropertyScope(nextRoomId, nextPropertyId);
             activeRoomId = roomStillApplies ? nextRoomId : '';
 
             syncUrl();

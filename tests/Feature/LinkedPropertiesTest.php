@@ -307,4 +307,20 @@ class LinkedPropertiesTest extends TestCase
             ->assertJsonFragment(['reference' => 'CH-LINK01'])
             ->assertJsonFragment(['property_name' => $partner->name]);
     }
+
+    public function test_admin_calendar_includes_linked_property_rooms_in_the_rate_selector(): void
+    {
+        [$main, $partner] = $this->linkedProperties();
+        Room::factory()->create(['property_id' => $main->id, 'name' => 'Main Suite', 'status' => 'active']);
+        Room::factory()->create(['property_id' => $partner->id, 'name' => 'Partner Suite', 'status' => 'active']);
+        $user = User::factory()->create();
+        $user->assignRole(Role::findByName('Super Admin'));
+
+        $this->actingAs($user)
+            ->withConfirmedPassword()
+            ->get(route('admin.calendar', ['property_id' => $main->id]))
+            ->assertOk()
+            ->assertSee('Main Suite')
+            ->assertSee('Partner Suite');
+    }
 }

@@ -53,14 +53,24 @@ class CalendarController extends Controller
 
     public function index(Request $request): View
     {
-        $properties = Property::query()->where('status', 'active')->get();
+        $properties = Property::query()
+            ->where('status', 'active')
+            ->orderByDesc('is_primary')
+            ->orderBy('name')
+            ->get();
 
         $selectedProperty = $request->query('property_id')
             ? Property::find($request->query('property_id'))
             : $properties->first();
 
+        $selectedPropertyIds = $selectedProperty?->linkedPropertyIds() ?? [];
         $rooms = $selectedProperty
-            ? Room::where('property_id', $selectedProperty->id)->get()
+            ? Room::query()
+                ->whereIn('property_id', $selectedPropertyIds)
+                ->where('status', 'active')
+                ->orderBy('property_id')
+                ->orderBy('name')
+                ->get()
             : collect();
 
         $selectedRoomId = $request->query('room_id');
@@ -70,10 +80,14 @@ class CalendarController extends Controller
             'selectedProperty' => $selectedProperty,
             'rooms' => $rooms,
             'allRooms' => Room::query()
+                ->where('status', 'active')
                 ->whereHas('property', fn ($q) => $q->where('status', 'active'))
                 ->orderBy('property_id')
                 ->orderBy('name')
                 ->get(['id', 'name', 'property_id']),
+            'linkedPropertyIds' => $properties->mapWithKeys(
+                fn (Property $property): array => [(string) $property->id => $property->linkedPropertyIds()],
+            ),
             'selectedRoomId' => $selectedRoomId,
             'blockTypes' => $this->blockTypes(),
             'initialMonth' => $request->query('month', now()->format('Y-m')),
