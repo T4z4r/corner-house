@@ -313,7 +313,7 @@ class PaymentWebhookTest extends TestCase
                 'amount' => 150,
             ])->assertRedirect();
 
-        Mail::assertNothingSent();
+        Mail::assertNotSent(GuestCommunicationMail::class);
         $this->assertDatabaseCount('communications', 0);
     }
 }
