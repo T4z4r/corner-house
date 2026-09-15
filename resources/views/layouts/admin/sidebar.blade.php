@@ -1,6 +1,7 @@
 <aside class="ch-sidebar d-none d-md-flex flex-column flex-shrink-0 p-3" style="width: 260px;">
     <a href="{{ route('admin.dashboard') }}" class="ch-brand d-flex align-items-center mb-3 mb-md-0 me-md-auto text-decoration-none">
-        <span class="fs-4"><i class="bi bi-house-heart-fill brand-mark"></i><span class="brand-name">{{ $propertyName }}</span></span>
+        <img src="{{ asset('images/logo.png') }}" alt="{{ $propertyName }}" class="brand-img">
+        <span class="fs-4"><span class="brand-name">{{ $propertyName }}</span></span>
     </a>
     <hr class="text-secondary">
     <ul class="nav nav-pills flex-column mb-auto">
@@ -197,7 +198,7 @@
 
 <div class="offcanvas offcanvas-start ch-sidebar text-bg-dark" tabindex="-1" id="sidebarOffcanvas">
     <div class="offcanvas-header">
-        <h5 class="offcanvas-title ch-brand"><i class="bi bi-house-heart-fill brand-mark me-2"></i>{{ $propertyName }}</h5>
+        <h5 class="offcanvas-title ch-brand"><img src="{{ asset('images/logo.png') }}" alt="{{ $propertyName }}" class="brand-img me-2"><span class="brand-name">{{ $propertyName }}</span></h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body d-flex flex-column">

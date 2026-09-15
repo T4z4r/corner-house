@@ -35,6 +35,21 @@ body {
     margin-right: 0.5rem;
 }
 
+.ch-sidebar .brand-img {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    border-radius: 0.4rem;
+    background: #fff;
+    padding: 0.2rem;
+    flex-shrink: 0;
+}
+
+body.ch-collapsed .ch-sidebar .brand-img {
+    width: 34px;
+    height: 34px;
+}
+
 /* ============ Sidebar ============ */
 .ch-sidebar {
     background: linear-gradient(180deg, #1b2a26 0%, #14201d 100%);

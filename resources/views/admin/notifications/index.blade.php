@@ -34,7 +34,7 @@
                         default => 'text-bg-info',
                     };
                 @endphp
-                <a class="text-decoration-none d-block border-bottom px-3 py-3 {{ is_null($notification->read_at) ? 'bg-light' : '' }}" href="{{ $notification->data['url'] ?? '#' }}">
+                <a class="text-decoration-none d-block border-bottom px-3 py-3 {{ is_null($notification->read_at) ? 'bg-light' : '' }}" href="{{ $notification->data['url'] ?? '#' }}" data-notification-link data-notification-id="{{ $notification->id }}">
                     <div class="d-flex gap-3">
                         <div class="ch-notification-icon {{ $badgeClass }}">
                             <i class="bi {{ $icon }}"></i>
@@ -66,3 +66,31 @@
         @endif
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('click', async function (event) {
+            const link = event.target.closest('[data-notification-link]');
+            if (!link) {
+                return;
+            }
+
+            event.preventDefault();
+
+            try {
+                await fetch(`{{ route('admin.notifications.read', ['notification' => '__ID__'], false) }}`.replace('__ID__', link.dataset.notificationId), {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    },
+                    credentials: 'same-origin',
+                });
+            } catch (error) {
+                console.warn('Unable to mark notification as read:', error);
+            }
+
+            window.location.href = link.href;
+        });
+    </script>
+@endpush

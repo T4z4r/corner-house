@@ -57,6 +57,12 @@
             margin-bottom: .4rem;
         }
 
+        .ch-auth-head img {
+            width: 150px;
+            height: auto;
+            margin-bottom: .4rem;
+        }
+
         .ch-auth-head h1 {
             margin: 0;
             font-size: 1.45rem;

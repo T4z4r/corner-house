@@ -139,31 +139,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const feedUrl = widget.dataset.notificationsFeedUrl;
-        const readAllUrl = widget.dataset.notificationsReadAllUrl;
         const badge = widget.querySelector('[data-notifications-badge]');
-        const summary = widget.querySelector('[data-notifications-summary]');
-        const list = widget.querySelector('[data-notifications-list]');
-        const markAllReadButton = widget.querySelector('[data-notifications-mark-all-read]');
         let latestId = widget.dataset.notificationsLatestId || null;
         let loadedOnce = false;
         let requestInFlight = false;
         let audioContext = null;
-
-        const levelClassMap = {
-            success: 'text-bg-success',
-            warning: 'text-bg-warning',
-            danger: 'text-bg-danger',
-            info: 'text-bg-info',
-        };
-
-        function escapeHtml(value) {
-            return String(value)
-                .replaceAll('&', '&amp;')
-                .replaceAll('<', '&lt;')
-                .replaceAll('>', '&gt;')
-                .replaceAll('"', '&quot;')
-                .replaceAll("'", '&#039;');
-        }
 
         function updateBadge(count) {
             if (!badge) {
@@ -172,14 +152,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             badge.textContent = String(count);
             badge.classList.toggle('d-none', count <= 0);
-        }
-
-        function updateSummary(count) {
-            if (!summary) {
-                return;
-            }
-
-            summary.textContent = count === 1 ? '1 unread' : `${count} unread`;
         }
 
         function playNotificationSound() {
@@ -215,48 +187,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        function renderNotifications(notifications) {
-            if (!list) {
-                return;
-            }
-
-            if (!notifications.length) {
-                list.innerHTML = `
-                    <div class="px-3 py-4 text-center text-muted">
-                        <i class="bi bi-bell-slash fs-3 d-block mb-2"></i>
-                        No notifications yet.
-                    </div>
-                `;
-                return;
-            }
-
-            list.innerHTML = notifications.map((notification) => {
-                const badgeClass = levelClassMap[notification.level] || levelClassMap.info;
-                const unreadClass = notification.read_at ? '' : ' ch-notification-unread';
-                const newBadge = notification.read_at
-                    ? ''
-                    : '<span class="badge text-bg-primary-subtle text-primary border border-primary-subtle">New</span>';
-
-                return `
-                    <a class="dropdown-item py-3 border-bottom${unreadClass}" href="${notification.url}" data-notification-link data-notification-id="${notification.id}">
-                        <div class="d-flex gap-3">
-                            <div class="ch-notification-icon ${badgeClass}">
-                                <i class="bi ${notification.icon}"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <div class="d-flex align-items-start justify-content-between gap-2">
-                                    <div class="fw-semibold text-dark">${escapeHtml(notification.title)}</div>
-                                    ${newBadge}
-                                </div>
-                                <div class="small text-muted">${escapeHtml(notification.message || '')}</div>
-                                <div class="small text-muted mt-1">${escapeHtml(notification.diff_for_humans || '')}</div>
-                            </div>
-                        </div>
-                    </a>
-                `;
-            }).join('');
-        }
-
         async function fetchNotifications() {
             if (!feedUrl || requestInFlight) {
                 return;
@@ -279,9 +209,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const unreadCount = Number(payload.unread_count || 0);
                 const changed = loadedOnce && incomingLatestId && incomingLatestId !== latestId;
 
-                renderNotifications(payload.notifications || []);
                 updateBadge(unreadCount);
-                updateSummary(unreadCount);
 
                 if (changed) {
                     playNotificationSound();
@@ -296,58 +224,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        async function markAllRead() {
-            if (!readAllUrl) {
-                return;
-            }
-
-            try {
-                await fetch(readAllUrl, {
-                    method: 'POST',
-                    headers: {
-                        Accept: 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                    },
-                    credentials: 'same-origin',
-                });
-
-                await fetchNotifications();
-            } catch (error) {
-                console.warn('Unable to mark notifications as read:', error);
-            }
-        }
-
-        widget.addEventListener('click', async function (event) {
-            const link = event.target.closest('[data-notification-link]');
-            if (!link) {
-                return;
-            }
-
-            event.preventDefault();
-
-            try {
-                await fetch(`${feedUrl.replace(/\/feed$/, '')}/${link.dataset.notificationId}/read`, {
-                    method: 'POST',
-                    headers: {
-                        Accept: 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                    },
-                    credentials: 'same-origin',
-                });
-            } catch (error) {
-                console.warn('Unable to mark notification as read:', error);
-            }
-
-            window.location.href = link.href;
-        });
-
-        if (markAllReadButton) {
-            markAllReadButton.addEventListener('click', function (event) {
-                event.preventDefault();
-                markAllRead();
-            });
-        }
-
         window.addEventListener('pointerdown', function primeAudioContext() {
             if (!audioContext && (window.AudioContext || window.webkitAudioContext)) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -359,7 +235,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }, { once: true });
 
         updateBadge(Number(widget.dataset.notificationsCount || 0));
-        updateSummary(Number(widget.dataset.notificationsCount || 0));
         fetchNotifications();
         window.setInterval(fetchNotifications, 30000);
     }
