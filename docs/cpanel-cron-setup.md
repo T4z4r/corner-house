@@ -8,18 +8,17 @@ Corner House uses Laravel's task scheduler to automatically:
 - **Sync bookings** from Beds24 (reservations, availability, calendar blocks)
 - **Sync messages** from Beds24 (guest communications via Airbnb, Booking.com, etc.)
 - **Push rates** to Beds24 (pricing updates from the platform)
-- **Process the job queue** (emails, Beds24 pushes, webhook processing)
 
 These tasks run on configurable schedules managed within the admin panel. However, the scheduler itself requires a single system-level cron job to trigger it every minute.
 
 ## How the Queue Runs on Shared Hosting
 
-On cPanel shared hosting you cannot run a persistent `php artisan queue:work` daemon (no supervisor/long-running processes). Instead, the scheduler runs `queue:work --stop-when-empty` every minute. Each time the cron triggers `schedule:run`, the scheduler spawns a background worker that drains all pending jobs from the `jobs` table and then exits.
+On cPanel shared hosting you cannot run a persistent `php artisan queue:work` daemon (no supervisor/long-running processes). Instead, a **dedicated cron job** runs `php artisan queue:work --stop-when-empty` every minute. Each invocation processes all pending jobs from the `jobs` table and then exits, so the worker never stays resident.
 
 This means:
-- The **same single cron entry** below handles both scheduled tasks and queued jobs.
-- Jobs (booking confirmations, refund emails, Beds24 pushes, webhooks) are processed within a minute of being dispatched.
-- `--tries=3` retries failed jobs up to 3 times; `--without-overlapping` prevents two workers running at once.
+- A **second cron entry** (see Step 4 below) handles queued jobs: booking confirmations, refund emails, Beds24 pushes, webhooks.
+- Jobs are processed within a minute of being dispatched.
+- `--tries=3` retries failed jobs up to 3 times; `--stop-when-empty` makes it safe to run from cron.
 
 ## Step 1: Log in to cPanel
 
@@ -65,6 +64,12 @@ Enter the following command, replacing `/path/to/corner-house` with your actual 
 cd /path/to/corner-house && php artisan schedule:run >> /dev/null 2>&1
 ```
 
+Then add a **second cron job** (also once per minute) to process the job queue:
+
+```bash
+cd /path/to/corner-house && php artisan queue:work --stop-when-empty --tries=3 >> /dev/null 2>&1
+```
+
 ### Finding Your Project Path
 
 To find your project path:
@@ -83,8 +88,16 @@ Common paths:
 
 If your project is at `/home/john/corner-house`:
 
+**1. Scheduler cron** (runs scheduled tasks):
+
 ```bash
 cd /home/cornzbzi/cornerhouse.com && php artisan schedule:run >> /dev/null 2>&1
+```
+
+**2. Queue worker cron** (processes queued jobs):
+
+```bash
+cd /home/cornzbzi/cornerhouse.com && php artisan queue:work --stop-when-empty --tries=3 >> /dev/null 2>&1
 ```
 
 ## Step 5: Verify the Cron Job

@@ -132,11 +132,12 @@
             <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>cPanel Cron Setup</h6>
         </div>
         <div class="card-body">
-            <p class="text-muted mb-3">For the schedule to run, you must set up a cron job in cPanel or your hosting provider. Add this single cron entry:</p>
+            <p class="text-muted mb-3">For the schedule to run, you must set up cron jobs in cPanel or your hosting provider. Add these two entries:</p>
             <div class="bg-light rounded p-3 mb-3">
-                <code>* * * * * cd /path/to/corner-house &amp;&amp; php artisan schedule:run &gt;&gt; /dev/null 2&gt;&amp;1</code>
+                <code class="d-block mb-2">* * * * * cd /path/to/corner-house &amp;&amp; php artisan schedule:run &gt;&gt; /dev/null 2&gt;&amp;1</code>
+                <code class="d-block">* * * * * cd /path/to/corner-house &amp;&amp; php artisan queue:work --stop-when-empty --tries=3 &gt;&gt; /dev/null 2&gt;&amp;1</code>
             </div>
-            <p class="text-muted mb-0">This runs every minute and Laravel's scheduler will determine which jobs to execute based on the settings above. See the <a href="#">cPanel Scheduling Guide</a> for detailed instructions.</p>
+            <p class="text-muted mb-0">Both run every minute: the scheduler decides which tasks to execute from the settings above, and the queue worker processes background jobs (emails, Beds24 pushes, webhooks). See the <a href="#">cPanel Scheduling Guide</a> for detailed instructions.</p>
         </div>
     </div>
 @endsection
