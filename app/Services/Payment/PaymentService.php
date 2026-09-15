@@ -310,40 +310,44 @@ class PaymentService
 
     public function refund(Payment $payment, ?float $amount = null, ?string $reason = null, ?int $userId = null): Refund
     {
-        if (! $payment->isPaid()) {
-            throw new \DomainException('Only paid payments can be refunded.');
-        }
+        return DB::transaction(function () use ($payment, $amount, $reason, $userId): Refund {
+            $locked = Payment::query()->whereKey($payment->id)->lockForUpdate()->firstOrFail();
 
-        $refundAmount = $amount ?? (float) $payment->amount;
+            if (! $locked->isPaid()) {
+                throw new \DomainException('Only paid payments can be refunded.');
+            }
 
-        if ($refundAmount <= 0 || $refundAmount > (float) $payment->amount) {
-            throw new \DomainException('Invalid refund amount.');
-        }
+            $refundAmount = $amount ?? (float) $locked->amount;
 
-        if (! $payment->provider_payment_id) {
-            throw new \DomainException('Payment is missing a provider payment id.');
-        }
+            if ($refundAmount <= 0 || $refundAmount > (float) $locked->amount) {
+                throw new \DomainException('Invalid refund amount.');
+            }
 
-        $result = $this->gateway->refund($payment->provider_payment_id, (int) round($refundAmount * 100));
+            if (! $locked->provider_payment_id) {
+                throw new \DomainException('Payment is missing a provider payment id.');
+            }
 
-        $refund = Refund::create([
-            'payment_id' => $payment->id,
-            'reservation_id' => $payment->reservation_id,
-            'amount' => $refundAmount,
-            'status' => $result['status'] === 'succeeded' ? 'succeeded' : 'pending',
-            'provider_refund_id' => $result['id'],
-            'reason' => $reason,
-            'created_by' => $userId,
-        ]);
+            $result = $this->gateway->refund($locked->provider_payment_id, (int) round($refundAmount * 100));
 
-        $payment->update(['status' => 'refunded']);
-        $payment->reservation?->update(['payment_status' => 'refunded']);
+            $refund = Refund::create([
+                'payment_id' => $locked->id,
+                'reservation_id' => $locked->reservation_id,
+                'amount' => $refundAmount,
+                'status' => $result['status'] === 'succeeded' ? 'succeeded' : 'pending',
+                'provider_refund_id' => $result['id'],
+                'reason' => $reason,
+                'created_by' => $userId,
+            ]);
 
-        $this->systemNotifications->paymentRefunded($payment->fresh(['reservation']), $refund, $userId);
-        $this->auditLogger->log('payments.refunded', 'payments', 'payment', (string) $payment->id);
+            $locked->update(['status' => 'refunded']);
+            $locked->reservation?->update(['payment_status' => 'refunded']);
 
-        SendPaymentRefundEmailJob::dispatch($refund->id);
+            $this->systemNotifications->paymentRefunded($locked->fresh(['reservation']), $refund, $userId);
+            $this->auditLogger->log('payments.refunded', 'payments', 'payment', (string) $locked->id);
 
-        return $refund;
+            SendPaymentRefundEmailJob::dispatch($refund->id);
+
+            return $refund;
+        });
     }
 }

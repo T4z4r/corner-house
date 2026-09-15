@@ -15,6 +15,7 @@ use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
+use Mockery;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -248,6 +249,39 @@ class PaymentWebhookTest extends TestCase
 
         $this->assertDatabaseHas('refunds', ['payment_id' => $payment->id, 'status' => 'succeeded']);
         $this->assertDatabaseHas('payments', ['id' => $payment->id, 'status' => 'refunded']);
+    }
+
+    public function test_refunding_an_already_refunded_payment_does_not_call_gateway_again(): void
+    {
+        $this->seed(RoleAndPermissionSeeder::class);
+
+        $gateway = Mockery::mock(PaymentGatewayInterface::class);
+        $gateway->shouldReceive('refund')->once()->andReturn(['id' => 're_test_1', 'status' => 'succeeded']);
+        $this->app->instance(PaymentGatewayInterface::class, $gateway);
+
+        $user = User::factory()->create();
+        $user->assignRole(Role::findByName('Finance Manager'));
+
+        $reservation = Reservation::factory()->create([
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+            'check_out' => now()->addDays(12)->toDateString(),
+        ]);
+        $payment = Payment::factory()->paid()->create([
+            'reservation_id' => $reservation->id,
+            'amount' => 150,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('admin.payments.refund', $payment), ['amount' => 150])
+            ->assertRedirect();
+
+        $this->actingAs($user)
+            ->post(route('admin.payments.refund', $payment), ['amount' => 150])
+            ->assertRedirect()
+            ->assertSessionHasErrors('error');
+
+        $this->assertDatabaseCount('refunds', 1);
     }
 
     public function test_refunding_a_paid_payment_sends_a_refund_email_to_the_guest(): void
