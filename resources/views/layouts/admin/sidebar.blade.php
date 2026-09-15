@@ -76,6 +76,13 @@
                 </a>
             </li>
         @endcan
+        @can('payments.view')
+            <li class="nav-item">
+                <a href="{{ route('admin.payments.index') }}" class="nav-link {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}">
+                    <i class="bi bi-credit-card me-2"></i><span class="nav-text">Payments</span>
+                </a>
+            </li>
+        @endcan
         @can('communications.view')
             <li class="nav-item">
                 <a href="{{ route('admin.messages.index') }}" class="nav-link {{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
@@ -89,13 +96,6 @@
             <li class="nav-item">
                 <a href="{{ route('admin.pricing.index') }}" class="nav-link {{ request()->routeIs('admin.pricing.*') ? 'active' : '' }}">
                     <i class="bi bi-tags me-2"></i><span class="nav-text">Pricing</span>
-                </a>
-            </li>
-        @endcan
-        @can('payments.view')
-            <li class="nav-item">
-                <a href="{{ route('admin.payments.index') }}" class="nav-link {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}">
-                    <i class="bi bi-credit-card me-2"></i><span class="nav-text">Payments</span>
                 </a>
             </li>
         @endcan
@@ -253,6 +253,9 @@
             @endcan
             @can('reservations.view')
                 <li class="nav-item"><a href="{{ route('admin.reservations.index') }}" class="nav-link">Bookings</a></li>
+            @endcan
+            @can('payments.view')
+                <li class="nav-item"><a href="{{ route('admin.payments.index') }}" class="nav-link">Payments</a></li>
             @endcan
             @can('pricing.view')
                 <li class="nav-item"><a href="{{ route('admin.pricing.index') }}" class="nav-link">Pricing</a></li>
