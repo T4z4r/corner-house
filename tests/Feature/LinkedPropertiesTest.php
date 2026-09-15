@@ -295,6 +295,7 @@ class LinkedPropertiesTest extends TestCase
         $user->assignRole(Role::findByName('Super Admin'));
 
         $this->actingAs($user)
+            ->withConfirmedPassword()
             ->getJson(route('admin.calendar.events', [
                 'property_id' => $main->id,
                 'start' => '2026-01-01',

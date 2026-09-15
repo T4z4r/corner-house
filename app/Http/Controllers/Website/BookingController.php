@@ -196,13 +196,6 @@ class BookingController extends Controller
             $request->merge(['guests_count' => $guestsNum]);
         }
 
-        if (! $request->has('room_id')) {
-            $defaultRoomId = Room::query()->where('status', 'active')->value('id');
-            if ($defaultRoomId) {
-                $request->merge(['room_id' => $defaultRoomId]);
-            }
-        }
-
         try {
             $data = $request->validate([
                 'room_id' => ['required', 'exists:rooms,id'],

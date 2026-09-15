@@ -242,6 +242,7 @@ class PaymentWebhookTest extends TestCase
         ]);
 
         $this->actingAs($user)
+            ->withConfirmedPassword()
             ->post(route('admin.payments.refund', $payment), [
                 'amount' => 150,
                 'reason' => 'Guest cancelled',
@@ -273,10 +274,12 @@ class PaymentWebhookTest extends TestCase
         ]);
 
         $this->actingAs($user)
+            ->withConfirmedPassword()
             ->post(route('admin.payments.refund', $payment), ['amount' => 150])
             ->assertRedirect();
 
         $this->actingAs($user)
+            ->withConfirmedPassword()
             ->post(route('admin.payments.refund', $payment), ['amount' => 150])
             ->assertRedirect()
             ->assertSessionHasErrors('error');
@@ -303,6 +306,7 @@ class PaymentWebhookTest extends TestCase
         ]);
 
         $this->actingAs($user)
+            ->withConfirmedPassword()
             ->post(route('admin.payments.refund', $payment), [
                 'amount' => 150,
                 'reason' => 'Guest cancelled',
@@ -343,6 +347,7 @@ class PaymentWebhookTest extends TestCase
         ]);
 
         $this->actingAs($user)
+            ->withConfirmedPassword()
             ->post(route('admin.payments.refund', $payment), [
                 'amount' => 150,
             ])->assertRedirect();
