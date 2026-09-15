@@ -21,8 +21,16 @@ class PaymentController extends Controller
             $query->where('status', $status);
         }
 
+        $stats = (object) [
+            'total_revenue' => (float) Payment::query()->where('status', 'paid')->sum('amount'),
+            'paid' => Payment::query()->where('status', 'paid')->count(),
+            'pending' => Payment::query()->where('status', 'pending')->count(),
+            'refunded' => Payment::query()->where('status', 'refunded')->count(),
+        ];
+
         return view('admin.payments.index', [
             'payments' => $query->paginate(20)->withQueryString(),
+            'stats' => $stats,
         ]);
     }
 

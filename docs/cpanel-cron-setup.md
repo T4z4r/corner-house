@@ -20,6 +20,16 @@ This means:
 - Jobs are processed within a minute of being dispatched.
 - `--tries=3` retries failed jobs up to 3 times; `--stop-when-empty` makes it safe to run from cron.
 
+### Alternative: a 5-Minute Worker with the default queue
+
+If you prefer to run the queue worker every **5 minutes** on the `default` queue instead of every minute, use this command in a cron entry with a `*/5 * * * *` frequency:
+
+```bash
+cd /path/to/corner-house && php artisan queue:work database --queue=default --timeout=840 --tries=3 >> /dev/null 2>&1
+```
+
+> **Caveat:** this command does **not** include `--stop-when-empty`, so `queue:work` keeps running until the process is killed. On cPanel, each 5-minute cron run **spawns a new, long-running worker that does not exit**, and workers accumulate over time. This setup is only safe where the host kills the process (or you add `--max-time=840` or `--stop-when-empty` yourself). Prefer the **every-minute `--stop-when-empty` entry below** unless you are intentionally running a persistent worker elsewhere.
+
 ## Step 1: Log in to cPanel
 
 1. Navigate to your cPanel URL (typically `https://yourdomain.com:2083`)

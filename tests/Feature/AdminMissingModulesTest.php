@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Jobs\FetchBeds24BookingsJob;
+use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Setting;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
+use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Spatie\Permission\Models\Role;
@@ -67,6 +69,26 @@ class AdminMissingModulesTest extends TestCase
 
         $this->assertDatabaseHas('users', ['email' => 'pat@example.com']);
         $this->assertTrue(User::query()->where('email', 'pat@example.com')->first()->hasRole('Property Manager'));
+    }
+
+    public function test_payments_index_statistics_cover_all_payments_not_just_the_current_page(): void
+    {
+        $this->seed(SettingsSeeder::class);
+
+        Payment::factory()->count(5)->create(['status' => 'paid', 'amount' => 100]);
+        Payment::factory()->count(2)->create(['status' => 'pending', 'amount' => 50]);
+        Payment::factory()->count(3)->create(['status' => 'refunded', 'amount' => 40]);
+        Payment::factory()->count(4)->create(['status' => 'failed', 'amount' => 30]);
+
+        $response = $this->actingAs($this->superAdmin())
+            ->get(route('admin.payments.index'));
+
+        $response->assertOk()
+            ->assertSee('£500.00')
+            ->assertSeeInOrder(['Total Revenue', '£500.00'])
+            ->assertSeeInOrder(['Paid', '5'])
+            ->assertSeeInOrder(['Pending', '2'])
+            ->assertSeeInOrder(['Refunded', '3']);
     }
 
     public function test_dashboard_shows_revenue_from_reservations(): void

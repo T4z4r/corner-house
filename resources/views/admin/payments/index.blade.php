@@ -14,7 +14,7 @@
         <div class="card border-0 shadow-sm">
             <div class="card-body text-center">
                 <div class="text-muted small mb-1">Total Revenue</div>
-                <div class="fs-4 fw-bold" style="color:var(--ch-forest);">£{{ number_format($payments->sum(fn ($p) => $p->status === 'paid' ? $p->amount : 0), 2) }}</div>
+                <div class="fs-4 fw-bold" style="color:var(--ch-forest);">£{{ number_format($stats->total_revenue, 2) }}</div>
             </div>
         </div>
     </div>
@@ -22,7 +22,7 @@
         <div class="card border-0 shadow-sm">
             <div class="card-body text-center">
                 <div class="text-muted small mb-1">Paid</div>
-                <div class="fs-4 fw-bold text-success">{{ $payments->count(fn ($p) => $p->status === 'paid') }}</div>
+                <div class="fs-4 fw-bold text-success">{{ $stats->paid }}</div>
             </div>
         </div>
     </div>
@@ -30,7 +30,7 @@
         <div class="card border-0 shadow-sm">
             <div class="card-body text-center">
                 <div class="text-muted small mb-1">Pending</div>
-                <div class="fs-4 fw-bold text-warning">{{ $payments->count(fn ($p) => $p->status === 'pending') }}</div>
+                <div class="fs-4 fw-bold text-warning">{{ $stats->pending }}</div>
             </div>
         </div>
     </div>
@@ -38,7 +38,7 @@
         <div class="card border-0 shadow-sm">
             <div class="card-body text-center">
                 <div class="text-muted small mb-1">Refunded</div>
-                <div class="fs-4 fw-bold text-danger">{{ $payments->count(fn ($p) => $p->status === 'refunded') }}</div>
+                <div class="fs-4 fw-bold text-danger">{{ $stats->refunded }}</div>
             </div>
         </div>
     </div>
