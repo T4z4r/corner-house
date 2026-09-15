@@ -47,38 +47,49 @@ class BookingController extends Controller
             }
         }
 
-        $property ??= $activeProperty;
-
         $rooms = collect();
 
         $checkIn = $request->query('check_in');
         $checkOut = $request->query('check_out');
         $guests = (int) $request->query('guests', 1);
 
-        if ($property && $checkIn && $checkOut) {
+        if ($checkIn && $checkOut) {
             $start = Carbon::parse($checkIn)->startOfDay();
             $end = Carbon::parse($checkOut)->startOfDay();
 
             if ($end->gt($start)) {
-                $propertyRooms = Room::query()
-                    ->with('property')
-                    ->where('property_id', $property->id)
-                    ->where('status', 'active')
-                    ->get();
-                $houseRoom = $propertyRooms->first();
-                $houseAvailable = $propertyRooms->isNotEmpty()
-                    && $propertyRooms->every(fn (Room $room): bool => $this->availability->isRoomAvailable($room, $start, $end)['available']);
+                // Without an explicit property, default to the preferred whole-house
+                // listing: the marina listing when its room is free, otherwise the
+                // primary Corner House listing (Lion).
+                if ($property === null && $activeProperty) {
+                    $property = $this->preferredSearchProperty($start, $end, $guests) ?? $activeProperty;
+                }
 
-                if ($houseRoom && $houseAvailable && $guests <= (int) $property->capacity) {
-                    $quote = $this->pricing->calculateForRange($houseRoom, $start, $end, $guests, null, true);
-                    $houseRoom->setAttribute('quote', $quote);
-                    $houseRoom->setAttribute('house_name', $property->name);
-                    $houseRoom->setAttribute('house_capacity', $property->capacity);
-                    $houseRoom->load(['property', 'images' => fn ($q) => $q->orderBy('sort_order')]);
-                    $rooms = collect([$houseRoom]);
+                if ($property) {
+                    $propertyRooms = Room::query()
+                        ->with('property')
+                        ->where('property_id', $property->id)
+                        ->where('status', 'active')
+                        ->get();
+                    $houseRoom = $propertyRooms->first();
+                    $houseAvailable = $propertyRooms->isNotEmpty()
+                        && $propertyRooms->every(fn (Room $room): bool => $this->availability->isRoomAvailable($room, $start, $end)['available']);
+
+                    $capacity = max((int) $property->capacity, (int) ($houseRoom?->capacity ?? 0));
+
+                    if ($houseRoom && $houseAvailable && $guests <= $capacity) {
+                        $quote = $this->pricing->calculateForRange($houseRoom, $start, $end, $guests, null, true);
+                        $houseRoom->setAttribute('quote', $quote);
+                        $houseRoom->setAttribute('house_name', $property->name);
+                        $houseRoom->setAttribute('house_capacity', $capacity);
+                        $houseRoom->load(['property', 'images' => fn ($q) => $q->orderBy('sort_order')]);
+                        $rooms = collect([$houseRoom]);
+                    }
                 }
             }
         }
+
+        $property ??= $activeProperty;
 
         // Linked properties are duplicate listings of the same accommodation,
         // so the search page lets the guest pick which listing to book.
@@ -97,6 +108,48 @@ class BookingController extends Controller
             'checkOut' => $checkOut,
             'guests' => $guests,
         ]);
+    }
+
+    /**
+     * Resolve the default whole-house listing for the booking search.
+     *
+     * The marina listing is preferred when its room is free for the requested
+     * dates; otherwise the Lion room (primary Corner House listing) is used.
+     * Returns null only when neither preferred room exists, is active, or fits
+     * the requested stay, so the caller falls back to the active property.
+     */
+    private function preferredSearchProperty(Carbon $start, Carbon $end, int $guests): ?Property
+    {
+        foreach (['Corner House - Large country house next to marina', 'Lion'] as $name) {
+            $room = Room::query()
+                ->with('property')
+                ->where('name', $name)
+                ->where('status', 'active')
+                ->whereHas('property', fn ($q) => $q->where('status', 'active'))
+                ->orderBy('id')
+                ->first();
+
+            if (! $room?->property) {
+                continue;
+            }
+
+            $property = $room->property;
+
+            $propertyRooms = Room::query()
+                ->where('property_id', $property->id)
+                ->where('status', 'active')
+                ->get();
+
+            $available = $propertyRooms->isNotEmpty()
+                && $propertyRooms->every(fn (Room $propertyRoom): bool => $this->availability->isRoomAvailable($propertyRoom, $start, $end)['available'])
+                && $guests <= max((int) $property->capacity, (int) $room->capacity);
+
+            if ($available) {
+                return $property;
+            }
+        }
+
+        return null;
     }
 
     public function details(Request $request, Room $room): View|RedirectResponse
