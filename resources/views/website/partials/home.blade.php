@@ -117,7 +117,7 @@
                     <div>
                         <h2>Also booking via {{ $linked->name }}</h2>
                         <p>{{ $linked->short_description ?: $linked->description ?: 'Corner House is a 175-year-old period home a few footsteps from Braunston Marina — five ensuite bedrooms, a 25ft kitchen built for entertaining, a games room and plenty of outside space, for family and friends to socialise and enjoy.' }}</p>
-                        <a class="btn btn-outline" href="#book">Check availability for this listing</a>
+                        <a class="btn btn-outline" href="https://cornerhousebraunston.uk/#book">Check availability for this listing</a>
                     </div>
                 </div>
             </div>
