@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Mail\GuestCommunicationMail;
 use App\Mail\SystemNotificationMail;
 use App\Models\Communication;
+use App\Models\CommunicationTemplate;
 use App\Models\Reservation;
 use App\Models\Setting;
 use App\Models\User;
@@ -376,6 +377,77 @@ class AdminNotificationsTest extends TestCase
         CronRunRecorder::finish($run);
 
         Mail::assertNothingSent();
+    }
+
+    public function test_sending_a_template_test_email_renders_reservation_tokens(): void
+    {
+        Mail::fake();
+
+        $actor = $this->adminUser('Sender');
+        $reservation = Reservation::factory()->create([
+            'total_amount' => 1250.50,
+        ]);
+        $template = CommunicationTemplate::factory()->create([
+            'subject' => 'Booking {{reference}} — thank you {{guest_name}}',
+            'body' => 'Hi {{guest_name}}, your stay {{check_in}} to {{check_out}} ({{nights}} nights) is confirmed. Total: £{{total}}.',
+        ]);
+
+        $this->actingAs($actor)
+            ->post(route('admin.communications.templates.test', $template), [
+                'recipient' => 'admin-test@example.com',
+                'reservation_id' => $reservation->id,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('status', "Test '{$template->name}' sent.");
+
+        $this->assertDatabaseHas('communications', [
+            'communication_template_id' => $template->id,
+            'reservation_id' => $reservation->id,
+            'channel' => 'email',
+            'recipient' => 'admin-test@example.com',
+            'status' => 'sent',
+            'metadata' => json_encode(['source' => 'test']),
+        ]);
+
+        Mail::assertSent(GuestCommunicationMail::class, 1);
+        $mail = Mail::sent(GuestCommunicationMail::class)->first();
+        $this->assertTrue($mail->hasTo('admin-test@example.com'));
+        $rendered = $mail->render();
+        $this->assertStringContainsString($reservation->guest->full_name, $rendered);
+        $this->assertStringContainsString('£1,250.50', $rendered);
+    }
+
+    public function test_sending_a_template_test_without_reservation_uses_sample_values(): void
+    {
+        Mail::fake();
+
+        $actor = $this->adminUser('Sender');
+        $template = CommunicationTemplate::factory()->create([
+            'body' => 'Hello {{guest_name}}, booking {{reference}} for {{property}}.',
+        ]);
+
+        $this->actingAs($actor)
+            ->post(route('admin.communications.templates.test', $template), [
+                'recipient' => 'admin-test@example.com',
+            ])
+            ->assertRedirect();
+
+        $mail = Mail::sent(GuestCommunicationMail::class)->first();
+        $rendered = $mail->render();
+        $this->assertStringContainsString('Hello Sample Guest, booking CH-000001 for Corner House.', $rendered);
+    }
+
+    public function test_testing_a_template_without_send_permission_is_forbidden(): void
+    {
+        $template = CommunicationTemplate::factory()->create();
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('admin.communications.templates.test', $template), [
+                'recipient' => 'admin-test@example.com',
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('communications', 0);
     }
 
     private function adminUser(string $name = 'Admin'): User

@@ -202,6 +202,43 @@
     </div>
 </div>
 
+@can('communications.send')
+<div class="modal fade" id="testTemplate{{ $template->id }}" tabindex="-1" aria-labelledby="testTemplateLabel{{ $template->id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ route('admin.communications.templates.test', $template) }}">
+            @csrf
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="testTemplateLabel{{ $template->id }}">Send test: {{ $template->name }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Recipient email *</label>
+                        <input type="email" name="recipient" class="form-control" placeholder="you@example.com" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reservation (optional)</label>
+                        <select name="reservation_id" class="form-select">
+                            <option value="">— Sample placeholder values —</option>
+                            @foreach ($reservations ?? [] as $reservation)
+                                <option value="{{ $reservation->id }}">{{ $reservation->reference }} — {{ $reservation->guest?->full_name ?? 'Guest #'.$reservation->guest_id }}</option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">Picks a reservation to fill in the {@guest_name}, {@check_in} tokens with real data. Leave empty to use sample values.</div>
+                    </div>
+                    <div class="small text-muted">Sends the template rendered as-is, bypassing event settings and delivery tracking, so you can test repeatedly.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-ch-primary">Send test</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+@endcan
+
 @can('communications.manage_templates')
 <div class="modal fade" id="editTemplate{{ $template->id }}" tabindex="-1" aria-labelledby="editTemplateLabel{{ $template->id }}" aria-hidden="true">
     <div class="modal-dialog">

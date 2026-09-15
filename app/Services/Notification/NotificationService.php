@@ -104,7 +104,7 @@ class NotificationService
     public function sendTest(CommunicationTemplate $template, string $recipient, ?Reservation $reservation = null): Communication
     {
         $replacements = $reservation
-            ? array_merge($this->replacements($reservation), $this->testReplacements())
+            ? array_merge($this->testReplacements(), $this->replacements($reservation))
             : $this->testReplacements();
 
         $communication = Communication::create([

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Communication;
 use App\Models\CommunicationTemplate;
 use App\Models\Guest;
+use App\Models\Reservation;
 use App\Services\Audit\AuditLogger;
 use App\Services\Mail\MailDispatchService;
 use App\Services\Notification\NotificationService;
@@ -30,6 +31,7 @@ class CommunicationController extends Controller
             'communications' => Communication::query()->with(['guest', 'reservation'])->latest()->paginate(20),
             'templates' => CommunicationTemplate::query()->orderBy('name')->get(),
             'guests' => Guest::query()->orderBy('last_name')->limit(200)->get(),
+            'reservations' => Reservation::query()->with('guest')->latest()->limit(100)->get(),
         ]);
     }
 
@@ -138,11 +140,11 @@ class CommunicationController extends Controller
             'reservation_id' => ['nullable', 'exists:reservations,id'],
         ]);
 
-        $communication = $this->notifications->sendTest(
-            $template,
-            $data['recipient'],
-            $data['reservation_id'] ? \App\Models\Reservation::query()->find($data['reservation_id']) : null,
-        );
+        $reservation = isset($data['reservation_id'])
+            ? Reservation::query()->find($data['reservation_id'])
+            : null;
+
+        $communication = $this->notifications->sendTest($template, $data['recipient'], $reservation);
 
         $this->auditLogger->log('communications.template_tested', 'communications', 'template', (string) $template->id);
 
