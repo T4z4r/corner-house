@@ -6,26 +6,41 @@
         $seoDescription = trim($__env->yieldContent('description', $seoProperty?->short_description ?? 'Corner House is a 175-year-old ivy-clad country house in Braunston, the Heart of the Waterways. Five ensuite bedrooms, a 25-foot kitchen, hot tub, cinema room and gym. Sleeps 12 adults and 2 children.'));
         $seoImage = ($site['og_image'] ?? null) ? asset('storage/'.$site['og_image']) : asset('images/logo.png');
         $seoCanonical = url()->current();
+        $rawTitle = trim($__env->yieldContent('title', $propertyName));
+        // Avoid "Corner House ... | Corner House, Braunston" when a page title already carries the brand name.
+        $seoTitle = str_contains(strtolower($rawTitle), strtolower($propertyName))
+            ? $rawTitle
+            : $rawTitle.' | '.$propertyName.', Braunston';
+        $sameAs = array_values(array_filter(array_merge(
+            $site['social_links'] ?? [],
+            array_values($site['platforms'] ?? []),
+        )));
     @endphp
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', $propertyName) | Corner House, Braunston</title>
+    <title>{{ $seoTitle }}</title>
     <meta name="description" content="{{ $seoDescription }}">
     <meta name="robots" content="@yield('robots', 'index, follow')">
     <link rel="canonical" href="{{ $seoCanonical }}">
     <link rel="icon" type="image/svg+xml" href="{{ asset('images/logo.svg') }}">
+    @if (\App\Models\Setting::getValue('website_google_site_verification'))
+        <meta name="google-site-verification" content="{{ \App\Models\Setting::getValue('website_google_site_verification') }}">
+    @endif
+    @if (\App\Models\Setting::getValue('website_bing_site_verification'))
+        <meta name="msvalidate.01" content="{{ \App\Models\Setting::getValue('website_bing_site_verification') }}">
+    @endif
 
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="{{ $propertyName }}">
-    <meta property="og:title" content="@yield('title', $propertyName) | Corner House, Braunston">
+    <meta property="og:title" content="{{ $seoTitle }}">
     <meta property="og:description" content="{{ $seoDescription }}">
     <meta property="og:url" content="{{ $seoCanonical }}">
     <meta property="og:image" content="{{ $seoImage }}">
     <meta property="og:locale" content="en_GB">
 
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="@yield('title', $propertyName) | Corner House, Braunston">
+    <meta name="twitter:title" content="{{ $seoTitle }}">
     <meta name="twitter:description" content="{{ $seoDescription }}">
     <meta name="twitter:image" content="{{ $seoImage }}">
 
@@ -33,27 +48,41 @@
         <script type="application/ld+json">
             {!! json_encode([
                 '@context' => 'https://schema.org',
-                '@type' => 'LodgingBusiness',
-                'name' => $seoProperty->name ?? $propertyName,
-                'description' => $seoDescription,
-                'image' => $seoImage,
-                'url' => url('/'),
-                'telephone' => $site['contact_phone'] ?? null,
-                'email' => $site['contact_email'] ?? null,
-                'address' => array_filter([
-                    '@type' => 'PostalAddress',
-                    'streetAddress' => trim(($seoProperty->address_line_1 ?? '').' '.($seoProperty->address_line_2 ?? '')),
-                    'addressLocality' => $seoProperty->city ?? null,
-                    'postalCode' => $seoProperty->postcode ?? null,
-                    'addressCountry' => $seoProperty->country ?? 'GB',
-                ]),
-                'geo' => $seoProperty->latitude && $seoProperty->longitude ? [
-                    '@type' => 'GeoCoordinates',
-                    'latitude' => $seoProperty->latitude,
-                    'longitude' => $seoProperty->longitude,
-                ] : null,
-                'numberOfRooms' => $seoProperty->bedrooms,
-                'petsAllowed' => (bool) $seoProperty->pets_allowed,
+                '@graph' => [
+                    [
+                        '@type' => 'LodgingBusiness',
+                        '@id' => url('/').'#business',
+                        'name' => $seoProperty->name ?? $propertyName,
+                        'description' => $seoDescription,
+                        'image' => $seoImage,
+                        'logo' => $seoImage,
+                        'url' => url('/'),
+                        'telephone' => $site['contact_phone'] ?? null,
+                        'email' => $site['contact_email'] ?? null,
+                        'sameAs' => $sameAs,
+                        'address' => array_filter([
+                            '@type' => 'PostalAddress',
+                            'streetAddress' => trim(($seoProperty->address_line_1 ?? '').' '.($seoProperty->address_line_2 ?? '')),
+                            'addressLocality' => $seoProperty->city ?? null,
+                            'postalCode' => $seoProperty->postcode ?? null,
+                            'addressCountry' => $seoProperty->country ?? 'GB',
+                        ]),
+                        'geo' => $seoProperty->latitude && $seoProperty->longitude ? [
+                            '@type' => 'GeoCoordinates',
+                            'latitude' => $seoProperty->latitude,
+                            'longitude' => $seoProperty->longitude,
+                        ] : null,
+                        'numberOfRooms' => $seoProperty->bedrooms,
+                        'petsAllowed' => (bool) $seoProperty->pets_allowed,
+                    ],
+                    [
+                        '@type' => 'WebSite',
+                        '@id' => url('/').'#website',
+                        'name' => $propertyName,
+                        'url' => url('/'),
+                        'publisher' => ['@id' => url('/').'#business'],
+                    ],
+                ],
             ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
         </script>
     @endif

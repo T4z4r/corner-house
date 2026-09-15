@@ -241,6 +241,27 @@
 
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-white">
+                        <h6 class="mb-0">Search engines</h6>
+                        <div class="small text-muted">Verification codes that prove you own this site to Google and Bing, so you can track and improve how it ranks.</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            @php $s = $settings['website_google_site_verification'] ?? null; @endphp
+                            <label class="form-label fw-semibold" for="website_google_site_verification">Google Search Console verification code</label>
+                            <input type="text" id="website_google_site_verification" name="website_google_site_verification" class="form-control" value="{{ $s->value ?? '' }}" placeholder="e.g. abc123...">
+                            <div class="form-text">From Search Console's HTML tag method — paste just the "content" value, not the whole tag.</div>
+                        </div>
+                        <div class="mb-0">
+                            @php $s = $settings['website_bing_site_verification'] ?? null; @endphp
+                            <label class="form-label fw-semibold" for="website_bing_site_verification">Bing Webmaster Tools verification code</label>
+                            <input type="text" id="website_bing_site_verification" name="website_bing_site_verification" class="form-control" value="{{ $s->value ?? '' }}" placeholder="e.g. abc123...">
+                            <div class="form-text">From Bing Webmaster Tools' meta tag method — paste just the "content" value.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
                         <h6 class="mb-0">Serengeti Spirits</h6>
                         <div class="small text-muted">Your on-site distillery link and logo.</div>
                     </div>

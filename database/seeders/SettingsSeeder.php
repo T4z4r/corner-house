@@ -88,6 +88,8 @@ class SettingsSeeder extends Seeder
             ['group' => 'website', 'key' => 'hero_rooms', 'value' => '', 'label' => 'Hero — Rooms value', 'cast' => 'string'],
             ['group' => 'website', 'key' => 'website_about_image', 'value' => '', 'label' => 'About page image', 'cast' => 'string'],
             ['group' => 'website', 'key' => 'website_og_image', 'value' => '', 'label' => 'Social sharing image (OG)', 'cast' => 'string'],
+            ['group' => 'website', 'key' => 'website_google_site_verification', 'value' => '', 'label' => 'Google Search Console verification code', 'cast' => 'string'],
+            ['group' => 'website', 'key' => 'website_bing_site_verification', 'value' => '', 'label' => 'Bing Webmaster Tools verification code', 'cast' => 'string'],
             ['group' => 'website', 'key' => 'website_spirits_logo', 'value' => '', 'label' => 'Serengeti Spirits logo', 'cast' => 'string'],
             ['group' => 'website', 'key' => 'platform_airbnb_url', 'value' => '', 'label' => 'Airbnb listing URL', 'cast' => 'string'],
             ['group' => 'website', 'key' => 'platform_booking_url', 'value' => '', 'label' => 'Booking.com listing URL', 'cast' => 'string'],
