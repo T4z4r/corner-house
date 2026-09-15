@@ -116,6 +116,7 @@ class BookingService
                 'property_id' => $lockedRoom->property_id,
                 'room_id' => $lockedRoom->id,
                 'guest_id' => $guest?->id,
+                'booking_hold_id' => $hold?->id,
                 'check_in' => $checkIn,
                 'check_out' => $checkOut,
                 'guests_count' => $data['guests_count'] ?? 1,
@@ -338,7 +339,7 @@ class BookingService
             return $existing;
         }
 
-        $guest = new Guest();
+        $guest = new Guest;
         $guest->forceFill([
             'first_name' => trim((string) ($data['guest_first_name'] ?? $data['lead_first_name'] ?? '')) ?: 'Guest',
             'last_name' => trim((string) ($data['guest_last_name'] ?? $data['lead_last_name'] ?? '')),

@@ -81,6 +81,11 @@
                                         <span class="ch-badge ch-badge-muted"><span class="dot"></span>Read</span>
                                     @endif
                                     <span class="ch-badge ch-badge-muted ms-1">{{ ucfirst($item->type) }}</span>
+                                    @if ($item->reservation)
+                                        <span class="ch-badge ch-badge-muted ms-1">
+                                            <i class="bi bi-bookmark-star"></i> {{ $item->reservation->reference }}
+                                        </span>
+                                    @endif
                                 </td>
                                 <td>{{ $item->name }}</td>
                                 <td class="small">

@@ -19,6 +19,7 @@ class CronJobsAdminTest extends TestCase
     {
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
+        $this->withConfirmedPassword();
     }
 
     public function test_requires_authentication(): void

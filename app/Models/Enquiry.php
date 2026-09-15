@@ -7,6 +7,7 @@ use Database\Factories\EnquiryFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Enquiry extends Model
 {
@@ -34,6 +35,7 @@ class Enquiry extends Model
         'drinks_package',
         'terms_accepted',
         'status',
+        'reservation_id',
     ];
 
     protected $casts = [
@@ -51,5 +53,10 @@ class Enquiry extends Model
     public function scopeNew(Builder $query): Builder
     {
         return $query->where('status', self::STATUS_NEW);
+    }
+
+    public function reservation(): BelongsTo
+    {
+        return $this->belongsTo(Reservation::class);
     }
 }

@@ -17,6 +17,7 @@ class EnquiryController extends Controller
     public function index(Request $request): View
     {
         $query = Enquiry::query()
+            ->with('reservation')
             ->when($request->filled('search'), function (Builder $query) use ($request): void {
                 $search = $request->string('search')->toString();
 

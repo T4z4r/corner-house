@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class Reservation extends Model
@@ -20,6 +21,7 @@ class Reservation extends Model
         'property_id',
         'room_id',
         'guest_id',
+        'booking_hold_id',
         'check_in',
         'check_out',
         'guests_count',
@@ -75,6 +77,16 @@ class Reservation extends Model
     public function guest(): BelongsTo
     {
         return $this->belongsTo(Guest::class);
+    }
+
+    public function bookingHold(): BelongsTo
+    {
+        return $this->belongsTo(BookingHold::class);
+    }
+
+    public function enquiry(): HasOne
+    {
+        return $this->hasOne(Enquiry::class);
     }
 
     public function guests(): HasMany

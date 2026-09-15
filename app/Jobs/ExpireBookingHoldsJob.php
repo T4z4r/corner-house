@@ -16,8 +16,9 @@ class ExpireBookingHoldsJob implements ShouldQueue
     {
         $this->trackCronRun(function () use ($holds): void {
             $released = $holds->expireExpiredHolds();
+            $enquiries = $holds->saveAbandonedDirectBookingsAsEnquiries();
 
-            Log::info('Booking holds expired', ['released' => $released]);
+            Log::info('Booking holds processed', ['released' => $released, 'enquiries_created' => $enquiries]);
         });
     }
 }
