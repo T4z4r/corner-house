@@ -91,6 +91,22 @@ class AdminMissingModulesTest extends TestCase
             ->assertSeeInOrder(['Refunded', '3']);
     }
 
+    public function test_sidebar_lists_payments_directly_after_bookings(): void
+    {
+        $response = $this->actingAs($this->superAdmin())
+            ->get(route('admin.dashboard'))
+            ->assertOk();
+
+        $html = $response->getContent();
+
+        $this->assertTrue(
+            strpos($html, '>Bookings</span>') < strpos($html, '>Payments</span>'),
+            'Payments must appear after Bookings in the sidebar.',
+        );
+        $this->assertStringContainsString('/admin/payments', $html);
+        $this->assertStringContainsString('>Payments</span>', $html);
+    }
+
     public function test_dashboard_shows_revenue_from_reservations(): void
     {
         Reservation::factory()->create([
