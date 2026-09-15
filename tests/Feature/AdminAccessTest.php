@@ -42,6 +42,7 @@ class AdminAccessTest extends TestCase
         $user->assignRole($role);
 
         $this->actingAs($user)
+            ->withConfirmedPassword()
             ->get(route('admin.settings'))
             ->assertOk();
     }

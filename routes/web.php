@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WebsiteManagementController;
 use App\Http\Controllers\Auth\AccountController;
+use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Website\BookingController;
@@ -79,6 +80,11 @@ Route::middleware('throttle:5,1')->group(function (): void {
 Route::redirect('/control-hub-q91x', '/login');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
+Route::middleware(['auth'])->group(function (): void {
+    Route::get('/confirm-password', [ConfirmablePasswordController::class, 'show'])->name('password.confirm');
+    Route::post('/confirm-password', [ConfirmablePasswordController::class, 'store'])->middleware('throttle:6,1')->name('password.confirm');
+});
+
 Route::middleware(['auth'])->name('account.')->group(function (): void {
     Route::get('/account', [AccountController::class, 'show'])->name('show');
     Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('profile.update');
@@ -96,7 +102,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs');
     });
 
-    Route::middleware('can:settings.view')->group(function (): void {
+    Route::middleware(['can:settings.view', 'password.confirm'])->group(function (): void {
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
         Route::get('/settings/mail', [SettingsController::class, 'mail'])->name('settings.mail');
         Route::get('/settings/notifications', [SettingsController::class, 'notifications'])->name('settings.notifications');
@@ -242,7 +248,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::delete('/guests/{guest}', [GuestController::class, 'destroy'])->name('guests.destroy')->middleware('can:guests.delete');
     });
 
-    Route::middleware('can:reservations.view')->group(function (): void {
+    Route::middleware(['can:reservations.view', 'password.confirm'])->group(function (): void {
         Route::get('/reservations', [ReservationController::class, 'index'])->name('reservations.index');
         Route::get('/reservations/export', [ReservationController::class, 'export'])->name('reservations.export');
         Route::get('/reservations/create', [ReservationController::class, 'create'])->name('reservations.create')->middleware('can:reservations.create');
@@ -257,7 +263,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::post('/reservations/fetch-beds24', [ReservationController::class, 'fetchFromBeds24'])->name('reservations.fetch-beds24')->middleware('can:channels.sync');
     });
 
-    Route::middleware('can:calendar.view')->group(function (): void {
+    Route::middleware(['can:calendar.view', 'password.confirm'])->group(function (): void {
         Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar');
         Route::get('/calendar/events', [CalendarController::class, 'events'])->name('calendar.events');
         Route::get('/calendar/prices', [CalendarController::class, 'prices'])->name('calendar.prices');
@@ -290,7 +296,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::delete('/pricing/overrides/{override}', [PricingController::class, 'destroyOverride'])->name('pricing.overrides.destroy')->middleware('can:pricing.delete');
     });
 
-    Route::middleware('can:payments.view')->group(function (): void {
+    Route::middleware(['can:payments.view', 'password.confirm'])->group(function (): void {
         Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
         Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
         Route::post('/payments/{payment}/refund', [PaymentController::class, 'refund'])->name('payments.refund')->middleware('can:payments.refund');

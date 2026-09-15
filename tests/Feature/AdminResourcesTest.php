@@ -36,6 +36,7 @@ class AdminResourcesTest extends TestCase
     {
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
+        $this->withConfirmedPassword();
     }
 
     private function actingAsSuperAdmin(): User

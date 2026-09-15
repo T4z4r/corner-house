@@ -30,6 +30,7 @@ class SettingsTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole($role);
         $this->actingAs($user);
+        $this->withConfirmedPassword();
     }
 
     public function test_can_view_settings_page(): void
