@@ -1,5 +1,6 @@
 @extends('layouts.website.app')
 @section('title', 'Area Guide')
+@section('description', 'Weather, local events and highlights near Corner House in Braunston, Northamptonshire, the Heart of the Waterways.')
 @section('content')
 @include('website._page-hero', ['kicker' => 'Explore', 'title' => 'Area Guide', 'subtitle' => 'A quick view of the weather, local events, and nearby highlights.'])
 

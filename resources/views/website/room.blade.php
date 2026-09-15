@@ -1,6 +1,7 @@
 @extends('layouts.website.app')
 
 @section('title', $room->name)
+@section('description', Str::limit($room->description ?? ($room->name.' at Corner House, Braunston - book direct for the best rate.'), 155))
 
 @php
     $hero = $room->primaryImage();

@@ -1,6 +1,7 @@
 @extends('layouts.website.app')
 
 @section('title', $reservation && $reservation->status === 'confirmed' ? 'Booking Confirmed' : 'Reservation Received')
+@section('robots', 'noindex, nofollow')
 
 @section('content')
 

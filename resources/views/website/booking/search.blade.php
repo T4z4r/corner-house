@@ -1,5 +1,6 @@
 @extends('layouts.website.app')
 @section('title', 'Availability')
+@section('description', 'Check availability and rates for Corner House, Braunston, and book your stay direct.')
 @section('content')
 @include('website._page-hero', ['kicker' => 'Bookings', 'title' => 'Find a stay', 'subtitle' => 'Choose dates. We will show what is free, with the house rate.'])
 <div class="container ch-section">

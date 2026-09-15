@@ -2,6 +2,8 @@
 
 @section('title', 'Corner House · Stay with us in Braunston')
 
+@section('description', 'Book a direct stay at Corner House, a 175-year-old ivy-clad country house in Braunston. Five ensuite bedrooms, hot tub, cinema room and gym, sleeping up to 12 adults.')
+
 @section('content')
     @include('website.partials.home')
     @include('website.partials.about')

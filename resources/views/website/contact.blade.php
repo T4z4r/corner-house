@@ -1,5 +1,6 @@
 @extends('layouts.website.app')
 @section('title', 'Contact')
+@section('description', 'Get in touch with Corner House, Braunston. Send us a note about your stay and we will reply personally.')
 @section('content')
 @include('website._page-hero', ['kicker' => 'Host', 'title' => 'Contact', 'subtitle' => 'A note is enough. We will reply personally.'])
 

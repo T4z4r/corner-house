@@ -1,5 +1,6 @@
 @extends('layouts.website.app')
 @section('title', 'FAQ')
+@section('description', 'Answers to frequently asked questions about booking and staying at Corner House, Braunston.')
 @section('content')
 @include('website._page-hero', ['kicker' => 'Before you arrive', 'title' => 'Frequently asked questions'])
 <div class="container ch-section">

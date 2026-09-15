@@ -1,5 +1,6 @@
 @extends('layouts.website.app')
 @section('title', 'About')
+@section('description', 'The story behind Corner House, a 175-year-old ivy-clad country house in Braunston restored for guests to enjoy the Heart of the Waterways.')
 @section('content')
 @include('website._page-hero', ['kicker' => 'Our story', 'title' => 'About '.($property?->name ?? $propertyName)])
 

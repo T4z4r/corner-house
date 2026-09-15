@@ -1,5 +1,6 @@
 @extends('layouts.website.app')
 @section('title', 'Gallery')
+@section('description', 'A photo tour of Corner House in Braunston: bedrooms, living spaces, hot tub, cinema room and gardens.')
 @section('content')
 @include('website._page-hero', ['kicker' => 'Look inside', 'title' => 'Gallery', 'subtitle' => 'A preview of the house, its rooms, and the details that matter.'])
 

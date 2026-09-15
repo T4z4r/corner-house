@@ -141,6 +141,49 @@ class WebsiteController extends Controller
         return view('website.contact', $this->propertyData());
     }
 
+    public function robots(): \Illuminate\Http\Response
+    {
+        $lines = [
+            'User-agent: *',
+            'Disallow: /admin',
+            'Disallow: /control-hub-q91x',
+            'Disallow: /account',
+            'Disallow: /register',
+            'Disallow: /book/pay',
+            'Disallow: /book/confirmation',
+            'Disallow: /book/room',
+            '',
+            'Sitemap: '.route('sitemap'),
+        ];
+
+        return response(implode("\n", $lines), 200)->header('Content-Type', 'text/plain');
+    }
+
+
+    public function sitemap(): \Illuminate\Http\Response
+    {
+        $staticRoutes = [
+            'home', 'about', 'property', 'amenities', 'gallery', 'location',
+            'area-guide', 'faq', 'food-drink', 'places', 'contact',
+            'privacy', 'terms', 'cancellation-policy', 'booking.search',
+        ];
+
+        $urls = collect($staticRoutes)->map(fn (string $name) => [
+            'loc' => route($name),
+            'lastmod' => now()->toAtomString(),
+        ]);
+
+        $rooms = Room::query()->where('status', 'active')->get(['id', 'updated_at']);
+        $urls = $urls->concat($rooms->map(fn (Room $room) => [
+            'loc' => route('property.room', $room),
+            'lastmod' => $room->updated_at?->toAtomString() ?? now()->toAtomString(),
+        ]));
+
+        $xml = view('website.sitemap', ['urls' => $urls])->render();
+
+        return response($xml, 200)->header('Content-Type', 'application/xml');
+    }
+
     public function submitContact(Request $request): RedirectResponse
     {
         $data = $request->validate([

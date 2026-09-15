@@ -38,6 +38,8 @@ use App\Http\Controllers\Website\WebsiteController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [WebsiteController::class, 'home'])->name('home');
+Route::get('/robots.txt', [WebsiteController::class, 'robots'])->name('robots');
+Route::get('/sitemap.xml', [WebsiteController::class, 'sitemap'])->name('sitemap');
 Route::get('/about', [WebsiteController::class, 'about'])->name('about');
 Route::get('/property', [WebsiteController::class, 'property'])->name('property');
 Route::get('/rooms/{room}', [WebsiteController::class, 'room'])->name('property.room');

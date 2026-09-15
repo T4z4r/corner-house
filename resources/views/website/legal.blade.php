@@ -1,5 +1,6 @@
 @extends('layouts.website.app')
 @section('title', $title)
+@section('description', $heading.' for stays booked directly with Corner House, Braunston.')
 @section('content')
 @include('website._page-hero', ['kicker' => 'House terms', 'title' => $heading])
 <div class="container ch-section">

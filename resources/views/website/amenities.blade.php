@@ -1,5 +1,6 @@
 @extends('layouts.website.app')
 @section('title', 'Amenities')
+@section('description', 'Explore the amenities at Corner House, Braunston: a hot tub, cinema room, gym, games room and five ensuite bedrooms sleeping up to 12 adults.')
 @section('content')
 @include('website._page-hero', ['kicker' => 'Comforts', 'title' => 'Amenities', 'subtitle' => 'What is waiting for you at the house.'])
 

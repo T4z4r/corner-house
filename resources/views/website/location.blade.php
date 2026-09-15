@@ -1,5 +1,6 @@
 @extends('layouts.website.app')
 @section('title', 'Location')
+@section('description', 'Corner House sits in Braunston, Northamptonshire, the Heart of the Waterways, with easy access to the surrounding countryside.')
 @section('content')
 @include('website._page-hero', ['kicker' => 'Arrive', 'title' => 'Location', 'subtitle' => 'Corner House sits in the heart of Northamptonshire.'])
 

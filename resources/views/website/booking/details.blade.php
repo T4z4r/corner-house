@@ -1,5 +1,6 @@
 @extends('layouts.website.app')
 @section('title', 'Guest Details & Stay Options')
+@section('robots', 'noindex, nofollow')
 @section('content')
 
 @include('website._page-hero', ['kicker' => 'Direct Booking · Step 2 of 3', 'title' => 'Guest Details & Stay Options', 'subtitle' => 'Confirm your guest details, select optional add-ons, and proceed to instant secure payment.'])

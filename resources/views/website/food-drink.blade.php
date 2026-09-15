@@ -1,5 +1,6 @@
 @extends('layouts.website.app')
 @section('title', 'Food & Drink')
+@section('description', 'Local food and drink favourites and optional drinks packages for your stay at Corner House, Braunston.')
 @section('content')
 @include('website._page-hero', ['kicker' => 'Enjoy', 'title' => 'Food & Drink', 'subtitle' => 'Local favourites and drinks packages for your stay'])
 

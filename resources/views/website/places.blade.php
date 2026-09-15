@@ -1,5 +1,6 @@
 @extends('layouts.website.app')
 @section('title', 'Places of Interest')
+@section('description', 'Discover places of interest near Corner House, Braunston, and make the most of Northamptonshire during your stay.')
 @section('content')
 @include('website._page-hero', ['kicker' => 'Explore', 'title' => 'Places of Interest', 'subtitle' => 'Explore the surrounding area and discover what Northamptonshire has to offer'])
 

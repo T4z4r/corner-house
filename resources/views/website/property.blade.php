@@ -1,5 +1,6 @@
 @extends('layouts.website.app')
 @section('title', 'The property')
+@section('description', $property?->short_description ?? 'An independently hosted country house stay in Braunston, Northamptonshire, sleeping up to 12 adults.')
 @section('content')
 @include('website._page-hero', ['kicker' => 'The house', 'title' => $property?->name ?? $propertyName, 'subtitle' => $property?->short_description ?? 'An independently hosted stay in Northamptonshire.'])
 

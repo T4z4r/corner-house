@@ -1,6 +1,7 @@
 @extends('layouts.website.app')
 
 @section('title', 'Complete Your Payment')
+@section('robots', 'noindex, nofollow')
 
 @section('content')
 
