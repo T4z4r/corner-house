@@ -52,7 +52,7 @@ class PasswordConfirmationTest extends TestCase
             ->get(route('password.confirm'))
             ->assertOk()
             ->assertSee('Confirm your password')
-            ->assertSee('Unlock &amp; continue');
+            ->assertSee('Unlock & continue', false);
     }
 
     public function test_invalid_password_is_rejected_and_access_stays_blocked(): void

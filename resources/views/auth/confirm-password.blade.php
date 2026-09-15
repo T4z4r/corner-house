@@ -256,7 +256,7 @@
 
                 <button type="submit" class="ch-confirm-btn">
                     <i class="bi bi-unlock"></i>
-                    Unlock &amp; continue
+                    Unlock & continue
                 </button>
             </form>
 
