@@ -80,6 +80,24 @@ Then add a **second cron job** (also once per minute) to process the job queue:
 cd /path/to/corner-house && php artisan queue:work --stop-when-empty --tries=3 >> /dev/null 2>&1
 ```
 
+If instead you want the queue worker to run **every five minutes** on the `default` queue (see "Alternative" above), set the frequency fields to:
+
+| Field | Value |
+|-------|-------|
+| Minute | `*/5` |
+| Hour | `*` |
+| Day | `*` |
+| Month | `*` |
+| Weekday | `*` |
+
+and use the command:
+
+```bash
+cd /home/cornzbzi/cornerhouse.com && php artisan queue:work database --queue=default --timeout=840 --tries=3 >> /dev/null 2>&1
+```
+
+Both cron jobs should use realistic paths; replace `/path/to/corner-house` with your actual project path (see below).
+
 ### Finding Your Project Path
 
 To find your project path:

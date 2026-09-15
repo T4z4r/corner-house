@@ -137,7 +137,11 @@
                 <code class="d-block mb-2">* * * * * cd /path/to/corner-house &amp;&amp; php artisan schedule:run &gt;&gt; /dev/null 2&gt;&amp;1</code>
                 <code class="d-block">* * * * * cd /path/to/corner-house &amp;&amp; php artisan queue:work --stop-when-empty --tries=3 &gt;&gt; /dev/null 2&gt;&amp;1</code>
             </div>
-            <p class="text-muted mb-0">Both run every minute: the scheduler decides which tasks to execute from the settings above, and the queue worker processes background jobs (emails, Beds24 pushes, webhooks). See the <a href="#">cPanel Scheduling Guide</a> for detailed instructions.</p>
+            <p class="text-muted mb-2">Prefer the queue worker to run every 5 minutes on the default queue instead? Use this entry (frequency <code>*/5 * * * *</code>):</p>
+            <div class="bg-light rounded p-3 mb-3">
+                <code class="d-block">*/5 * * * * cd /path/to/corner-house &amp;&amp; php artisan queue:work database --queue=default --timeout=840 --tries=3 &gt;&gt; /dev/null 2&gt;&amp;1</code>
+            </div>
+            <p class="text-muted mb-0">Both run every minute: the scheduler decides which tasks to execute from the settings above, and the queue worker processes background jobs (emails, Beds24 pushes, webhooks). See the <a href="#">cPanel Scheduling Guide</a> for detailed instructions. The 5-minute worker command has no <code>--stop-when-empty</code>, so it keeps running until killed — add <code>--max-time=840</code> or <code>--stop-when-empty</code> to make it end on each run.</p>
         </div>
     </div>
 @endsection
