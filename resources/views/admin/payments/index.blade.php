@@ -98,6 +98,8 @@
                 <option value="">All statuses</option>
                 <option value="paid" @selected(request('status') === 'paid')>Paid</option>
                 <option value="pending" @selected(request('status') === 'pending')>Pending</option>
+                <option value="processing" @selected(request('status') === 'processing')>Held / processing</option>
+                <option value="cancelled" @selected(request('status') === 'cancelled')>Released / cancelled</option>
                 <option value="refunded" @selected(request('status') === 'refunded')>Refunded</option>
                 <option value="failed" @selected(request('status') === 'failed')>Failed</option>
             </select>
@@ -149,7 +151,7 @@
                             @elseif ($payment->status === 'refunded')
                                 <span class="badge bg-danger">Refunded</span>
                             @else
-                                <span class="badge bg-secondary">{{ ucfirst($payment->status) }}</span>
+                                <span class="badge bg-secondary">{{ $payment->statusLabel() }}</span>
                             @endif
                         </td>
                         <td>{{ $payment->paid_at?->format('d M Y H:i') ?? '-' }}</td>

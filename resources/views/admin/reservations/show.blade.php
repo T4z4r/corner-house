@@ -63,6 +63,21 @@
         </div>
     </div>
 
+    @if ((float) $reservation->security_deposit_amount > 0)
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <h5>Refundable security deposit &mdash; separate card hold</h5>
+                <p>&pound;{{ number_format($reservation->security_deposit_amount, 2) }} is excluded from the booking payment. Request the hold from one day before arrival. Standard holds usually last seven days; check the actual expiry in Payments.</p>
+                @can('payments.refund')
+                    <form method="POST" action="{{ route('admin.reservations.security-deposit', $reservation) }}">
+                        @csrf
+                        <button class="btn btn-outline-primary btn-sm">Generate / view security deposit hold</button>
+                    </form>
+                @endcan
+            </div>
+        </div>
+    @endif
+
     <div class="row g-3">
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm mb-3">

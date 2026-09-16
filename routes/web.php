@@ -35,6 +35,7 @@ use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Website\BookingController;
+use App\Http\Controllers\Website\SecurityDepositController;
 use App\Http\Controllers\Website\IcalController;
 use App\Http\Controllers\Website\WebsiteController;
 use Illuminate\Support\Facades\Route;
@@ -67,6 +68,8 @@ Route::get('/book/requested', [BookingController::class, 'requestReceived'])->na
 Route::get('/book/pay/{reservation}', [BookingController::class, 'checkoutPage'])->name('booking.checkout');
 Route::post('/book/pay/{reservation}/confirm', [BookingController::class, 'confirmDirectPayment'])->name('booking.checkout.confirm');
 Route::get('/book/confirmation', [BookingController::class, 'confirmation'])->name('booking.confirmation');
+Route::get('/book/security-deposit/{payment}', [SecurityDepositController::class, 'show'])
+    ->name('booking.security-deposit')->middleware(['signed:payment_intent,payment_intent_client_secret,redirect_status', 'throttle:30,1']);
 
 Route::get('/pay/{token:uuid}', [BookingController::class, 'payLink'])->name('booking.pay-link');
 
@@ -312,6 +315,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
         Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy')->middleware('can:payments.create');
         Route::post('/payments/{payment}/refund', [PaymentController::class, 'refund'])->name('payments.refund')->middleware('can:payments.refund');
+        Route::post('/reservations/{reservation}/security-deposit', [PaymentController::class, 'requestHold'])->name('reservations.security-deposit')->middleware('can:payments.refund');
+        Route::post('/payments/{payment}/release-hold', [PaymentController::class, 'releaseHold'])->name('payments.release-hold')->middleware('can:payments.refund');
     });
 
     Route::middleware('can:channels.view')->group(function (): void {

@@ -20,7 +20,9 @@
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                     <td style="font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#1e211c;">
-                        @if ($isBalancePayment)
+                        @if ($reservation->security_deposit_amount !== null)
+                            Please pay &pound;{{ number_format($paymentAmount, 2) }} for your stay using the secure link below. The security deposit of &pound;{{ number_format($reservation->security_deposit_amount, 2) }} is a separate card hold requested near arrival and is not charged here.
+                        @elseif ($isBalancePayment)
                             Thank you for your payment. Please settle the remaining balance for your stay using the secure link below.
                         @else
                             Thanks for choosing Corner House. To confirm your stay, please settle your refundable security deposit using the secure link below.

@@ -151,7 +151,7 @@ class CreateBookingTest extends TestCase
         $this->assertSame(20.0, (float) $result['reservation']->discount_amount);
     }
 
-    public function test_addons_and_deposit_are_included_in_charged_total(): void
+    public function test_addons_are_charged_and_security_deposit_is_stored_separately(): void
     {
         $room = $this->makeRoom(['base_rate' => 100]);
 
@@ -161,7 +161,7 @@ class CreateBookingTest extends TestCase
             'addons_total' => 30,
         ]));
 
-        // 200 base + 30 add-ons + 50 deposit = 280
-        $this->assertSame(280.0, (float) $result['reservation']->total_amount);
+        $this->assertSame(230.0, (float) $result['reservation']->total_amount);
+        $this->assertSame(50.0, (float) $result['reservation']->security_deposit_amount);
     }
 }

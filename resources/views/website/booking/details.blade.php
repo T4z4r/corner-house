@@ -563,7 +563,7 @@
                             <ol class="mb-0 ps-3">
                                 <li>We review your request and hold your dates for 48 hours.</li>
                                 <li>We ask the lead guest for a photo ID and a signed rental agreement.</li>
-                                <li>We email you a payment link (or you pay on this website) to secure the booking with a refundable &pound;950 deposit.</li>
+                                <li>We send a secure link for your booking payment. The refundable security deposit is a separate card hold requested near arrival.</li>
                             </ol>
                         </div>
                     </div>
@@ -648,7 +648,7 @@
 
                     @if (! empty($quote['damage_deposit']) && $quote['damage_deposit'] > 0)
                         <div class="ch-breakdown-row py-2 my-2 border-top border-bottom small text-muted">
-                            <span><i class="bi bi-info-circle me-1"></i>Damage deposit (refundable)</span>
+                            <span><i class="bi bi-info-circle me-1"></i>Security deposit hold near arrival (separate)</span>
                             <span class="fw-bold text-dark">£{{ number_format($quote['damage_deposit'], 2) }}</span>
                         </div>
                     @endif
@@ -662,7 +662,7 @@
                     <div class="ch-breakdown-row total-row">
                         <div>
                             <span class="d-block fw-bold text-dark fs-6" style="font-family:'Fraunces',serif;">Grand Total</span>
-                            <span class="small text-muted">Includes stay, deposit &amp; tax</span>
+                            <span class="small text-muted">Includes stay &amp; tax; security hold is separate</span>
                         </div>
                         <span class="ch-total-price" id="totalDisplay">£{{ number_format($quote['total'], 2) }}</span>
                     </div>
@@ -699,7 +699,7 @@
         <div class="ch-modal-icon success"><i class="bi bi-check-lg"></i></div>
         <h3 id="enquirySuccessTitle">Your enquiry has been sent</h3>
         <p class="ch-modal-text">
-            Thank you &mdash; your dates are held for 48 hours while we review your request. We will email you to confirm, then send a secure payment link for the refundable &pound;950 deposit.
+            Thank you &mdash; your dates are held for 48 hours while we review your request. We will email you to confirm, then send a secure link for your booking payment. Your security deposit hold will be requested near arrival.
         </p>
         <span class="ch-modal-ref" id="enquirySuccessRef"></span>
         <div class="ch-modal-actions">

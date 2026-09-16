@@ -10,6 +10,7 @@ use App\Models\BookingHold;
 use App\Models\Guest;
 use App\Models\Reservation;
 use App\Models\Room;
+use App\Models\Setting;
 use App\Services\Availability\AvailabilityService;
 use App\Services\Pricing\PricingEngine;
 use App\Services\Notification\NotificationService;
@@ -109,10 +110,10 @@ class BookingService
 
             $guest = $this->firstOrCreateGuest($data);
 
-            // Add-ons and the damage deposit are part of what the guest is
-            // quoted and charged, so they must be included in the stored total.
             $addonsTotal = (float) ($data['addons_total'] ?? 0);
-            $damageDeposit = (float) ($data['damage_deposit'] ?? 0);
+            $separateDeposit = in_array($data['source'] ?? 'direct', ['direct', 'manual'], true)
+                ? max(0, (float) ($data['damage_deposit'] ?? Setting::getValue('damage_deposit', 950))) : null;
+            $damageDeposit = $separateDeposit !== null ? 0 : (float) ($data['damage_deposit'] ?? 0);
             $finalTotal = round($price['total'] + $addonsTotal + $damageDeposit, 2);
 
             $reservation = Reservation::create([
@@ -136,6 +137,7 @@ class BookingService
                 'fees_amount' => round($price['fees_amount'] + $addonsTotal + $damageDeposit, 2),
                 'total_amount' => $finalTotal,
                 'paid_amount' => 0,
+                'security_deposit_amount' => $separateDeposit,
                 'payment_status' => 'unpaid',
                 'sync_status' => $data['skip_sync'] ?? false ? 'none' : 'pending',
                 'notes' => $data['notes'] ?? null,
@@ -264,7 +266,7 @@ class BookingService
             $guest = $this->firstOrCreateGuest($data);
 
             $addonsTotal = (float) ($data['addons_total'] ?? 0);
-            $damageDeposit = (float) ($data['damage_deposit'] ?? 0);
+            $damageDeposit = $reservation->security_deposit_amount !== null ? 0 : (float) ($data['damage_deposit'] ?? 0);
             $finalTotal = round($price['total'] + $addonsTotal + $damageDeposit, 2);
 
             $reservation->update([
@@ -301,6 +303,9 @@ class BookingService
      */
     public function delete(Reservation $reservation): void
     {
+        if ($reservation->payments()->where('metadata->purpose', 'security_deposit')->whereIn('status', ['pending', 'processing', 'paid'])->exists()) {
+            throw new \DomainException('Release or refund the security deposit and cancel pending holds before deleting this booking.');
+        }
         if ($reservation->payment_status !== 'refunded'
             && (in_array($reservation->payment_status, ['paid', 'partial'], true) || $reservation->paid_amount > 0)) {
             throw new \DomainException('This booking has payments. Refund the payments before deleting the booking.');

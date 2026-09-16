@@ -31,7 +31,7 @@ class PaymentLinkMail extends Mailable
         $deposit = (float) Setting::getValue('damage_deposit', 950);
         $isBalancePayment = (float) $this->reservation->paid_amount > 0;
         $outstandingAmount = max(0.0, round((float) $this->reservation->total_amount - (float) $this->reservation->paid_amount, 2));
-        $paymentAmount = $isBalancePayment ? $outstandingAmount : $deposit;
+        $paymentAmount = $isBalancePayment || $this->reservation->security_deposit_amount !== null ? $outstandingAmount : $deposit;
         $balanceDue = max(0.0, round($outstandingAmount - $paymentAmount, 2));
 
         return new Content(

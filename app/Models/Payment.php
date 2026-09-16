@@ -51,4 +51,22 @@ class Payment extends Model
     {
         return $this->status === 'paid';
     }
+
+    public function isSecurityDeposit(): bool
+    {
+        return ($this->metadata['purpose'] ?? null) === 'security_deposit';
+    }
+
+    public function statusLabel(): string
+    {
+        if ($this->isSecurityDeposit()) {
+            return match ($this->status) {
+                'processing' => 'Held (not charged)',
+                'cancelled' => 'Hold released / expired',
+                default => ucfirst($this->status),
+            };
+        }
+
+        return ucfirst($this->status);
+    }
 }

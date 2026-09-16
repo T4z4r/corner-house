@@ -1,6 +1,12 @@
 @extends('layouts.admin.app')
 @section('title', 'Payment Details')
 @section('content')
+@if (session('error'))
+    <div class="alert alert-danger">{{ session('error') }}</div>
+@endif
+@error('error')
+    <div class="alert alert-danger">{{ $message }}</div>
+@enderror
 <div class="ch-page-header">
     <div>
         <div class="ch-breadcrumb">Finance / Payments</div>
@@ -22,7 +28,7 @@
                 @elseif ($payment->status === 'refunded')
                     <span class="badge bg-danger">Refunded</span>
                 @else
-                    <span class="badge bg-secondary">{{ ucfirst($payment->status) }}</span>
+                    <span class="badge bg-secondary">{{ $payment->statusLabel() }}</span>
                 @endif
             </div>
             <div class="card-body">
@@ -105,6 +111,33 @@
     </div>
 
     <div class="col-lg-4">
+        @if ($payment->isSecurityDeposit())
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white">Refundable security deposit hold</div>
+                <div class="card-body">
+                    <p>Held funds are not charged and do not count towards the booking payment.</p>
+                    @if ($payment->metadata['capture_before'] ?? null)
+                        <p>Stripe authorisation expires: <strong>{{ \Illuminate\Support\Carbon::createFromTimestamp($payment->metadata['capture_before'])->setTimezone('Europe/London')->format('d M Y H:i T') }}</strong></p>
+                        @if ($payment->status === 'processing' && \Illuminate\Support\Carbon::createFromTimestamp($payment->metadata['capture_before'])->lt($payment->reservation->check_out->copy()->endOfDay()))
+                            <p class="text-danger">This hold expires before the end of the stay. Arrange a new authorisation with the guest when it expires.</p>
+                        @endif
+                    @endif
+                    @if ($holdUrl)
+                        <label for="hold-link" class="form-label">Guest hold link (valid for 24 hours)</label>
+                        <input id="hold-link" class="form-control" value="{{ $holdUrl }}" readonly onclick="this.select()">
+                    @endif
+                    @can('payments.refund')
+                        @if ($payment->status === 'processing')
+                            <form method="POST" action="{{ route('admin.payments.release-hold', $payment) }}" class="mt-3">
+                                @csrf
+                                <p>Release the full hold back to the guest. No refund transaction is needed because the funds were never charged.</p>
+                                <button class="btn btn-warning w-100" onclick="return confirm('Release the entire security deposit hold?')">Release hold</button>
+                            </form>
+                        @endif
+                    @endcan
+                </div>
+            </div>
+        @endif
         <div class="mb-3">@include('admin.payments._delete', ['payment' => $payment])</div>
         @can('payments.refund')
             @if ($payment->status === 'paid')

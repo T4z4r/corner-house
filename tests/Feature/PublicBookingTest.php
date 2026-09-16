@@ -276,7 +276,7 @@ class PublicBookingTest extends TestCase
             ->assertOk()->assertViewHas('enquiry', fn ($value): bool => $value->id === $enquiry->id);
     }
 
-    public function test_details_page_total_includes_damage_deposit(): void
+    public function test_details_page_shows_security_hold_separately_from_the_total(): void
     {
         $room = Room::factory()->create(['base_rate' => 100, 'status' => 'active', 'capacity' => 2]);
         Setting::updateOrCreate(['key' => 'damage_deposit'], ['value' => '950']);
@@ -290,12 +290,13 @@ class PublicBookingTest extends TestCase
             'guests' => 1,
         ]))
             ->assertOk()
-            ->assertSee('Damage deposit')
+            ->assertSee('Security deposit hold near arrival (separate)')
             ->assertSee('🇰🇪 Kenya +254')
             ->assertSee('🇮🇳 India +91')
             ->assertSee('🇧🇷 Brazil +55')
             ->assertSee('data-country="gb" selected', false)
-            ->assertSee('£1,150.00');
+            ->assertSee('£200.00')
+            ->assertSee('£950.00');
     }
 
     public function test_check_in_on_the_checkout_day_is_rejected(): void
@@ -392,6 +393,8 @@ class PublicBookingTest extends TestCase
         ]);
 
         $reservation = $result['reservation'];
+
+        $reservation->update(['security_deposit_amount' => null, 'total_amount' => (float) $reservation->total_amount + 950, 'fees_amount' => (float) $reservation->fees_amount + 950]);
 
         $this->get(route('booking.checkout', [$reservation->getRouteKey(), 'payment_option' => 'deposit']))
             ->assertOk()
@@ -646,6 +649,8 @@ class PublicBookingTest extends TestCase
 
         $reservation = $result['reservation'];
 
+        $reservation->update(['security_deposit_amount' => null, 'total_amount' => (float) $reservation->total_amount + 950, 'fees_amount' => (float) $reservation->fees_amount + 950]);
+
         $this->get(route('booking.checkout', [$reservation->getRouteKey(), 'payment_option' => 'deposit']))
             ->assertOk();
 
@@ -682,6 +687,8 @@ class PublicBookingTest extends TestCase
         ]);
 
         $reservation = $result['reservation'];
+
+        $reservation->update(['security_deposit_amount' => null, 'total_amount' => (float) $reservation->total_amount + 950, 'fees_amount' => (float) $reservation->fees_amount + 950]);
 
         $this->get(route('booking.checkout', [$reservation->getRouteKey(), 'payment_option' => 'deposit']))
             ->assertOk()
@@ -722,6 +729,8 @@ class PublicBookingTest extends TestCase
             'status' => 'hold',
             'source' => 'direct',
         ])['reservation'];
+
+        $reservation->update(['security_deposit_amount' => null, 'total_amount' => (float) $reservation->total_amount + 950, 'fees_amount' => (float) $reservation->fees_amount + 950]);
 
         $this->get(route('booking.checkout', [$reservation->getRouteKey(), 'payment_option' => 'deposit']))
             ->assertOk()

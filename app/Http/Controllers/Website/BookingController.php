@@ -199,11 +199,8 @@ class BookingController extends Controller
             return back()->withErrors(['check_in' => 'This stay exceeds the '.$quote['maximum_stay'].'-night maximum.']);
         }
 
-        // The damage deposit is collected up front with the stay, so it must be
-        // shown (and included in the total) here to match what holdAndPay charges.
         $damageDeposit = (float) Setting::getValue('damage_deposit', 950);
         $quote['damage_deposit'] = $damageDeposit;
-        $quote['total'] = round($quote['total'] + $damageDeposit, 2);
 
         // Max occupancy
         $maxAdults = (int) Setting::getValue('max_adults', 12);
@@ -297,10 +294,8 @@ class BookingController extends Controller
             return $this->requestFailure($request, 'This stay exceeds the '.$quote['maximum_stay'].'-night maximum.');
         }
 
-        // The refundable deposit (£950) is quoted now and collected later via a
-        // payment link once the lead guest has been verified.
         $damageDeposit = (float) Setting::getValue('damage_deposit', 950);
-        $quote['total'] = round($quote['total'] + $damageDeposit, 2);
+        $quote['damage_deposit'] = $damageDeposit;
 
         $addonIds = $data['addon_ids'] ?? [];
         $addons = AddOn::query()->whereIn('id', $addonIds)->where('is_active', true)->get();
@@ -440,6 +435,9 @@ class BookingController extends Controller
             'payment_option' => ['sometimes', 'required', 'in:deposit,full'],
         ]);
         $paymentOption = $validated['payment_option'] ?? 'full';
+        if ($reservation->security_deposit_amount !== null) {
+            $paymentOption = 'full';
+        }
 
         $reservation->load(['room.images', 'guest', 'property', 'addons', 'payments']);
 
@@ -456,7 +454,7 @@ class BookingController extends Controller
             ]);
         }
 
-        $deposit = (float) Setting::getValue('damage_deposit', 950);
+        $deposit = (float) ($reservation->security_deposit_amount ?? Setting::getValue('damage_deposit', 950));
         $paymentAmount = $isBalancePayment || $paymentOption === 'full' ? $outstandingAmount : $deposit;
         $balanceDue = max(0.0, round($outstandingAmount - $paymentAmount, 2));
 
@@ -465,6 +463,7 @@ class BookingController extends Controller
         $checkoutPayment = $reservation->payments()
             ->where('provider', 'stripe')
             ->where('status', 'pending')
+            ->where(fn ($query) => $query->whereNull('metadata->purpose')->orWhere('metadata->purpose', '!=', 'security_deposit'))
             ->where('amount', $paymentAmount)
             ->whereNotNull('provider_session_id')
             ->latest('id')

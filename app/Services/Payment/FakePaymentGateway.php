@@ -12,6 +12,11 @@ class FakePaymentGateway implements PaymentGatewayInterface
 
     public bool $paid = true;
 
+    public function releaseHold(string $paymentIntentId): void
+    {
+        $this->intents[$paymentIntentId]['released'] = true;
+    }
+
     public function cancelPendingPayment(?string $sessionId, ?string $intentId): void
     {
         if ($this->paid && ($sessionId || $intentId)) {
@@ -67,8 +72,10 @@ class FakePaymentGateway implements PaymentGatewayInterface
     {
         return [
             'id' => $paymentIntentId,
-            'status' => $this->paid ? 'succeeded' : 'requires_payment_method',
+            'status' => ! empty($this->intents[$paymentIntentId]['released']) ? 'canceled' : ($this->paid ? (($this->intents[$paymentIntentId]['capture_method'] ?? '') === 'manual' ? 'requires_capture' : 'succeeded') : 'requires_payment_method'),
             'amount' => (int) round(((float) ($this->intents[$paymentIntentId]['amount'] ?? 0)) * 100),
+            'currency' => strtolower($this->intents[$paymentIntentId]['currency'] ?? 'GBP'),
+            'capture_before' => now()->addDays(7)->timestamp,
         ];
     }
 

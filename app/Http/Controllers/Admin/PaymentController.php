@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use App\Models\Reservation;
 use App\Services\Payment\PaymentService;
+use App\Services\Payment\SecurityDepositService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -40,11 +42,47 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function show(Payment $payment): View
+    public function show(Payment $payment, SecurityDepositService $deposits): View
     {
+        if ($payment->isSecurityDeposit() && $payment->provider_payment_id) {
+            try {
+                $payment = $deposits->sync($payment);
+            } catch (\Throwable $exception) {
+                report($exception);
+                session()->flash('error', 'Unable to refresh the hold status from Stripe. Try again before relying on this status.');
+            }
+        }
+
         return view('admin.payments.show', [
             'payment' => $payment->load(['reservation.guest', 'reservation.room', 'refunds']),
+            'holdUrl' => $payment->isSecurityDeposit() && $payment->status === 'pending' ? $deposits->guestUrl($payment) : null,
         ]);
+    }
+
+    public function requestHold(Reservation $reservation, SecurityDepositService $deposits): RedirectResponse
+    {
+        try {
+            $payment = $deposits->requestHold($reservation);
+
+            return redirect()->route('admin.payments.show', $payment)->with('status', 'Security deposit link ready to share with the guest.');
+        } catch (\DomainException $exception) {
+            return back()->withErrors(['error' => $exception->getMessage()]);
+        }
+    }
+
+    public function releaseHold(Payment $payment, SecurityDepositService $deposits): RedirectResponse
+    {
+        try {
+            $deposits->release($payment);
+
+            return back()->with('status', 'Security deposit hold released. The guest’s bank controls when the funds become available.');
+        } catch (\DomainException $exception) {
+            return back()->withErrors(['error' => $exception->getMessage()]);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return back()->withErrors(['error' => 'The hold could not be released. Refresh its Stripe status and try again.']);
+        }
     }
 
     public function destroy(Payment $payment): RedirectResponse

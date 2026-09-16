@@ -11,6 +11,8 @@ interface PaymentGatewayInterface
 
     public function cancelPendingPayment(?string $sessionId, ?string $intentId): void;
 
+    public function releaseHold(string $paymentIntentId): void;
+
     /**
      * @param  array{
      *     amount: float,

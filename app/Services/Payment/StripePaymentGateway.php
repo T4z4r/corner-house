@@ -114,11 +114,17 @@ class StripePaymentGateway implements PaymentGatewayInterface
             'metadata' => $payload['metadata'] ?? [],
         ];
 
+        if (($payload['capture_method'] ?? null) === 'manual') {
+            unset($params['automatic_payment_methods']);
+            $params['payment_method_types'] = ['card'];
+            $params['capture_method'] = 'manual';
+        }
+
         if (! empty($payload['customer_email'])) {
             $params['receipt_email'] = (string) $payload['customer_email'];
         }
 
-        $intent = $this->client->paymentIntents->create($params);
+        $intent = $this->client->paymentIntents->create($params, isset($payload['idempotency_key']) ? ['idempotency_key' => $payload['idempotency_key']] : []);
 
         return [
             'id' => $intent->id,
@@ -129,13 +135,27 @@ class StripePaymentGateway implements PaymentGatewayInterface
 
     public function retrievePaymentIntent(string $paymentIntentId): array
     {
-        $intent = $this->client->paymentIntents->retrieve($paymentIntentId);
+        $intent = $this->client->paymentIntents->retrieve($paymentIntentId, ['expand' => ['latest_charge']]);
 
         return [
             'id' => $intent->id,
             'status' => (string) $intent->status,
             'amount' => (int) $intent->amount,
+            'currency' => (string) $intent->currency,
+            'capture_before' => $intent->latest_charge?->payment_method_details?->card?->capture_before,
         ];
+    }
+
+    public function releaseHold(string $paymentIntentId): void
+    {
+        $intent = $this->client->paymentIntents->retrieve($paymentIntentId);
+        if ($intent->status === 'canceled') {
+            return;
+        }
+        if ($intent->status !== 'requires_capture') {
+            throw new \DomainException('This payment is not an active hold. Captured payments must be refunded instead.');
+        }
+        $this->client->paymentIntents->cancel($paymentIntentId, [], ['idempotency_key' => 'release-'.$paymentIntentId]);
     }
 
     public function refund(string $paymentIntentId, int $amountPence): array

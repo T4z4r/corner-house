@@ -8,6 +8,7 @@
 @php($guest = $reservation->guest?->exists ? $reservation->guest : null)
 @php($fullName = trim(($guest?->first_name ?? '').' '.($guest?->last_name ?? '')))
 @php($guestEmail = $guest?->email ?? '')
+@php($separateDeposit = $reservation->security_deposit_amount !== null)
 @php($nights = $reservation->check_in && $reservation->check_out ? $reservation->check_in->diffInDays($reservation->check_out) : 1)
 @php($balanceDueNote = $balanceDue > 0 ? ' &mdash; the balance of &pound;'.number_format($balanceDue, 2).' is due before arrival' : '')
 @php($balanceDueSentence = $balanceDue > 0 ? ' The balance of &pound;'.number_format($balanceDue, 2).' is due before arrival.' : '')
@@ -16,7 +17,7 @@
     <div class="wrap">
         <p class="ch-kicker">Direct Booking &middot; Step 3 of 3</p>
         <h1>Complete Your Payment</h1>
-        <p class="ch-page-hero-sub">{{ $isBalancePayment ? 'Pay the remaining balance for your booking below.' : 'Pay the full booking amount now, or choose to pay only the refundable deposit.' }}</p>
+        <p class="ch-page-hero-sub">{{ $separateDeposit ? 'Pay for your stay below. Your security deposit is a separate card hold requested near arrival.' : ($isBalancePayment ? 'Pay the remaining balance for your booking below.' : 'Pay the full booking amount now, or choose to pay only the refundable deposit.') }}</p>
     </div>
 </section>
 
@@ -523,7 +524,13 @@
             </div>
 
             <div class="ch-card-premium">
-                @if ($isBalancePayment)
+                @if ($separateDeposit)
+                    <h2 class="ch-card-header-title">Pay for your stay</h2>
+                    <p>Booking payment: <strong>&pound;{{ number_format($paymentAmount, 2) }}</strong>.</p>
+                    @if ($deposit > 0)
+                        <p>The &pound;{{ number_format($deposit, 2) }} refundable security deposit is not charged here. We will request a separate card hold near arrival and release it after your stay, subject to the rental agreement.</p>
+                    @endif
+                @elseif ($isBalancePayment)
                     <h2 class="ch-card-header-title">Pay your remaining balance</h2>
                     <p>You have already paid &pound;{{ number_format((float) $reservation->paid_amount, 2) }}.</p>
                     <p class="ch-hosted-lead">Remaining balance: <strong>&pound;{{ number_format($paymentAmount, 2) }}</strong> due now.</p>
@@ -704,7 +711,7 @@
 
                     @if ((float) $deposit > 0)
                         <div class="ch-breakdown-row deposit" style="border-top:1px solid var(--ch-line); border-bottom:1px solid var(--ch-line); padding:.7rem 0; margin:.6rem 0;">
-                            <span>Refundable Security Deposit &mdash; {{ $isBalancePayment ? 'included in booking total' : 'included in payment' }}</span>
+                            <span>Refundable Security Deposit &mdash; {{ $separateDeposit ? 'separate hold near arrival' : ($isBalancePayment ? 'included in booking total' : 'included in payment') }}</span>
                             <span style="font-weight:700; color:var(--ch-ink);">&pound;{{ number_format((float) $deposit, 2) }}</span>
                         </div>
                     @endif
@@ -719,7 +726,7 @@
                     <div class="ch-breakdown-row total-row">
                         <div>
                             <span class="ch-summary-sub" style="display:block; font-family:var(--ch-serif); font-size:1.02rem; color:var(--ch-ink); font-weight:700;">Grand Total</span>
-                            <span class="ch-summary-sub">Includes stay, deposit &amp; tax</span>
+                            <span class="ch-summary-sub">{{ $separateDeposit ? 'Includes stay and tax; security hold is separate' : 'Includes stay, deposit & tax' }}</span>
                         </div>
                         <span class="ch-total-price">&pound;{{ number_format((float) $reservation->total_amount, 2) }}</span>
                     </div>

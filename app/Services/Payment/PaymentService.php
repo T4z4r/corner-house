@@ -23,6 +23,7 @@ class PaymentService
         private readonly AuditLogger $auditLogger,
         private readonly SystemNotificationService $systemNotifications,
         private readonly NotificationService $notifications,
+        private readonly SecurityDepositService $securityDeposits,
     ) {}
 
     /**
@@ -165,6 +166,7 @@ class PaymentService
         $payment = $reservation->payments()
             ->where('provider', 'stripe')
             ->where('status', 'pending')
+            ->where(fn ($query) => $query->whereNull('metadata->purpose')->orWhere('metadata->purpose', '!=', 'security_deposit'))
             ->where('amount', $chargeAmount)
             ->latest('id')
             ->first()
@@ -220,6 +222,10 @@ class PaymentService
             throw new \DomainException('Unknown payment intent.');
         }
 
+        if ($payment->isSecurityDeposit()) {
+            return $this->securityDeposits->sync($payment);
+        }
+
         if ($payment->isPaid()) {
             return $payment;
         }
@@ -250,6 +256,15 @@ class PaymentService
     {
         $event = $this->gateway->parseWebhook($payload, $signature);
         $type = $event['type'] ?? '';
+
+        if (in_array($type, ['payment_intent.amount_capturable_updated', 'payment_intent.canceled', 'payment_intent.succeeded'], true)) {
+            $payment = Payment::query()->where('provider_payment_id', $event['data']['object']['id'] ?? '')->first();
+            if ($payment?->isSecurityDeposit()) {
+                $this->securityDeposits->sync($payment);
+
+                return;
+            }
+        }
 
         if ($type === 'checkout.session.completed') {
             $this->handleCheckoutSessionCompleted($event);
@@ -308,6 +323,9 @@ class PaymentService
 
     public function markPaid(Payment $payment, ?string $paymentIntentId = null): Payment
     {
+        if ($payment->isSecurityDeposit()) {
+            return $this->securityDeposits->sync($payment);
+        }
         if ($payment->isPaid()) {
             return $payment;
         }
@@ -414,7 +432,9 @@ class PaymentService
             ]);
 
             $locked->update(['status' => 'refunded']);
-            $locked->reservation?->update(['payment_status' => 'refunded']);
+            if (! $locked->isSecurityDeposit()) {
+                $locked->reservation?->update(['payment_status' => 'refunded']);
+            }
 
             $this->systemNotifications->paymentRefunded($locked->fresh(['reservation']), $refund, $userId);
             $this->auditLogger->log('payments.refunded', 'payments', 'payment', (string) $locked->id);
