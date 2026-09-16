@@ -96,8 +96,8 @@
         <div class="wrap">
             <div class="grid-2">
                 <div>
-                    <h2>Distilled on site</h2>
-                    <p class="lede">Serengeti Spirits is made here at Corner House. Order a case for your stay, or commission a custom-labelled bottle for a birthday, event or special occasion.</p>
+                    <h2>Manufactured on site</h2>
+                    <p class="lede">Serengeti Spirits is manufactured here at Corner House. Order a case for your stay, or commission a custom-labelled bottle for a birthday, event or special occasion.</p>
                 </div>
                 <div style="align-self:end">
                     <a class="btn btn-outline" href="#spirits">Spirits and drinks packages</a>
