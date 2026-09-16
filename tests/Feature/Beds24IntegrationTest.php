@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\PublishBeds24PriceOverrideJob;
 use App\Models\CalendarBlock;
 use App\Models\ChannelAccount;
 use App\Models\ChannelMapping;
@@ -27,6 +28,7 @@ use Illuminate\Database\Schema\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -2207,6 +2209,7 @@ class Beds24IntegrationTest extends TestCase
     #[DataProvider('overridePublishRates')]
     public function test_pricing_override_can_be_published_from_integrations_page(bool $upliftEnabled, float $expectedRate): void
     {
+        Queue::fake();
         Setting::updateOrCreate(['key' => 'holiday_weekend_uplift_enabled'], ['value' => $upliftEnabled ? '1' : '0']);
         Setting::updateOrCreate(['key' => 'holiday_weekend_uplift'], ['value' => '5']);
         Setting::updateOrCreate(['key' => 'school_holiday_periods'], [
@@ -2255,11 +2258,47 @@ class Beds24IntegrationTest extends TestCase
         $this->actingAs($this->superAdmin())
             ->post(route('admin.channels.pricing.overrides.publish', $override))
             ->assertRedirect()
-            ->assertSessionHas('status', 'Rate override posted to Beds24.');
+            ->assertSessionHas('status', 'Rate override queued for publishing to Beds24.');
+
+        Http::assertNothingSent();
+        Queue::assertPushed(PublishBeds24PriceOverrideJob::class, fn ($job): bool => $job->overrideId === $override->id);
+        app()->call([new PublishBeds24PriceOverrideJob($override->id), 'handle']);
 
         Http::assertSent(fn ($request) => str_contains($request->url(), 'inventory/rooms/calendar')
             && (int) ($request->data()[0]['roomId'] ?? 0) === 77
             && (float) ($request->data()[0]['calendar'][0]['price1'] ?? 0) === $expectedRate);
+    }
+
+    public function test_override_publish_job_skips_deleted_and_disabled_overrides(): void
+    {
+        $publisher = $this->mock(Beds24PricingPublisher::class);
+        $publisher->shouldNotReceive('postOverride');
+        $override = PricingOverride::create([
+            'room_id' => Room::factory()->create()->id,
+            'start_date' => '2026-10-23',
+            'end_date' => '2026-10-25',
+            'rate' => 125,
+            'is_enabled' => false,
+        ]);
+        $job = new PublishBeds24PriceOverrideJob($override->id);
+        $job->handle($publisher);
+        $override->delete();
+        $job->handle($publisher);
+    }
+
+    public function test_override_publish_job_throws_on_failure_to_allow_retry(): void
+    {
+        $override = PricingOverride::create([
+            'room_id' => Room::factory()->create()->id,
+            'start_date' => '2026-10-23',
+            'end_date' => '2026-10-25',
+            'rate' => 125,
+            'is_enabled' => true,
+        ]);
+        $publisher = $this->mock(Beds24PricingPublisher::class);
+        $publisher->shouldReceive('postOverride')->once()->andReturnFalse();
+        $this->expectException(\RuntimeException::class);
+        (new PublishBeds24PriceOverrideJob($override->id))->handle($publisher);
     }
 
     public function test_sync_updates_existing_beds24_booking_dates(): void

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\PublishBeds24PriceOverrideJob;
 use App\Jobs\SyncBeds24BookingsJob;
 use App\Jobs\SyncBeds24MessagesJob;
 use App\Models\ChannelAccount;
@@ -31,7 +32,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -399,13 +399,11 @@ class ChannelController extends Controller
         return back()->with('status', 'Pricing rule could not be posted to Beds24.');
     }
 
-    public function publishPricingOverride(PricingOverride $override, Beds24PricingPublisher $publisher): RedirectResponse
+    public function publishPricingOverride(PricingOverride $override): RedirectResponse
     {
-        if ($publisher->postOverride($override)) {
-            return back()->with('status', 'Rate override posted to Beds24.');
-        }
+        PublishBeds24PriceOverrideJob::dispatch($override->id)->afterCommit();
 
-        return back()->with('status', 'Rate override could not be posted to Beds24.');
+        return back()->with('status', 'Rate override queued for publishing to Beds24.');
     }
 
     public function publishDefaultPricing(Beds24PricingPublisher $publisher): RedirectResponse
@@ -960,8 +958,8 @@ class ChannelController extends Controller
         }
 
         try {
-            Bus::dispatchSync(new SyncBeds24BookingsJob());
-            Bus::dispatchSync(new SyncBeds24MessagesJob());
+            Bus::dispatchSync(new SyncBeds24BookingsJob);
+            Bus::dispatchSync(new SyncBeds24MessagesJob);
         } catch (\Throwable $e) {
             return back()->withErrors(['error' => 'Beds24 sync failed: '.$e->getMessage()]);
         }
