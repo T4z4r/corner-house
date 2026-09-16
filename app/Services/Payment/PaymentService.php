@@ -11,6 +11,7 @@ use App\Models\Reservation;
 use App\Services\Audit\AuditLogger;
 use App\Services\Booking\BookingService;
 use App\Services\Notification\SystemNotificationService;
+use App\Services\Notification\NotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -21,6 +22,7 @@ class PaymentService
         private readonly BookingService $bookingService,
         private readonly AuditLogger $auditLogger,
         private readonly SystemNotificationService $systemNotifications,
+        private readonly NotificationService $notifications,
     ) {}
 
     /**
@@ -381,7 +383,8 @@ class PaymentService
 
     public function refund(Payment $payment, ?float $amount = null, ?string $reason = null, ?int $userId = null): Refund
     {
-        return DB::transaction(function () use ($payment, $amount, $reason, $userId): Refund {
+        $communication = null;
+        $refund = DB::transaction(function () use ($payment, $amount, $reason, $userId, &$communication): Refund {
             $locked = Payment::query()->whereKey($payment->id)->lockForUpdate()->firstOrFail();
 
             if (! $locked->isPaid()) {
@@ -416,9 +419,16 @@ class PaymentService
             $this->systemNotifications->paymentRefunded($locked->fresh(['reservation']), $refund, $userId);
             $this->auditLogger->log('payments.refunded', 'payments', 'payment', (string) $locked->id);
 
-            SendPaymentRefundEmailJob::dispatch($refund->id);
+            $communication = $this->notifications->prepareRefund($refund);
+
 
             return $refund;
         });
+
+        if ($communication) {
+            SendPaymentRefundEmailJob::dispatch($refund->id, $communication->id)->afterCommit();
+        }
+
+        return $refund;
     }
 }

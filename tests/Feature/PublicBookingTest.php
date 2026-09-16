@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\NewBookingRequestMail;
+use App\Mail\GuestCommunicationMail;
 use App\Models\Enquiry;
 use App\Models\Payment;
 use App\Models\PricingRule;
@@ -180,6 +181,7 @@ class PublicBookingTest extends TestCase
 
     public function test_booking_request_creates_a_48_hour_hold_from_the_widget_payload(): void
     {
+        Mail::fake();
         $room = Room::factory()->create(['base_rate' => 80, 'status' => 'active']);
         $checkIn = now()->addDays(20)->toDateString();
         $checkOut = now()->addDays(22)->toDateString();
@@ -199,6 +201,9 @@ class PublicBookingTest extends TestCase
 
         $enquiry = Enquiry::query()->first();
         $this->assertNotNull($enquiry);
+
+        Mail::assertSent(GuestCommunicationMail::class, fn (GuestCommunicationMail $mail): bool => $mail->hasTo('jane@example.com')
+            && str_contains($mail->emailBody, 'successfully received'));
         $response->assertJsonPath('redirect_url', route('booking.requested', ['enquiry' => $enquiry->id]));
         $this->get($response->json('redirect_url'))
             ->assertOk()

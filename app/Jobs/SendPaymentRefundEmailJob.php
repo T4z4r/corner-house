@@ -2,8 +2,9 @@
 
 namespace App\Jobs;
 
-use App\Models\Payment;
+use App\Models\Communication;
 use App\Models\Refund;
+use App\Services\Mail\MailDispatchService;
 use App\Services\Notification\NotificationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -12,23 +13,24 @@ class SendPaymentRefundEmailJob implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public int $refundId) {}
+    public function __construct(public int $refundId, public ?int $communicationId = null) {}
 
-    public function handle(NotificationService $notifications): void
+    public function handle(NotificationService $notifications, MailDispatchService $mailer): void
     {
+        if ($this->communicationId !== null) {
+            $communication = Communication::find($this->communicationId);
+        } else {
         $refund = Refund::query()->with('payment.reservation')->find($this->refundId);
 
         if (! $refund || ! $refund->payment?->reservation) {
             return;
         }
 
-        $reasonLine = trim((string) $refund->reason) !== ''
-            ? "\n\nReason: ".$refund->reason
-            : '';
+            $communication = $notifications->prepareRefund($refund);
+        }
 
-        $notifications->sendForEvent('payment_refund', $refund->payment->reservation, [
-            '{{refund_amount}}' => number_format((float) $refund->amount, 2),
-            '{{reason_line}}' => $reasonLine,
-        ]);
+        if ($communication && $communication->status !== 'sent') {
+            $mailer->send($communication);
+        }
     }
 }

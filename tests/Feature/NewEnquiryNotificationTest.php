@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\NewEnquiryNotificationMail;
+use App\Mail\GuestCommunicationMail;
 use App\Models\Enquiry;
 use App\Models\Setting;
 use Database\Seeders\SettingsSeeder;
@@ -48,6 +49,10 @@ class NewEnquiryNotificationTest extends TestCase
                 && str_contains($mail->emailBody, 'sam@example.com')
                 && str_contains($mail->emailBody, 'A birthday weekend.');
         });
+
+        Mail::assertSent(GuestCommunicationMail::class, fn (GuestCommunicationMail $mail): bool => $mail->hasTo('sam@example.com')
+            && str_contains($mail->emailBody, 'successfully received')
+            && str_contains($mail->emailBody, 'not a confirmed booking'));
     }
 
     public function test_contact_enquiry_sends_notification_email_to_configured_recipient(): void
@@ -69,6 +74,9 @@ class NewEnquiryNotificationTest extends TestCase
                 && str_contains($mail->envelope()->subject, 'New website enquiry from Sam Guest')
                 && str_contains($mail->emailBody, 'Can we arrive early?');
         });
+
+        Mail::assertSent(GuestCommunicationMail::class, fn (GuestCommunicationMail $mail): bool => $mail->hasTo('sam@example.com')
+            && str_contains($mail->emailBody, 'successfully received'));
     }
 
     public function test_notification_not_sent_when_recipient_email_is_empty(): void
@@ -84,7 +92,8 @@ class NewEnquiryNotificationTest extends TestCase
             'message' => 'Hello',
         ])->assertOk();
 
-        Mail::assertNothingSent();
+        Mail::assertNotSent(NewEnquiryNotificationMail::class);
+        Mail::assertSent(GuestCommunicationMail::class, fn (GuestCommunicationMail $mail): bool => $mail->hasTo('sam@example.com'));
     }
 
     public function test_mailable_body_contains_enquiry_details(): void

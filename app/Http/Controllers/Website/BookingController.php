@@ -336,6 +336,7 @@ class BookingController extends Controller
             ]);
 
             $this->sendBookingRequestMail($request, $mailConfigurationService, $enquiry, $room, $hold['expires_at'], $quote);
+            app(\App\Services\Notification\NotificationService::class)->sendEnquiryAcknowledgement($enquiry);
 
             if ($request->expectsJson()) {
                 return response()->json([

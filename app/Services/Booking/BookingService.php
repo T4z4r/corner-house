@@ -12,6 +12,8 @@ use App\Models\Reservation;
 use App\Models\Room;
 use App\Services\Availability\AvailabilityService;
 use App\Services\Pricing\PricingEngine;
+use App\Services\Notification\NotificationService;
+use App\Services\Mail\MailDispatchService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -20,6 +22,8 @@ class BookingService
     public function __construct(
         private readonly AvailabilityService $availability,
         private readonly PricingEngine $pricing,
+        private readonly NotificationService $notifications,
+        private readonly MailDispatchService $mailer,
     ) {}
 
     /**
@@ -304,7 +308,16 @@ class BookingService
 
         // The database cascade removes related rows and frees the room's
         // dates immediately (the reservation no longer overlaps the range).
-        DB::transaction(fn () => $reservation->delete());
+        $communication = DB::transaction(function () use ($reservation) {
+            $communication = $this->notifications->prepareBookingDeletion($reservation);
+            $reservation->delete();
+
+            return $communication;
+        });
+
+        if ($communication) {
+            $this->mailer->send($communication);
+        }
     }
 
     private function afterConfirm(Reservation $reservation): void

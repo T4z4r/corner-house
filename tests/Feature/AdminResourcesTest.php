@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AddOn;
+use App\Mail\GuestCommunicationMail;
 use App\Models\CalendarBlock;
 use App\Models\ChannelAccount;
 use App\Models\ChannelMapping;
@@ -24,6 +25,7 @@ use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -816,6 +818,7 @@ class AdminResourcesTest extends TestCase
 
     public function test_super_admin_can_delete_an_unpaid_reservation(): void
     {
+        Mail::fake();
         $reservation = Reservation::factory()->create([
             'payment_status' => 'unpaid',
             'paid_amount' => 0,
@@ -826,10 +829,19 @@ class AdminResourcesTest extends TestCase
             ->assertRedirect(route('admin.reservations.index'));
 
         $this->assertDatabaseMissing('reservations', ['id' => $reservation->id]);
+        Mail::assertSent(GuestCommunicationMail::class, fn (GuestCommunicationMail $mail): bool => $mail->hasTo($reservation->guest->email)
+            && str_contains($mail->emailBody, $reservation->reference)
+            && str_contains($mail->emailBody, 'has been deleted'));
+        $this->assertDatabaseHas('communications', [
+            'reservation_id' => null,
+            'recipient' => $reservation->guest->email,
+            'status' => 'sent',
+        ]);
     }
 
     public function test_super_admin_cannot_delete_a_paid_reservation(): void
     {
+        Mail::fake();
         $reservation = Reservation::factory()->create([
             'payment_status' => 'paid',
             'paid_amount' => 100,
@@ -841,6 +853,7 @@ class AdminResourcesTest extends TestCase
             ->assertSessionHasErrors('error');
 
         $this->assertDatabaseHas('reservations', ['id' => $reservation->id]);
+        Mail::assertNothingSent();
     }
 
     public function test_super_admin_can_delete_a_reservation_once_the_payment_has_been_refunded(): void

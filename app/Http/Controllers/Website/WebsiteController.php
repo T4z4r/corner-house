@@ -199,6 +199,8 @@ class WebsiteController extends Controller
 
         SendNewEnquiryNotificationJob::dispatch($enquiry->id);
 
+        app(\App\Services\Notification\NotificationService::class)->sendEnquiryAcknowledgement($enquiry);
+
         return back()->with('status', 'Thank you. We will get back to you shortly.');
     }
 
@@ -237,6 +239,8 @@ class WebsiteController extends Controller
         ]);
 
         SendNewEnquiryNotificationJob::dispatch($enquiry->id);
+
+        app(\App\Services\Notification\NotificationService::class)->sendEnquiryAcknowledgement($enquiry);
 
         return response()->json(['status' => 'ok']);
     }

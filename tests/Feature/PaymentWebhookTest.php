@@ -3,12 +3,15 @@
 namespace Tests\Feature;
 
 use App\Jobs\PushBeds24BookingJob;
+use App\Jobs\SendPaymentRefundEmailJob;
 use App\Mail\GuestCommunicationMail;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\Payment\PaymentGatewayInterface;
+use App\Services\Payment\PaymentService;
+use App\Services\Booking\BookingService;
 use Database\Seeders\CommunicationTemplateSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Database\Seeders\SettingsSeeder;
@@ -354,5 +357,48 @@ class PaymentWebhookTest extends TestCase
 
         Mail::assertNotSent(GuestCommunicationMail::class);
         $this->assertDatabaseCount('communications', 0);
+    }
+
+    public function test_each_refund_sends_an_email_without_seeded_templates(): void
+    {
+        Mail::fake();
+        $reservation = Reservation::factory()->create(['payment_status' => 'paid']);
+
+        foreach ([100, 50] as $amount) {
+            $payment = Payment::factory()->paid()->create([
+                'reservation_id' => $reservation->id,
+                'amount' => $amount,
+            ]);
+            $refund = app(PaymentService::class)->refund($payment);
+            app()->call([new SendPaymentRefundEmailJob($refund->id), 'handle']);
+        }
+
+        Mail::assertSent(GuestCommunicationMail::class, 2);
+        Mail::assertSent(GuestCommunicationMail::class, fn (GuestCommunicationMail $mail): bool => $mail->hasTo($reservation->guest->email)
+            && str_contains($mail->emailBody, '£100.00')
+            && str_contains($mail->emailBody, 'original payment method'));
+        $this->assertDatabaseCount('communications', 2);
+    }
+
+    public function test_queued_refund_email_survives_booking_deletion(): void
+    {
+        Queue::fake();
+        Mail::fake();
+        $reservation = Reservation::factory()->create(['payment_status' => 'paid']);
+        $payment = Payment::factory()->paid()->create(['reservation_id' => $reservation->id, 'amount' => 150]);
+        $refund = app(PaymentService::class)->refund($payment);
+
+        app(BookingService::class)->delete($reservation->fresh());
+
+        $this->assertDatabaseMissing('refunds', ['id' => $refund->id]);
+        Queue::assertPushed(SendPaymentRefundEmailJob::class, function (SendPaymentRefundEmailJob $job): bool {
+            app()->call([$job, 'handle']);
+            app()->call([$job, 'handle']);
+
+            return true;
+        });
+        Mail::assertSent(GuestCommunicationMail::class, 2);
+        Mail::assertSent(GuestCommunicationMail::class, fn (GuestCommunicationMail $mail): bool => $mail->hasTo($reservation->guest->email)
+            && str_contains($mail->emailBody, '£150.00'));
     }
 }
