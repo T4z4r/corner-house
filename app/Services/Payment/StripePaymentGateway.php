@@ -10,6 +10,26 @@ class StripePaymentGateway implements PaymentGatewayInterface
 {
     public function __construct(private readonly StripeClient $client) {}
 
+    public function cancelPendingPayment(?string $sessionId, ?string $intentId): void
+    {
+        $session = $sessionId ? $this->client->checkout->sessions->retrieve($sessionId) : null;
+        if ($session && ($session->status === 'complete' || $session->payment_status === 'paid')) {
+            throw new \DomainException('Stripe has already completed this checkout. It cannot be deleted.');
+        }
+
+        $intent = $intentId ? $this->client->paymentIntents->retrieve($intentId) : null;
+        if ($intent && ! in_array($intent->status, ['requires_payment_method', 'requires_confirmation', 'requires_action', 'canceled'], true)) {
+            throw new \DomainException('This payment is paid, authorised, or processing at Stripe. It cannot be deleted.');
+        }
+
+        if ($session && $session->status === 'open') {
+            $this->client->checkout->sessions->expire($sessionId);
+        }
+        if ($intent && $intent->status !== 'canceled' && $intentId !== ($session?->payment_intent ?? null)) {
+            $this->client->paymentIntents->cancel($intentId);
+        }
+    }
+
     public function retrieveBalance(): array
     {
         $balance = $this->client->balance->retrieve();

@@ -47,6 +47,21 @@ class PaymentController extends Controller
         ]);
     }
 
+    public function destroy(Payment $payment): RedirectResponse
+    {
+        try {
+            app(PaymentService::class)->deletePending($payment);
+        } catch (\DomainException $exception) {
+            return back()->withErrors(['error' => $exception->getMessage()]);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return back()->withErrors(['error' => 'The payment could not be deleted. Check its Stripe status and try again.']);
+        }
+
+        return redirect()->route('admin.payments.index')->with('status', 'Pending payment deleted.');
+    }
+
     public function refund(Request $request, Payment $payment, PaymentService $payments): RedirectResponse
     {
         $data = $request->validate([

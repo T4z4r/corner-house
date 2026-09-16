@@ -155,6 +155,7 @@
                         <td>{{ $payment->paid_at?->format('d M Y H:i') ?? '-' }}</td>
                         <td class="text-end">
                             <a href="{{ route('admin.payments.show', $payment) }}" class="btn btn-sm btn-outline-primary">View</a>
+                            @include('admin.payments._delete', ['payment' => $payment])
                         </td>
                     </tr>
                 @empty

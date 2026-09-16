@@ -359,6 +359,26 @@ class PaymentService
         });
     }
 
+    public function deletePending(Payment $payment): void
+    {
+        DB::transaction(function () use ($payment): void {
+            $locked = Payment::query()->whereKey($payment->id)->lockForUpdate()->firstOrFail();
+            if ($locked->status !== 'pending' || $locked->paid_at !== null || $locked->refunds()->exists()) {
+                throw new \DomainException('Only unpaid pending payments without refunds can be deleted.');
+            }
+
+            if ($locked->provider === 'stripe') {
+                $this->gateway->cancelPendingPayment($locked->provider_session_id, $locked->provider_payment_id);
+            }
+
+            $this->auditLogger->log('payments.deleted', 'payments', 'payment', (string) $locked->id, oldValues: [
+                'reservation_id' => $locked->reservation_id, 'amount' => $locked->amount, 'currency' => $locked->currency,
+                'provider_session_id' => $locked->provider_session_id, 'provider_payment_id' => $locked->provider_payment_id,
+            ]);
+            $locked->delete();
+        });
+    }
+
     public function refund(Payment $payment, ?float $amount = null, ?string $reason = null, ?int $userId = null): Refund
     {
         return DB::transaction(function () use ($payment, $amount, $reason, $userId): Refund {

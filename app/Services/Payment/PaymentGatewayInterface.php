@@ -9,6 +9,8 @@ interface PaymentGatewayInterface
      */
     public function retrieveBalance(): array;
 
+    public function cancelPendingPayment(?string $sessionId, ?string $intentId): void;
+
     /**
      * @param  array{
      *     amount: float,

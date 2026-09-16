@@ -12,6 +12,13 @@ class FakePaymentGateway implements PaymentGatewayInterface
 
     public bool $paid = true;
 
+    public function cancelPendingPayment(?string $sessionId, ?string $intentId): void
+    {
+        if ($this->paid && ($sessionId || $intentId)) {
+            throw new \DomainException('This payment has already been paid at Stripe.');
+        }
+    }
+
     public function retrieveBalance(): array
     {
         return ['livemode' => false, 'available' => [], 'pending' => []];

@@ -105,6 +105,7 @@
     </div>
 
     <div class="col-lg-4">
+        <div class="mb-3">@include('admin.payments._delete', ['payment' => $payment])</div>
         @can('payments.refund')
             @if ($payment->status === 'paid')
                 <div class="card border-0 shadow-sm mb-3">

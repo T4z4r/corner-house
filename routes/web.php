@@ -308,6 +308,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::post('/payments/instant-payout/review', [InstantPayoutController::class, 'review'])->name('payments.instant.review')->middleware('can:payments.create');
         Route::post('/payments/instant-payout', [InstantPayoutController::class, 'store'])->name('payments.instant.store')->middleware('can:payments.create');
         Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
+        Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy')->middleware('can:payments.create');
         Route::post('/payments/{payment}/refund', [PaymentController::class, 'refund'])->name('payments.refund')->middleware('can:payments.refund');
     });
 
