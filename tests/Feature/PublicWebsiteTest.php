@@ -308,7 +308,7 @@ class PublicWebsiteTest extends TestCase
             ->assertSee('Security deposit', false);
     }
 
-    public function test_home_page_refunds_section_has_airbnb_moderate_policy(): void
+    public function test_home_page_refunds_section_has_configured_cancellation_fees(): void
     {
         Property::factory()->create(['name' => 'Corner House']);
 
@@ -316,7 +316,10 @@ class PublicWebsiteTest extends TestCase
             ->assertOk()
             ->assertSee('Cancellation and refund policy', false)
             ->assertSee('Within 24 hours of booking', false)
-            ->assertSee('More than 5 days', false);
+            ->assertSee('More than 5 days', false)
+            ->assertSee('50% cancellation fee on the accommodation cost')
+            ->assertSee('Within 24 hours before check-in, or after check-in')
+            ->assertSee('100% cancellation fee on the accommodation cost');
     }
 
     public function test_home_page_booking_and_house_rules_use_reference_content(): void

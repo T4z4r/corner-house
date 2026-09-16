@@ -35,7 +35,46 @@ class SettingsTest extends TestCase
 
     public function test_can_view_settings_page(): void
     {
-        $this->get(route('admin.settings'))->assertOk();
+        $this->get(route('admin.settings'))->assertOk()->assertSee('Late cancellation fee (%)');
+    }
+
+    public function test_cancellation_settings_can_be_saved_and_are_displayed_on_the_policy_page(): void
+    {
+        $this->put(route('admin.settings.update'), [
+            'cancellation_notice_days' => 7,
+            'cancellation_fee_percent' => 40,
+            'cancellation_late_hours' => 48,
+            'cancellation_late_fee_percent' => 90,
+        ])->assertSessionHas('status');
+
+        $this->assertDatabaseHas('settings', ['key' => 'cancellation_fee_percent', 'value' => '40']);
+        $this->get(route('cancellation'))->assertOk()
+            ->assertSee('class="cancellation-policy"', false)
+            ->assertSee('Within 7 days before check-in, but more than 48 hours before check-in')
+            ->assertSee('40% cancellation fee on the accommodation cost')
+            ->assertSee('90% cancellation fee on the accommodation cost');
+    }
+
+    public function test_invalid_cancellation_settings_are_rejected_without_saving(): void
+    {
+        $this->put(route('admin.settings.update'), [
+            'cancellation_fee_percent' => 101,
+            'cancellation_late_fee_percent' => -1,
+            'cancellation_notice_days' => 0,
+            'cancellation_late_hours' => 0,
+        ])->assertSessionHasErrors(['cancellation_fee_percent', 'cancellation_late_fee_percent', 'cancellation_notice_days', 'cancellation_late_hours']);
+
+        $this->assertDatabaseMissing('settings', ['group' => 'cancellation']);
+    }
+
+    public function test_late_cancellation_window_must_be_shorter_than_the_standard_window(): void
+    {
+        $this->put(route('admin.settings.update'), [
+            'cancellation_notice_days' => 2,
+            'cancellation_late_hours' => 48,
+        ])->assertSessionHasErrors('cancellation_late_hours');
+
+        $this->assertDatabaseMissing('settings', ['group' => 'cancellation']);
     }
 
     public function test_can_view_mail_settings_page(): void

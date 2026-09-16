@@ -2,6 +2,9 @@
 @section('title', $title)
 @section('description', $heading.' for stays booked directly with Corner House, Braunston.')
 @section('content')
+@if (request()->routeIs('cancellation'))
+@include('website.partials.refunds')
+@else
 @include('website._page-hero', ['kicker' => 'House terms', 'title' => $heading])
 <div class="container ch-section">
     <p class="ch-prose">Please contact us if you need a copy of the full policy for your stay. Booking terms are confirmed at checkout.</p>
@@ -12,4 +15,5 @@
         @endforeach
     @endif
 </div>
+@endif
 @endsection

@@ -77,6 +77,28 @@ class SettingsController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
+        $request->validate([
+            'cancellation_notice_days' => ['sometimes', 'required', 'integer', 'min:1', 'max:365'],
+            'cancellation_fee_percent' => ['sometimes', 'required', 'integer', 'between:0,100'],
+            'cancellation_late_hours' => ['sometimes', 'required', 'integer', 'min:1', 'max:8760'],
+            'cancellation_late_fee_percent' => ['sometimes', 'required', 'integer', 'between:0,100'],
+        ]);
+
+        $noticeDays = (int) $request->input('cancellation_notice_days', Setting::getValue('cancellation_notice_days', 5));
+        $lateHours = (int) $request->input('cancellation_late_hours', Setting::getValue('cancellation_late_hours', 24));
+        if ($lateHours >= $noticeDays * 24) {
+            return back()->withInput()->withErrors(['cancellation_late_hours' => 'The late cancellation window must be shorter than the cancellation fee window.']);
+        }
+
+        foreach (config('cancellation') as $key => $default) {
+            if ($request->has($key)) {
+                Setting::firstOrCreate(['key' => $key], [
+                    'group' => 'cancellation', 'value' => (string) $default['value'],
+                    'label' => $default['label'], 'cast' => 'integer',
+                ]);
+            }
+        }
+
         $settings = Setting::query()->get();
 
         foreach ($settings as $setting) {
@@ -172,6 +194,17 @@ class SettingsController extends Controller
             ->orderBy('group')
             ->orderBy('key')
             ->get();
+
+        if ($group === null || $group === 'cancellation') {
+            foreach (config('cancellation') as $key => $default) {
+                if (! $settings->contains('key', $key)) {
+                    $settings->push(new Setting([
+                        'key' => $key, 'group' => 'cancellation', 'value' => (string) $default['value'],
+                        'label' => $default['label'], 'cast' => 'integer',
+                    ]));
+                }
+            }
+        }
 
         return $settings->groupBy('group');
     }

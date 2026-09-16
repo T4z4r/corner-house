@@ -357,7 +357,7 @@ class WebsiteContentService
             [
                 'title' => 'Changes and cancellations',
                 'items' => [
-                    'Cancellations follow our refund policy, which mirrors Airbnb&rsquo;s Moderate policy.',
+                    'Cancellations follow the cancellation windows and fees in our refund policy.',
                     'Date changes are treated as a cancellation and a new booking, though we will always try to move you if we can re-let the dates.',
                     'We strongly recommend travel insurance that covers cancellation.',
                     '<a href="#refunds">Read the full refund policy</a>',

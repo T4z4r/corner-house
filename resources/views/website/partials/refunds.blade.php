@@ -1,24 +1,31 @@
-<section class="page" id="page-refunds" data-page="refunds">
+<section class="{{ request()->routeIs('cancellation') ? 'cancellation-policy' : 'page' }}" id="page-refunds" data-page="refunds">
     <div class="section">
         <div class="wrap legal">
             <h1 style="font-size:clamp(2.2rem,4.5vw,3.4rem)">Cancellation and refund policy</h1>
-            <p class="lede">Our direct-booking policy mirrors Airbnb&rsquo;s Moderate cancellation policy, so the terms are the same wherever you choose to book with us.</p>
+            <p class="lede">The cancellation fees below apply to direct bookings. Platform bookings follow the policy shown when you book.</p>
             <p class="small">Last updated: <span class="rev-date"></span></p>
 
             <h2>If you booked through a platform</h2>
             <p>Bookings made through Airbnb, Booking.com or Vrbo are cancelled and refunded under that platform&rsquo;s policy, through that platform. Please cancel in your account there rather than contacting us, so that the refund is processed correctly. The policy shown at the time you booked is the one that applies.</p>
 
             <h2>If you booked directly with us</h2>
+            @php
+                $noticeDays = (int) \App\Models\Setting::getValue('cancellation_notice_days', config('cancellation.cancellation_notice_days.value'));
+                $feePercent = (int) \App\Models\Setting::getValue('cancellation_fee_percent', config('cancellation.cancellation_fee_percent.value'));
+                $lateHours = (int) \App\Models\Setting::getValue('cancellation_late_hours', config('cancellation.cancellation_late_hours.value'));
+                $lateFeePercent = (int) \App\Models\Setting::getValue('cancellation_late_fee_percent', config('cancellation.cancellation_late_fee_percent.value'));
+            @endphp
             <table class="refund-table">
                 <thead><tr><th>When you cancel</th><th>What you get back</th></tr></thead>
                 <tbody>
                     <tr><td>Within 24 hours of booking, where the booking was made at least 7 days before check-in</td><td>Everything you have paid, including the booking fee</td></tr>
-                    <tr><td>More than 5 days (120 hours) before check-in</td><td>Everything you have paid, less the non-refundable 30% booking fee</td></tr>
-                    <tr><td>Less than 5 days before check-in</td><td>50% of the nightly rate for the nights you do not stay. The first night is not refunded</td></tr>
-                    <tr><td>After check-in</td><td>50% of the nightly rate for the remaining nights, counted from 24 hours after you tell us you are leaving</td></tr>
+                    <tr><td>More than {{ $noticeDays }} days ({{ $noticeDays * 24 }} hours) before check-in</td><td>Everything you have paid, less the non-refundable 30% booking fee</td></tr>
+                    <tr><td>Within {{ $noticeDays }} days before check-in, but more than {{ $lateHours }} hours before check-in</td><td>{{ $feePercent }}% cancellation fee on the accommodation cost</td></tr>
+                    <tr><td>Within {{ $lateHours }} hours before check-in, or after check-in</td><td>{{ $lateFeePercent }}% cancellation fee on the accommodation cost</td></tr>
                 </tbody>
             </table>
             <p class="small">Times are measured against the 3:00pm check-in time at the property, UK local time.</p>
+            <p>The late cancellation fee takes priority within the final {{ $lateHours }} hours. Cancellation fees are not added together. Any refund is limited to the amount you have paid, less the applicable fee.</p>
 
             <h2>The security deposit</h2>
             <p>The &pound;950 security deposit is always refunded in full on cancellation, whenever you cancel. It is separate from the accommodation cost and is never treated as part of a cancellation charge.</p>
@@ -35,7 +42,7 @@
             <h2>How refunds are paid</h2>
             <p>Refunds are made by the same method used to pay, within 10 working days of the cancellation being confirmed in writing.</p>
 
-            <div class="cta-row"><a class="btn btn-outline" href="#terms">Terms and conditions</a><a class="btn btn-primary" href="#book">Back to booking</a></div>
+            <div class="cta-row"><a class="btn btn-outline" href="{{ route('home') }}#terms">Terms and conditions</a><a class="btn btn-primary" href="{{ route('home') }}#book">Back to booking</a></div>
         </div>
     </div>
 </section>
