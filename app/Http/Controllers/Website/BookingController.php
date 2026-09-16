@@ -249,6 +249,11 @@ class BookingController extends Controller
             $request->merge(['guests_count' => $guestsNum]);
         }
 
+        // The website booking widget sends the room under its camelCase JSON key.
+        if (! $request->has('room_id') && $request->has('roomId')) {
+            $request->merge(['room_id' => (int) $request->input('roomId')]);
+        }
+
         try {
             $data = $request->validate([
                 'room_id' => ['required', 'exists:rooms,id'],

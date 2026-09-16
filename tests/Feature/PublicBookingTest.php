@@ -119,6 +119,32 @@ class PublicBookingTest extends TestCase
         $this->assertDatabaseMissing('reservations', ['room_id' => $room->id]);
     }
 
+    public function test_hold_accepts_the_room_id_from_the_website_widget_payload(): void
+    {
+        $room = Room::factory()->create(['base_rate' => 80, 'status' => 'active']);
+        $checkIn = now()->addDays(14)->toDateString();
+        $checkOut = now()->addDays(16)->toDateString();
+
+        $this->post(route('booking.pay'), [
+            'roomId' => $room->id,
+            'checkIn' => $checkIn,
+            'checkOut' => $checkOut,
+            'name' => 'Alex Guest',
+            'email' => 'alex@example.com',
+            'phone' => '+44 7700 900123',
+            'guests' => 2,
+            'agree' => true,
+        ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('reservations', [
+            'room_id' => $room->id,
+            'status' => 'hold',
+            'source' => 'direct',
+        ]);
+    }
+
     public function test_details_page_total_includes_damage_deposit(): void
     {
         $room = Room::factory()->create(['base_rate' => 100, 'status' => 'active', 'capacity' => 2]);

@@ -220,6 +220,7 @@ if (enquiryForm) {
     const payload = {
       checkIn: fmtISO(checkIn),
       checkOut: fmtISO(checkOut),
+      roomId: (livePriceData && livePriceData.room_id) ? livePriceData.room_id : CONFIG.bookingRoomId,
       name: f.get("name"),
       email: f.get("email"),
       phone: [f.get("phone_code"), f.get("phone")].filter(Boolean).map(v=>v.trim()).join(" "),
