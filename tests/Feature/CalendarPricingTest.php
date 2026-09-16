@@ -376,6 +376,32 @@ class CalendarPricingTest extends TestCase
             ->assertJsonValidationErrors(['start']);
     }
 
+    public function test_calendar_price_can_be_set_for_all_rooms_of_the_property(): void
+    {
+        $property = Property::factory()->create();
+        $first = Room::factory()->create(['property_id' => $property->id, 'name' => 'Oak Suite', 'base_rate' => 500]);
+        $second = Room::factory()->create(['property_id' => $property->id, 'name' => 'Garden Room', 'base_rate' => 700]);
+        Room::factory()->create(['property_id' => $property->id, 'name' => 'Closed', 'base_rate' => 900, 'status' => 'inactive']);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->postJson(route('admin.calendar.prices.store'), [
+                'property_id' => $property->id,
+                'room_id' => '',
+                'start_date' => '2026-03-02',
+                'end_date' => '2026-03-03',
+                'rate' => 888,
+            ])
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('count', 2);
+
+        $overrides = PricingOverride::query()->orderBy('room_id')->get();
+        $this->assertSame([$first->id, $second->id], $overrides->pluck('room_id')->all());
+        $this->assertTrue($overrides->every(fn ($o) => (float) $o->rate === 888.0));
+        $this->assertSame('2026-03-02', $overrides->first()->start_date->toDateString());
+        $this->assertSame('2026-03-03', $overrides->first()->end_date->toDateString());
+    }
+
     public function test_calendar_prices_require_the_calendar_view_permission(): void
     {
         $role = Role::create(['name' => 'No Calendar Access', 'guard_name' => 'web']);

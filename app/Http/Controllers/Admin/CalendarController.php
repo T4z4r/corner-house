@@ -384,38 +384,55 @@ class CalendarController extends Controller
     {
         $validated = $request->validate([
             'property_id' => ['required', 'exists:properties,id'],
-            'room_id' => ['required', 'exists:rooms,id'],
+            'room_id' => ['nullable', 'exists:rooms,id'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'rate' => ['required', 'numeric', 'min:0', 'max:999999'],
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
-        PricingOverride::query()
-            ->where('room_id', $validated['room_id'])
-            ->where('is_enabled', true)
-            ->whereDate('start_date', '<=', $validated['end_date'])
-            ->whereDate('end_date', '>=', $validated['start_date'])
-            ->delete();
+        $property = Property::findOrFail($validated['property_id']);
 
-        $override = PricingOverride::create([
-            'room_id' => $validated['room_id'],
+        // An empty room_id means "All rooms" of the property's linked group.
+        $roomIds = ! empty($validated['room_id'])
+            ? collect([(int) $validated['room_id']])
+            : Room::query()
+                ->whereIn('property_id', $property->linkedPropertyIds())
+                ->where('status', 'active')
+                ->pluck('id');
+
+        if ($roomIds->isEmpty()) {
+            return response()->json(['ok' => false, 'message' => 'No active rooms found for this property.'], 422);
+        }
+
+        $created = [];
+        foreach ($roomIds as $roomId) {
+            PricingOverride::query()
+                ->where('room_id', $roomId)
+                ->where('is_enabled', true)
+                ->whereDate('start_date', '<=', $validated['end_date'])
+                ->whereDate('end_date', '>=', $validated['start_date'])
+                ->delete();
+
+            $created[] = PricingOverride::create([
+                'room_id' => $roomId,
+                'start_date' => $validated['start_date'],
+                'end_date' => $validated['end_date'],
+                'rate' => $validated['rate'],
+                'notes' => $validated['notes'] ?? null,
+                'is_enabled' => true,
+                'created_by' => auth()->id(),
+            ]);
+        }
+
+        $this->auditLogger->log('calendar.price_set', 'calendar', 'pricing_override', collect($created)->map->getRouteKey()->implode(','), newValues: [
+            'room_ids' => collect($created)->pluck('room_id')->all(),
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
             'rate' => $validated['rate'],
-            'notes' => $validated['notes'] ?? null,
-            'is_enabled' => true,
-            'created_by' => auth()->id(),
         ]);
 
-        $this->auditLogger->log('calendar.price_set', 'calendar', 'pricing_override', (string) $override->id, newValues: [
-            'room_id' => $override->room_id,
-            'start_date' => $override->start_date->toDateString(),
-            'end_date' => $override->end_date->toDateString(),
-            'rate' => $override->rate,
-        ]);
-
-        return response()->json(['ok' => true, 'override' => $override]);
+        return response()->json(['ok' => true, 'override' => $created[0], 'count' => count($created)]);
     }
 
     public function destroyPrice(PricingOverride $override): JsonResponse
