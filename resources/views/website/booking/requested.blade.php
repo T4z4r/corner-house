@@ -49,11 +49,17 @@
 <header class="conf-hero">
     <div class="conf-hero-inner">
         <p class="conf-hero-kicker">Direct booking &middot; Corner House, Braunston</p>
-        <h1>{{ $enquiry ? 'Thank you for your enquiry' : 'Looking for your enquiry?' }}</h1>
+        <h1>{{ $enquiry ? 'Thank you — we have your request.' : 'Looking for your enquiry?' }}</h1>
         <p class="conf-hero-sub">
-            {{ $enquiry ? 'Your request has been received. Our team will review your preferred dates and get back to you by email. No payment has been taken.' : 'We could not find an enquiry from this link. If you have already submitted one, please contact us before sending another request.' }}
+            @if ($enquiry)
+                Your dates are held while we review it. No payment is taken at this stage.
+            @else
+                We could not find an enquiry from this link. If you have already submitted one, please contact us before sending another request.
+            @endif
         </p>
-        @if ($enquiry)<span class="conf-received">Enquiry received &middot; Awaiting confirmation</span>@endif
+        @if ($enquiry)
+            <span class="conf-received">Enquiry received &middot; Awaiting confirmation</span>
+        @endif
     </div>
 </header>
 
@@ -67,20 +73,21 @@
                 </svg>
             </div>
             <div class="conf-intro-copy">
-                <p class="conf-kicker">Next steps</p>
-                <h2>We are reviewing your request</h2>
-                <p class="conf-lede">
-                    We will check availability and email you about your stay, any details we need and the next steps. If we can accommodate your request, we will explain the payment options and provide a secure payment link. Please check your junk folder too.
-                </p>
+                <h2>Next steps</h2>
+                <ol class="conf-lede" style="padding-left:1.25rem;">
+                    <li style="margin-bottom:1rem;">We review your request and check the dates.</li>
+                    <li style="margin-bottom:1rem;">We email you to confirm availability and the price. For direct bookings we will also ask the lead guest for photo ID and a signed rental agreement.</li>
+                    <li>Once that is returned, we send a secure link to make the first payment.</li>
+                </ol>
             </div>
         </div>
         @endif
 
         @if ($enquiry)
             <div class="conf-status">
-                <h3 class="conf-status-title">Your stay at a glance</h3>
+                <h3 class="conf-status-title">Your request</h3>
                 <div class="conf-status-row">
-                    <span>Request reference</span>
+                    <span>Reference</span>
                     <strong>#{{ $enquiry->id }}</strong>
                 </div>
                 @if ($enquiry->room)
@@ -92,7 +99,7 @@
                 @if ($enquiry->check_in && $enquiry->check_out)
                     <div class="conf-status-row">
                         <span>Dates</span>
-                        <strong>{{ $enquiry->check_in->format('d M Y') }} &rarr; {{ $enquiry->check_out->format('d M Y') }}</strong>
+                        <strong>{{ $enquiry->check_in->format('d M Y') }} to {{ $enquiry->check_out->format('d M Y') }}</strong>
                     </div>
                 @endif
                 @if ($enquiry->guests)
@@ -104,6 +111,7 @@
             </div>
 
             <p class="conf-hint" style="margin-top:1.25rem;">
+                If anything changes in the meantime, just reply to our email.<br>
                 <strong>Your booking is not confirmed yet.</strong> This page acknowledges your enquiry.
                 @if ($enquiry->bookingHold?->status === 'active' && $enquiry->bookingHold->expires_at?->isFuture())
                     Your dates are temporarily held until {{ $enquiry->bookingHold->expires_at->copy()->timezone('Europe/London')->format('d M Y, H:i T') }} while we review your request. Please contact us if you need more time.

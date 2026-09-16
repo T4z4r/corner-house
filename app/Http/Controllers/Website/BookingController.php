@@ -345,11 +345,11 @@ class BookingController extends Controller
                 return response()->json([
                     'status' => 'ok',
                     'enquiry_id' => $enquiry->id,
-                    'redirect_url' => route('booking.requested', ['enquiry' => $enquiry->id]),
+                    'redirect_url' => route('booking.requested', ['enquiry' => $enquiry->getRouteKey()]),
                 ]);
             }
 
-            return redirect()->route('booking.requested', ['enquiry' => $enquiry->id]);
+            return redirect()->route('booking.requested', ['enquiry' => $enquiry->getRouteKey()]);
         } catch (\DomainException $e) {
             return $this->requestFailure($request, $e->getMessage());
         } catch (Throwable $e) {
@@ -383,7 +383,9 @@ class BookingController extends Controller
         $enquiry = null;
 
         if ($request->filled('enquiry')) {
-            $enquiry = Enquiry::query()->with('room')->find($request->query('enquiry'));
+            $key = $request->query('enquiry');
+            $id = is_string($key) ? Enquiry::decodeHashId($key) : null;
+            $enquiry = $id === null ? null : Enquiry::query()->with(['room', 'bookingHold'])->find($id);
         }
 
         return view('website.booking.requested', ['enquiry' => $enquiry]);

@@ -72,7 +72,7 @@ class BookingRequestNotificationMail extends Mailable
                 'actionUrl' => route('admin.enquiries.index'),
                 'actionLabel' => 'View enquiry',
                 'footerNote' => 'Follow up: verify the guest\'s photo ID and signed rental agreement, then email '
-                    .'them a secure payment link to take the refundable £'.number_format($deposit, 0).' deposit.',
+                    .'them a secure link to make the first payment in line with the booking terms.',
             ],
         );
     }

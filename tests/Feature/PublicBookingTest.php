@@ -205,14 +205,17 @@ class PublicBookingTest extends TestCase
 
         Mail::assertSent(GuestCommunicationMail::class, fn (GuestCommunicationMail $mail): bool => $mail->hasTo('jane@example.com')
             && str_contains($mail->emailBody, 'successfully received'));
-        $response->assertJsonPath('redirect_url', route('booking.requested', ['enquiry' => $enquiry->id]));
+        $response->assertJsonPath('redirect_url', route('booking.requested', ['enquiry' => $enquiry->getRouteKey()]));
         $this->get($response->json('redirect_url'))
             ->assertOk()
-            ->assertSee('Thank you for your enquiry')
+            ->assertSee('Thank you — we have your request.')
+            ->assertSee('photo ID and a signed rental agreement')
+            ->assertSee('the first payment')
+            ->assertDontSee('@if', false)->assertDontSee('@endif', false)
             ->assertSee('Your booking is not confirmed yet.')
             ->assertSee('temporarily held until')
             ->assertDontSee('refundable &pound;950 deposit', false)
-            ->assertSee('Request reference')
+            ->assertSee('Reference')
             ->assertSee('#'.$enquiry->id);
         $hold = $enquiry->bookingHold;
 
@@ -260,6 +263,17 @@ class PublicBookingTest extends TestCase
 
             return true;
         });
+    }
+
+    public function test_requested_page_rejects_raw_and_invalid_enquiry_keys(): void
+    {
+        $enquiry = Enquiry::factory()->create();
+        foreach ([(string) $enquiry->id, 'invalid-key', ['invalid']] as $key) {
+            $this->get(route('booking.requested', ['enquiry' => $key]))->assertOk()
+                ->assertViewHas('enquiry', null)->assertSee('Looking for your enquiry?');
+        }
+        $this->get(route('booking.requested', ['enquiry' => $enquiry->getRouteKey()]))
+            ->assertOk()->assertViewHas('enquiry', fn ($value): bool => $value->id === $enquiry->id);
     }
 
     public function test_details_page_total_includes_damage_deposit(): void
