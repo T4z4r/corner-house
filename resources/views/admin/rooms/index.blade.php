@@ -37,6 +37,9 @@
                             <tr>
                 <td class="fw-semibold">
                     <a href="{{ route('admin.rooms.show', $room) }}" class="text-decoration-none">{{ $room->name }}</a>
+                    @if ($room->is_primary)
+                        <span class="ch-badge ch-badge-primary ms-1"><i class="bi bi-star-fill me-1"></i>Primary</span>
+                    @endif
                 </td>
                                 <td>{{ $room->type ?? '-' }}</td>
                                 <td>{{ $room->capacity }}</td>

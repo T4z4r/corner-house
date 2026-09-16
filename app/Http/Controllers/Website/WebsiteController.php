@@ -313,7 +313,8 @@ class WebsiteController extends Controller
      */
     public function availability(Request $request)
     {
-        $propertyId = Property::query()->where('status', 'active')->value('id');
+        $primaryRoom = Room::defaultForDirectBookings();
+        $propertyId = $primaryRoom?->property_id ?? Property::query()->where('status', 'active')->value('id');
 
         return response()->json($this->availability->websiteBlockedRanges($propertyId ? (int) $propertyId : null));
     }

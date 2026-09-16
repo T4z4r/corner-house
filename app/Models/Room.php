@@ -23,6 +23,7 @@ class Room extends Model
         'bedrooms',
         'bathrooms',
         'is_private',
+        'is_primary',
         'status',
         'base_rate',
         'min_stay',
@@ -37,6 +38,7 @@ class Room extends Model
         'bedrooms' => 'integer',
         'bathrooms' => 'integer',
         'is_private' => 'boolean',
+        'is_primary' => 'boolean',
         'base_rate' => 'decimal:2',
         'min_stay' => 'integer',
         'max_stay' => 'integer',
@@ -77,5 +79,18 @@ class Room extends Model
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    /**
+     * The whole-house room used as the default for direct bookings: the room
+     * marked primary, or the first active room when none is marked.
+     */
+    public static function defaultForDirectBookings(): ?self
+    {
+        return self::query()
+            ->where('status', 'active')
+            ->orderByDesc('is_primary')
+            ->orderBy('id')
+            ->first();
     }
 }

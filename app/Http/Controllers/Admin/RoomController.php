@@ -73,6 +73,7 @@ class RoomController extends Controller
         $data['slug'] = $data['slug'] ?? Str::slug($data['name'].'-'.$property->id);
 
         $room = $property->rooms()->create($data);
+        $this->applyPrimaryFlag($room);
 
         if ($request->hasFile('images')) {
             $this->storeImages($request, $room);
@@ -96,6 +97,7 @@ class RoomController extends Controller
 
         $data = $this->validated($request);
         $room->update($data);
+        $this->applyPrimaryFlag($room);
 
         if ($request->hasFile('images')) {
             $this->storeImages($request, $room);
@@ -171,7 +173,7 @@ class RoomController extends Controller
 
     private function validated(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'type' => ['nullable', 'string', 'max:100'],
@@ -180,11 +182,26 @@ class RoomController extends Controller
             'bedrooms' => ['nullable', 'integer', 'min:0'],
             'bathrooms' => ['nullable', 'integer', 'min:0'],
             'is_private' => ['nullable', 'boolean'],
+            'is_primary' => ['nullable', 'boolean'],
             'status' => ['required', 'in:active,inactive,maintenance'],
             'base_rate' => ['nullable', 'numeric', 'min:0'],
             'min_stay' => ['nullable', 'integer', 'min:1'],
             'max_stay' => ['nullable', 'integer', 'gt:min_stay'],
         ]);
+
+        return array_merge($data, [
+            'is_primary' => $request->boolean('is_primary'),
+        ]);
+    }
+
+    /**
+     * Ensure only one room in the whole system carries the primary flag.
+     */
+    private function applyPrimaryFlag(Room $room): void
+    {
+        if ($room->is_primary) {
+            Room::whereKeyNot($room->id)->update(['is_primary' => false]);
+        }
     }
 
     private function storeImages(Request $request, Room $room): void

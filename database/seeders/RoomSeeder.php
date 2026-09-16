@@ -26,6 +26,7 @@ class RoomSeeder extends Seeder
                 'bedrooms' => 1,
                 'bathrooms' => 1,
                 'is_private' => true,
+                'is_primary' => true,
                 'status' => 'active',
                 'base_rate' => 950.00,
                 'min_stay' => 2,

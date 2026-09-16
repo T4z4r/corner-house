@@ -40,6 +40,16 @@
             <option value="0" @selected(! (bool) old('is_private', $room?->is_private))>Shared</option>
         </select>
     </div>
+    <div class="col-md-4 d-flex align-items-end">
+        <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" name="is_primary" value="1" id="is_primary"
+                   @checked((bool) old('is_primary', $room?->is_primary))>
+            <label class="form-check-label" for="is_primary">
+                <i class="bi bi-star-fill text-warning me-1"></i>Primary room
+            </label>
+            <div class="form-text small">The primary room is the default whole-house listing for direct bookings. Only one room can be primary.</div>
+        </div>
+    </div>
 
     <div class="col-md-3">
         <label class="form-label" for="capacity">Guest capacity</label>

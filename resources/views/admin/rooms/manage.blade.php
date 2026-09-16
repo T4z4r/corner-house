@@ -82,6 +82,9 @@
                                             <span class="ch-avatar"><i class="bi bi-door-open"></i></span>
                                         @endif
                                         <a href="{{ route('admin.rooms.show', $room) }}" class="fw-semibold text-decoration-none">{{ $room->name }}</a>
+                                        @if ($room->is_primary)
+                                            <span class="ch-badge ch-badge-primary ms-1"><i class="bi bi-star-fill me-1"></i>Primary</span>
+                                        @endif
                                     </div>
                                 </td>
                                 <td class="text-muted" title="{{ $room->property?->status ?? 'Unassigned' }}">

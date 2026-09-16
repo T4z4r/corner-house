@@ -113,23 +113,24 @@ class BookingController extends Controller
     /**
      * Resolve the default whole-house listing for the booking search.
      *
-     * The marina listing is preferred when its room is free for the requested
-     * dates; otherwise the Lion room (primary Corner House listing) is used.
-     * Returns null only when neither preferred room exists, is active, or fits
-     * the requested stay, so the caller falls back to the active property.
+     * The room marked as primary is preferred; without one, the first active
+     * room is used. Preference stops at the first candidate whose entire
+     * property is free for the requested dates and fits the guest count.
+     * Returns null only when no active room exists or fits the requested stay,
+     * so the caller falls back to the active property.
      */
     private function preferredSearchProperty(Carbon $start, Carbon $end, int $guests): ?Property
     {
-        foreach (['Corner House - Large country house next to marina', 'Lion'] as $name) {
-            $room = Room::query()
-                ->with('property')
-                ->where('name', $name)
-                ->where('status', 'active')
-                ->whereHas('property', fn ($q) => $q->where('status', 'active'))
-                ->orderBy('id')
-                ->first();
+        $candidateRooms = Room::query()
+            ->with('property')
+            ->where('status', 'active')
+            ->whereHas('property', fn ($q) => $q->where('status', 'active'))
+            ->orderByDesc('is_primary')
+            ->orderBy('id')
+            ->get();
 
-            if (! $room?->property) {
+        foreach ($candidateRooms as $room) {
+            if (! $room->property) {
                 continue;
             }
 
@@ -613,7 +614,7 @@ class BookingController extends Controller
 
         $room = ($data['room_id'] ?? null)
             ? Room::query()->where('status', 'active')->find($data['room_id'])
-            : Room::query()->where('status', 'active')->orderBy('id')->first();
+            : Room::defaultForDirectBookings();
 
         if (! $room) {
             return response()->json(['error' => 'No active room available.'], 404);
