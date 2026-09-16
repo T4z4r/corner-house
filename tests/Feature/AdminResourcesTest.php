@@ -353,7 +353,9 @@ class AdminResourcesTest extends TestCase
         $this->assertSame('2026-02-10', $rateEvents[0]['start']);
         $this->assertTrue($rateEvents[0]['extendedProps']['from_beds24']);
         $this->assertEqualsWithDelta(185.0, (float) $rateEvents[0]['extendedProps']['rate'], 0.001);
-        $this->assertSame('2026-02-12', $rateEvents[1]['end']);
+        $this->assertSame('2026-02-11', $rateEvents[0]['end']);
+        $this->assertSame('2026-02-11', $rateEvents[1]['start']);
+        $this->assertSame('2026-02-13', $rateEvents[1]['end']);
     }
 
     public function test_calendar_events_do_not_include_rates_from_other_rooms(): void

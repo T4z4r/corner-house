@@ -199,7 +199,7 @@ class CalendarController extends Controller
                 'id' => 'rate-'.$override->id,
                 'title' => '£'.number_format((float) $override->rate, 2).($roomName !== '' ? ' · '.$roomName : ''),
                 'start' => $override->start_date->toDateString(),
-                'end' => $override->end_date->toDateString(),
+                'end' => $override->end_date->copy()->addDay()->toDateString(),
                 'className' => 'fc-event--block fc-event--block-rates',
                 'extendedProps' => [
                     'type' => 'rate',

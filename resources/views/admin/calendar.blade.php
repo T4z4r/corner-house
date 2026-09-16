@@ -454,7 +454,7 @@
                         <input type="hidden" name="override_id" id="priceId">
                         <div class="mb-3">
                             <label class="form-label">Room</label>
-                            <select name="room_id" id="priceRoom" class="form-select no-select2" required></select>
+                            <select name="room_id" id="priceRoom" class="form-select no-select2"></select>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Price per night (GBP)</label>
