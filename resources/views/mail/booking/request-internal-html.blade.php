@@ -85,7 +85,7 @@
                                 <tr>
                                     <td style="padding:8px 0; border-top:1px solid #efead7; font-family:Arial, Helvetica, sans-serif; font-size:13px; color:#1e211c;">
                                         <span style="color:#6b7268;">Details</span><br>
-                                        <strong>{{ collect([$enquiry->drinks_package ? 'Drinks package requested' : null, $enquiry->terms_accepted ? 'Terms and house rules accepted' : null])->filter()->join(' &middot; ') }}</strong>
+                                        <strong>{!! collect([$enquiry->drinks_package ? 'Drinks package requested' : null, $enquiry->terms_accepted ? 'Terms and house rules accepted' : null])->filter()->join(' &middot; ') !!}</strong>
                                     </td>
                                 </tr>
                             @endif
