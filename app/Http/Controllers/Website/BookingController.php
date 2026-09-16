@@ -426,7 +426,7 @@ class BookingController extends Controller
         $validated = $request->validate([
             'payment_option' => ['sometimes', 'required', 'in:deposit,full'],
         ]);
-        $paymentOption = $validated['payment_option'] ?? 'deposit';
+        $paymentOption = $validated['payment_option'] ?? 'full';
 
         $reservation->load(['room.images', 'guest', 'property', 'addons', 'payments']);
 

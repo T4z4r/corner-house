@@ -360,7 +360,7 @@ class PublicBookingTest extends TestCase
 
         $reservation = $result['reservation'];
 
-        $this->get(route('booking.checkout', $reservation->getRouteKey()))
+        $this->get(route('booking.checkout', [$reservation->getRouteKey(), 'payment_option' => 'deposit']))
             ->assertOk()
             ->assertSee('Complete Your Payment')
             ->assertSee('Refundable Security Deposit');
@@ -383,7 +383,7 @@ class PublicBookingTest extends TestCase
         $this->assertSame(1, Reservation::query()->count());
     }
 
-    public function test_guest_can_choose_full_payment_and_confirm_from_stripe_checkout(): void
+    public function test_checkout_defaults_to_full_payment_and_confirms_from_stripe_checkout(): void
     {
         Setting::updateOrCreate(['key' => 'damage_deposit'], ['value' => '950']);
         $reservation = Reservation::factory()->create([
@@ -393,8 +393,9 @@ class PublicBookingTest extends TestCase
             'paid_amount' => 0,
         ]);
 
-        $this->get(route('booking.checkout', [$reservation, 'payment_option' => 'full', 'amount' => 1]))
+        $this->get(route('booking.checkout', [$reservation, 'amount' => 1]))
             ->assertOk()
+            ->assertViewHas('paymentOption', 'full')
             ->assertViewHas('paymentAmount', 1500.0)
             ->assertViewHas('balanceDue', 0.0)
             ->assertSee('Pay in full')
@@ -430,7 +431,7 @@ class PublicBookingTest extends TestCase
             'paid_amount' => 0,
         ]);
 
-        $this->get(route('booking.checkout', $reservation))
+        $this->get(route('booking.checkout', [$reservation, 'payment_option' => 'deposit']))
             ->assertOk()
             ->assertViewHas('paymentOption', 'deposit')
             ->assertViewHas('paymentAmount', 950.0);
@@ -438,6 +439,7 @@ class PublicBookingTest extends TestCase
 
         $this->get(route('booking.checkout', [$reservation, 'payment_option' => 'full']))
             ->assertOk()
+            ->assertViewHas('paymentOption', 'full')
             ->assertViewHas('paymentAmount', 1500.0);
         $fullPayment = $reservation->payments()->where('amount', 1500)->sole();
         $gateway = app(PaymentGatewayInterface::class);
@@ -590,7 +592,7 @@ class PublicBookingTest extends TestCase
 
         $reservation = $result['reservation'];
 
-        $this->get(route('booking.checkout', $reservation->getRouteKey()))
+        $this->get(route('booking.checkout', [$reservation->getRouteKey(), 'payment_option' => 'deposit']))
             ->assertOk();
 
         $payment = Payment::query()->where('reservation_id', $reservation->id)->first();
@@ -627,7 +629,7 @@ class PublicBookingTest extends TestCase
 
         $reservation = $result['reservation'];
 
-        $this->get(route('booking.checkout', $reservation->getRouteKey()))
+        $this->get(route('booking.checkout', [$reservation->getRouteKey(), 'payment_option' => 'deposit']))
             ->assertOk()
             ->assertSee('Complete Your Payment')
             ->assertSee('The Garden Suite')
@@ -667,7 +669,7 @@ class PublicBookingTest extends TestCase
             'source' => 'direct',
         ])['reservation'];
 
-        $this->get(route('booking.checkout', $reservation->getRouteKey()))
+        $this->get(route('booking.checkout', [$reservation->getRouteKey(), 'payment_option' => 'deposit']))
             ->assertOk()
             ->assertSee('Stripe Instant Checkout')
             ->assertSee('&mdash; the balance of &pound;', false)

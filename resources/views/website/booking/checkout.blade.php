@@ -16,7 +16,7 @@
     <div class="wrap">
         <p class="ch-kicker">Direct Booking &middot; Step 3 of 3</p>
         <h1>Complete Your Payment</h1>
-        <p class="ch-page-hero-sub">{{ $isBalancePayment ? 'Pay the remaining balance for your booking below.' : 'Secure your booking with the refundable deposit, or choose to pay the full booking amount now.' }}</p>
+        <p class="ch-page-hero-sub">{{ $isBalancePayment ? 'Pay the remaining balance for your booking below.' : 'Pay the full booking amount now, or choose to pay only the refundable deposit.' }}</p>
     </div>
 </section>
 
@@ -529,13 +529,13 @@
                     <p class="ch-hosted-lead">Remaining balance: <strong>&pound;{{ number_format($paymentAmount, 2) }}</strong> due now.</p>
                 @else
                 <h2 class="ch-card-header-title">Choose how much to pay</h2>
-                <p>The refundable deposit is the default. Paying in full is optional and includes the deposit.</p>
+                <p>Full payment is selected by default and includes the refundable deposit. You can choose to pay only the deposit instead.</p>
                 <form method="GET" action="{{ route('booking.checkout', $reservation) }}" class="ch-chip-row" aria-label="Payment amount">
-                    <button type="submit" name="payment_option" value="deposit" class="ch-chip {{ $paymentOption === 'deposit' ? 'ch-chip-recommended' : '' }}" aria-pressed="{{ $paymentOption === 'deposit' ? 'true' : 'false' }}">
-                        Pay deposit &middot; &pound;{{ number_format($deposit, 2) }}
-                    </button>
                     <button type="submit" name="payment_option" value="full" class="ch-chip {{ $paymentOption === 'full' ? 'ch-chip-recommended' : '' }}" aria-pressed="{{ $paymentOption === 'full' ? 'true' : 'false' }}">
                         Pay in full &middot; &pound;{{ number_format((float) $reservation->total_amount, 2) }}
+                    </button>
+                    <button type="submit" name="payment_option" value="deposit" class="ch-chip {{ $paymentOption === 'deposit' ? 'ch-chip-recommended' : '' }}" aria-pressed="{{ $paymentOption === 'deposit' ? 'true' : 'false' }}">
+                        Pay deposit &middot; &pound;{{ number_format($deposit, 2) }}
                     </button>
                 </form>
                 <p class="ch-hosted-lead" role="status">
