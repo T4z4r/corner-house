@@ -823,12 +823,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         function updateWalletAvailability(event) {
             const available = event.availablePaymentMethods;
+            walletStatus.className = 'ch-field-help text-danger';
             walletStatus.hidden = !!(available && (available.applePay || available.googlePay));
             walletStatus.textContent = 'Apple Pay and Google Pay are unavailable for this checkout in your current browser. You can pay by card below or try another browser with your wallet set up.';
         }
         expressCheckout.on('ready', updateWalletAvailability);
         expressCheckout.on('availablepaymentmethodschange', updateWalletAvailability);
         expressCheckout.on('loaderror', function () {
+            walletStatus.className = 'ch-field-help text-danger';
             walletStatus.hidden = false;
             walletStatus.textContent = 'Wallet payments could not load. Please refresh the page or pay by card below.';
         });

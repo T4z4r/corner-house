@@ -29,6 +29,7 @@ test('wallets request broader browser support and explain unavailable methods', 
     page.wallet.events.ready({ availablePaymentMethods: undefined });
     assert.equal(page.node('express-checkout-status').hidden, false);
     assert.match(page.node('express-checkout-status').textContent, /unavailable/);
+    assert.match(page.node('express-checkout-status').className, /\btext-danger\b/);
     page.wallet.events.availablepaymentmethodschange({ availablePaymentMethods: { googlePay: true } });
     assert.equal(page.node('express-checkout-status').hidden, true);
 });
@@ -38,6 +39,7 @@ test('wallet loading failure explains how to continue paying', () => {
     page.wallet.events.loaderror();
     assert.equal(page.node('express-checkout-status').hidden, false);
     assert.match(page.node('express-checkout-status').textContent, /pay by card/);
+    assert.match(page.node('express-checkout-status').className, /\btext-danger\b/);
 });
 
 test('wallet confirms on site without requiring card form completion', async () => {
