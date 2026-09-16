@@ -245,6 +245,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
 
     Route::middleware('can:guests.view')->group(function (): void {
         Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');
+        Route::get('/guests/export', [GuestController::class, 'export'])->name('guests.export');
         Route::get('/guests/create', [GuestController::class, 'create'])->name('guests.create')->middleware('can:guests.create');
         Route::post('/guests', [GuestController::class, 'store'])->name('guests.store')->middleware('can:guests.create');
         Route::get('/guests/{guest}', [GuestController::class, 'show'])->name('guests.show');

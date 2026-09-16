@@ -10,6 +10,13 @@
             <p class="ch-subtitle">{{ $guests->total() }} guest{{ $guests->total() === 1 ? '' : 's' }} in the directory</p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-download me-1"></i>Export</button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{{ route('admin.guests.export', array_merge(request()->only('search'), ['format' => 'csv'])) }}"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Export as CSV (Excel)</a></li>
+                    <li><a class="dropdown-item" href="{{ route('admin.guests.export', array_merge(request()->only('search'), ['format' => 'html'])) }}"><i class="bi bi-file-earmark-pdf me-2"></i>Export as PDF</a></li>
+                </ul>
+            </div>
             @can('guests.create')
                 <a href="{{ route('admin.guests.create') }}" class="btn btn-ch-primary"><i class="bi bi-plus-lg me-1"></i>New guest</a>
             @endcan

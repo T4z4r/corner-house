@@ -8,7 +8,9 @@ use App\Services\Audit\AuditLogger;
 use App\Services\Notification\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class GuestController extends Controller
 {
@@ -18,6 +20,42 @@ class GuestController extends Controller
     ) {}
 
     public function index(Request $request): View
+    {
+        return view('admin.guests.index', [
+            'guests' => $this->guestQuery($request)->paginate(15)->withQueryString(),
+        ]);
+    }
+
+    public function export(Request $request): StreamedResponse|View
+    {
+        $request->validate(['format' => ['sometimes', 'in:csv,html'], 'search' => ['nullable', 'string', 'max:255']]);
+        $query = $this->guestQuery($request);
+
+        if ($request->query('format') === 'html') {
+            return view('admin.guests.export-pdf', [
+                'guests' => $query->get(),
+                'search' => $request->query('search'),
+            ]);
+        }
+
+        return response()->streamDownload(function () use ($query): void {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Name', 'Email', 'Phone', 'Bookings', 'Source', 'Status']);
+            foreach ($query->lazy() as $guest) {
+                $row = [$guest->full_name, $guest->email ?? '', $guest->phone ?? '', $guest->reservations_count, $guest->source ?? '', ucfirst($guest->status)];
+                fputcsv($handle, array_map(static function (string|int $value): string|int {
+                    if (is_string($value) && preg_match('/^[\s]*[=+@-]/u', $value)) {
+                        return "'".$value;
+                    }
+
+                    return $value;
+                }, $row));
+            }
+            fclose($handle);
+        }, 'guests-'.now()->format('Y-m-d-H-i').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    private function guestQuery(Request $request): Builder
     {
         $query = Guest::query()->withCount('reservations');
 
@@ -30,9 +68,7 @@ class GuestController extends Controller
             });
         }
 
-        $guests = $query->orderBy('last_name')->paginate(15)->withQueryString();
-
-        return view('admin.guests.index', ['guests' => $guests]);
+        return $query->orderBy('last_name')->orderBy('first_name')->orderBy('id');
     }
 
     public function create(): View
