@@ -40,7 +40,7 @@
             </li>
         @endcan
 
-        <li class="sidebar-heading">Management</li>
+        <li class="sidebar-heading">Management <span class="badge bg-warning text-dark" aria-label="{{ $sidebarPendingTotal }} total pending">{{ $sidebarPendingTotal }} pending</span></li>
         @can('properties.view')
             <li class="nav-item">
                 <a href="{{ route('admin.properties.index') }}" class="nav-link {{ request()->routeIs('admin.properties.*') ? 'active' : '' }}">
@@ -65,28 +65,28 @@
         @can('enquiries.view')
             <li class="nav-item">
                 <a href="{{ route('admin.enquiries.index') }}" class="nav-link {{ request()->routeIs('admin.enquiries.*') ? 'active' : '' }}">
-                    <i class="bi bi-inbox me-2"></i><span class="nav-text">Enquiries</span>
+                    <i class="bi bi-inbox me-2"></i><span class="nav-text">Enquiries</span> @include('layouts.admin._sidebar-count', ['section' => 'enquiries'])
                 </a>
             </li>
         @endcan
         @can('reservations.view')
             <li class="nav-item">
                 <a href="{{ route('admin.reservations.index') }}" class="nav-link {{ request()->routeIs('admin.reservations.*') ? 'active' : '' }}">
-                    <i class="bi bi-journal-bookmark me-2"></i><span class="nav-text">Bookings</span>
+                    <i class="bi bi-journal-bookmark me-2"></i><span class="nav-text">Bookings</span> @include('layouts.admin._sidebar-count', ['section' => 'bookings'])
                 </a>
             </li>
         @endcan
         @can('payments.view')
             <li class="nav-item">
                 <a href="{{ route('admin.payments.index') }}" class="nav-link {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}">
-                    <i class="bi bi-credit-card me-2"></i><span class="nav-text">Payments</span>
+                    <i class="bi bi-credit-card me-2"></i><span class="nav-text">Payments</span> @include('layouts.admin._sidebar-count', ['section' => 'payments'])
                 </a>
             </li>
         @endcan
         @can('communications.view')
             <li class="nav-item">
                 <a href="{{ route('admin.messages.index') }}" class="nav-link {{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
-                    <i class="bi bi-chat-dots me-2"></i><span class="nav-text">Messages</span>
+                    <i class="bi bi-chat-dots me-2"></i><span class="nav-text">Messages</span> @include('layouts.admin._sidebar-count', ['section' => 'messages'])
                 </a>
             </li>
         @endcan
@@ -247,15 +247,15 @@
             @can('enquiries.view')
                 <li class="nav-item">
                     <a href="{{ route('admin.enquiries.index') }}" class="nav-link {{ request()->routeIs('admin.enquiries.*') ? 'active' : '' }}">
-                        <i class="bi bi-inbox me-2"></i><span class="nav-text">Enquiries</span>
+                        <i class="bi bi-inbox me-2"></i><span class="nav-text">Enquiries</span> @include('layouts.admin._sidebar-count', ['section' => 'enquiries'])
                     </a>
                 </li>
             @endcan
             @can('reservations.view')
-                <li class="nav-item"><a href="{{ route('admin.reservations.index') }}" class="nav-link">Bookings</a></li>
+                <li class="nav-item"><a href="{{ route('admin.reservations.index') }}" class="nav-link">Bookings @include('layouts.admin._sidebar-count', ['section' => 'bookings'])</a></li>
             @endcan
             @can('payments.view')
-                <li class="nav-item"><a href="{{ route('admin.payments.index') }}" class="nav-link">Payments</a></li>
+                <li class="nav-item"><a href="{{ route('admin.payments.index') }}" class="nav-link">Payments @include('layouts.admin._sidebar-count', ['section' => 'payments'])</a></li>
             @endcan
             @can('pricing.view')
                 <li class="nav-item"><a href="{{ route('admin.pricing.index') }}" class="nav-link">Pricing</a></li>

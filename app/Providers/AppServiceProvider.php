@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Communication;
+use App\Models\Enquiry;
+use App\Models\Payment;
+use App\Models\Reservation;
 use App\Models\Setting;
 use App\Services\Audit\AuditLogger;
 use App\Services\Beds24\Beds24ChannelProvider;
@@ -11,6 +15,7 @@ use App\Services\Payment\FakePaymentGateway;
 use App\Services\Payment\PaymentGatewayInterface;
 use App\Services\Payment\StripePaymentGateway;
 use App\Services\System\MailConfigurationService;
+use App\Services\Website\WebsiteContentService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Schema;
@@ -89,11 +94,33 @@ class AppServiceProvider extends ServiceProvider
             },
         );
 
+        View::composer('layouts.admin.sidebar', function ($view): void {
+            $counts = [];
+            $sections = [
+                'enquiries' => ['enquiries.view', Enquiry::class, ['new']],
+                'bookings' => ['reservations.view', Reservation::class, ['pending', 'hold']],
+                'payments' => ['payments.view', Payment::class, ['pending']],
+                'messages' => ['communications.view', Communication::class, ['pending']],
+            ];
+            foreach ($sections as $section => [$permission, $model, $pendingStatuses]) {
+                if (! auth()->user()?->can($permission)) {
+                    continue;
+                }
+                $statuses = $model::query()->selectRaw('status, COUNT(*) as aggregate')->groupBy('status')->pluck('aggregate', 'status');
+                $counts[$section] = [
+                    'total' => (int) $statuses->sum(),
+                    'pending' => (int) $statuses->only($pendingStatuses)->sum(),
+                ];
+            }
+            $view->with('sidebarCounts', $counts);
+            $view->with('sidebarPendingTotal', array_sum(array_column($counts, 'pending')));
+        });
+
         View::composer(
             ['layouts.website.*', 'website.*'],
             function ($view): void {
                 $view->with('propertyName', Setting::getValue('property_name', config('app.name')));
-                $view->with('site', $this->app->make(\App\Services\Website\WebsiteContentService::class)->data());
+                $view->with('site', $this->app->make(WebsiteContentService::class)->data());
             },
         );
     }
