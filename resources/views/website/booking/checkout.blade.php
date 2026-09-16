@@ -9,6 +9,8 @@
 @php($fullName = trim(($guest?->first_name ?? '').' '.($guest?->last_name ?? '')))
 @php($guestEmail = $guest?->email ?? '')
 @php($nights = $reservation->check_in && $reservation->check_out ? $reservation->check_in->diffInDays($reservation->check_out) : 1)
+@php($balanceDueNote = $balanceDue > 0 ? ' &mdash; the balance of &pound;'.number_format($balanceDue, 2).' is due before arrival' : '')
+@php($balanceDueSentence = $balanceDue > 0 ? ' The balance of &pound;'.number_format($balanceDue, 2).' is due before arrival.' : '')
 
 <section class="ch-page-hero">
     <div class="wrap">
@@ -535,7 +537,7 @@
                         </div>
                         <span class="ch-chip ch-chip-recommended">Recommended</span>
                     </div>
-                    <p class="ch-hosted-lead">Prefer to pay on Stripe's secure page? Continue there to pay your refundable deposit of <strong>&pound;{{ number_format($deposit, 2) }}</strong>@if ($balanceDue > 0) &mdash; the balance of &pound;{{ number_format($balanceDue, 2) }} is due before arrival@endif.</p>
+                    <p class="ch-hosted-lead">Prefer to pay on Stripe's secure page? Continue there to pay your refundable deposit of <strong>&pound;{{ number_format($deposit, 2) }}</strong>{{ $balanceDueNote }}.</p>
                     <a href="{{ $checkoutUrl }}" class="btn-ch-pay">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3 8.5-7 10-4-1.5-7-5-7-10V5z"/></svg>
                         <span>Pay &pound;{{ number_format($deposit, 2) }} via Stripe Checkout</span>
@@ -582,7 +584,7 @@
                             <span class="ch-check-text">
                                 I confirm the stay details and authorise the charge of
                                 <strong>&pound;{{ number_format($deposit, 2) }}</strong>
-                                via Stripe.@if ($balanceDue > 0) The balance of &pound;{{ number_format($balanceDue, 2) }} is due before arrival.@endif
+                                via Stripe.{{ $balanceDueSentence }}
                             </span>
                         </label>
 
