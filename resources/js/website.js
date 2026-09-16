@@ -88,10 +88,8 @@ async function loadAvailability(){
   try{
     const res = await fetch(CONFIG.availabilityUrl, {cache:"no-store"});
     loadBlocked(await res.json());
-    document.getElementById("demo-notice").hidden = true;
   }catch(e){
     loadBlocked([]);
-    document.getElementById("demo-notice").textContent = "Live availability could not be loaded. Send an enquiry and we will confirm dates by email.";
   }
   renderMonths();
 }
@@ -236,7 +234,9 @@ if (enquiryForm) {
     const submitBtn = enquiryForm.querySelector('button[type="submit"]');
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.textContent = "Sending booking request...";
+      submitBtn.classList.add("disabled");
+      submitBtn.dataset.chOriginalHtml = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Submitting...';
     }
 
     try {
@@ -262,7 +262,11 @@ if (enquiryForm) {
     } catch(err) {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.textContent = "Send booking request";
+        submitBtn.classList.remove("disabled");
+        if (submitBtn.dataset.chOriginalHtml !== undefined) {
+          submitBtn.innerHTML = submitBtn.dataset.chOriginalHtml;
+          delete submitBtn.dataset.chOriginalHtml;
+        }
       }
       setError(err.message || "Your booking request could not be submitted. Please try again.");
     }
