@@ -17,6 +17,17 @@
         )));
     @endphp
     <meta charset="utf-8">
+    <style>
+        @font-face {
+            font-family: 'Country Flags';
+            src: url('{{ asset('fonts/TwemojiCountryFlags.woff2') }}') format('woff2');
+            font-display: swap;
+            unicode-range: U+1F1E6-1F1FF;
+        }
+        select[name="phone_code"], select[name="phone_code"] option {
+            font-family: 'Country Flags', Arial, sans-serif;
+        }
+    </style>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $seoTitle }}</title>

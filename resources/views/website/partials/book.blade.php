@@ -83,20 +83,9 @@
                         <div class="row">
                             <label>Phone
                                 <span class="phone-row">
-                                    <select name="phone_code">
-                                        <option value="+44" selected>UK +44</option>
-                                        <option value="+353">Ireland +353</option>
-                                        <option value="+1">United States +1</option>
-                                        <option value="+1">Canada +1</option>
-                                        <option value="+61">Australia +61</option>
-                                        <option value="+64">New Zealand +64</option>
-                                        <option value="+33">France +33</option>
-                                        <option value="+49">Germany +49</option>
-                                        <option value="+34">Spain +34</option>
-                                        <option value="+31">Netherlands +31</option>
-                                        <option value="+971">United Arab Emirates +971</option>
-                                        <option value="+966">Saudi Arabia +966</option>
-                                    </select>
+                                    <select name="phone_code" aria-label="Country dial code">
+                                    @include('website.partials.phone-code-options')
+                                </select>
                                     <input name="phone" type="tel" autocomplete="tel" placeholder="7700 900 123">
                                 </span>
                             </label>

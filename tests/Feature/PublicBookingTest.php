@@ -262,6 +262,10 @@ class PublicBookingTest extends TestCase
         ]))
             ->assertOk()
             ->assertSee('Damage deposit')
+            ->assertSee('🇰🇪 Kenya +254')
+            ->assertSee('🇮🇳 India +91')
+            ->assertSee('🇧🇷 Brazil +55')
+            ->assertSee('data-country="gb" selected', false)
             ->assertSee('£1,150.00');
     }
 
