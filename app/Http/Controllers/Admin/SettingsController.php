@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\Audit\AuditLogger;
+use App\Services\Notification\HostNotificationRecipients;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
 class SettingsController extends Controller
@@ -77,7 +79,18 @@ class SettingsController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
+        $emailListRules = ['sometimes', 'nullable', 'string', 'max:5000', function (string $attribute, mixed $value, \Closure $fail): void {
+            if (! is_string($value)) {
+                return;
+            }
+            $addresses = HostNotificationRecipients::parse($value);
+            if (Validator::make(['addresses' => $addresses], ['addresses.*' => ['email', 'max:254']])->fails()) {
+                $fail('Enter valid email addresses separated by commas, semicolons or new lines.');
+            }
+        }];
         $request->validate([
+            'booking_notify_email' => $emailListRules,
+            'admin_notification_email' => $emailListRules,
             'cancellation_notice_days' => ['sometimes', 'required', 'integer', 'min:1', 'max:365'],
             'cancellation_fee_percent' => ['sometimes', 'required', 'integer', 'between:0,100'],
             'cancellation_late_hours' => ['sometimes', 'required', 'integer', 'min:1', 'max:8760'],

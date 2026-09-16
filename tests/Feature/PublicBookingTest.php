@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Mail\NewBookingRequestMail;
 use App\Mail\GuestCommunicationMail;
+use App\Mail\NewBookingRequestMail;
 use App\Models\Enquiry;
 use App\Models\Payment;
 use App\Models\PricingRule;
@@ -221,7 +221,7 @@ class PublicBookingTest extends TestCase
     {
         Mail::fake();
 
-        $recipient = 'bookings@cornerhouse.test';
+        $recipient = 'bookings@cornerhouse.test, manager@example.com';
         Setting::updateOrCreate(['key' => 'booking_notify_email'], ['value' => $recipient, 'group' => 'booking']);
 
         $room = Room::factory()->create(['base_rate' => 80, 'status' => 'active', 'name' => 'Lion Bedroom']);
@@ -243,8 +243,8 @@ class PublicBookingTest extends TestCase
         $enquiry = Enquiry::query()->first();
         $this->assertNotNull($enquiry);
 
-        Mail::assertSent(NewBookingRequestMail::class, function (NewBookingRequestMail $mail) use ($enquiry, $recipient): bool {
-            if (! $mail->hasTo($recipient) || $mail->enquiry->id !== $enquiry->id || $mail->room->id !== $enquiry->room_id) {
+        Mail::assertSent(NewBookingRequestMail::class, function (NewBookingRequestMail $mail) use ($enquiry): bool {
+            if (! $mail->hasTo('bookings@cornerhouse.test') || ! $mail->hasTo('manager@example.com') || $mail->enquiry->id !== $enquiry->id || $mail->room->id !== $enquiry->room_id) {
                 return false;
             }
 

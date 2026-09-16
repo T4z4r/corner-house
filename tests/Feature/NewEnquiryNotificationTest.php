@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Mail\NewEnquiryNotificationMail;
 use App\Mail\GuestCommunicationMail;
+use App\Mail\NewEnquiryNotificationMail;
 use App\Models\Enquiry;
 use App\Models\Setting;
 use Database\Seeders\SettingsSeeder;
@@ -24,7 +24,7 @@ class NewEnquiryNotificationTest extends TestCase
 
     public function test_booking_enquiry_sends_notification_email_to_configured_recipient(): void
     {
-        $recipient = 'owner@example.com';
+        $recipient = 'owner@example.com, manager@example.com';
         Setting::where('key', 'admin_notification_email')->firstOrFail()->update(['value' => $recipient]);
         Setting::where('key', 'booking_notify_email')->firstOrFail()->update(['value' => $recipient]);
 
@@ -43,8 +43,8 @@ class NewEnquiryNotificationTest extends TestCase
             'acceptedTerms' => true,
         ])->assertOk()->assertJson(['status' => 'ok']);
 
-        Mail::assertSent(NewEnquiryNotificationMail::class, function (NewEnquiryNotificationMail $mail) use ($recipient): bool {
-            return $mail->hasTo($recipient)
+        Mail::assertSent(NewEnquiryNotificationMail::class, function (NewEnquiryNotificationMail $mail): bool {
+            return $mail->hasTo('owner@example.com') && $mail->hasTo('manager@example.com')
                 && str_contains($mail->envelope()->subject, 'New booking enquiry from Sam Guest')
                 && str_contains($mail->emailBody, 'sam@example.com')
                 && str_contains($mail->emailBody, 'A birthday weekend.');

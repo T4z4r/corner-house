@@ -27,7 +27,7 @@ class NewDirectBookingNotificationTest extends TestCase
 
     public function test_new_direct_booking_sends_notification_email_to_configured_recipient(): void
     {
-        $recipient = 'owner@example.com';
+        $recipient = 'owner@example.com, manager@example.com';
         Setting::where('key', 'admin_notification_email')->firstOrFail()->update(['value' => $recipient]);
         Setting::where('key', 'booking_notify_email')->firstOrFail()->update(['value' => $recipient]);
 
@@ -37,8 +37,8 @@ class NewDirectBookingNotificationTest extends TestCase
 
         app(BookingService::class)->confirm($reservation);
 
-        Mail::assertSent(NewBookingNotificationMail::class, function (NewBookingNotificationMail $mail) use ($reservation, $recipient): bool {
-            return $mail->hasTo($recipient)
+        Mail::assertSent(NewBookingNotificationMail::class, function (NewBookingNotificationMail $mail) use ($reservation): bool {
+            return $mail->hasTo('owner@example.com') && $mail->hasTo('manager@example.com')
                 && str_contains($mail->envelope()->subject, $reservation->reference)
                 && str_contains($mail->emailBody, $reservation->reference)
                 && str_contains($mail->emailBody, 'A new direct booking has been received');

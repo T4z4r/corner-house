@@ -13,6 +13,7 @@ use App\Models\Room;
 use App\Models\Setting;
 use App\Services\Availability\AvailabilityService;
 use App\Services\Booking\BookingHoldService;
+use App\Services\Notification\HostNotificationRecipients;
 use App\Services\Notification\NotificationService;
 use App\Services\Payment\PaymentService;
 use App\Services\Pricing\PricingEngine;
@@ -412,7 +413,10 @@ class BookingController extends Controller
         try {
             $mailConfigurationService->apply();
 
-            $recipient = Setting::getValue('booking_notify_email', Setting::getValue('admin_notification_email', config('mail.from.address')));
+            $recipient = HostNotificationRecipients::parse(Setting::getValue('booking_notify_email', Setting::getValue('admin_notification_email', config('mail.from.address'))));
+            if ($recipient === []) {
+                return;
+            }
 
             Mail::to($recipient)->send(new NewBookingRequestMail(
                 $enquiry,

@@ -274,9 +274,9 @@ class SystemNotificationService
             return;
         }
 
-        $recipient = trim((string) (Setting::getValue('admin_notification_email') ?: Setting::getValue('booking_notify_email', '')));
+        $recipient = HostNotificationRecipients::parse((string) (Setting::getValue('admin_notification_email') ?: Setting::getValue('booking_notify_email', '')));
 
-        if ($recipient === '') {
+        if ($recipient === []) {
             return;
         }
 

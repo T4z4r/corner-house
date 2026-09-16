@@ -98,7 +98,10 @@
                                                    min="1"
                                                    max="65535"
                                                    value="{{ $setting->value }}">
-                                        @elseif (in_array($setting->key, ['mail_from_address', 'website_contact_email', 'booking_notify_email', 'admin_notification_email', 'beds24_alert_email']))
+                                        @elseif (in_array($setting->key, ['booking_notify_email', 'admin_notification_email']))
+                                            <textarea class="form-control" id="{{ $setting->key }}" name="{{ $setting->key }}" rows="3" placeholder="host@example.com, manager@example.com">{{ old($setting->key, $setting->value) }}</textarea>
+                                            <div class="form-text">Host notification emails. Enter one or more addresses separated by commas, semicolons or new lines. Booking and system notifications include payment updates.</div>
+                                        @elseif (in_array($setting->key, ['mail_from_address', 'website_contact_email', 'beds24_alert_email']))
                                             <input type="email"
                                                    class="form-control"
                                                    id="{{ $setting->key }}"

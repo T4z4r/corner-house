@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Mail\NewEnquiryNotificationMail;
 use App\Models\Enquiry;
 use App\Models\Setting;
+use App\Services\Notification\HostNotificationRecipients;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -24,9 +25,9 @@ class SendNewEnquiryNotificationJob implements ShouldQueue
             return;
         }
 
-        $recipient = trim((string) (Setting::getValue('admin_notification_email') ?: Setting::getValue('booking_notify_email', '')));
+        $recipient = HostNotificationRecipients::parse((string) (Setting::getValue('admin_notification_email') ?: Setting::getValue('booking_notify_email', '')));
 
-        if ($recipient === '') {
+        if ($recipient === []) {
             return;
         }
 
