@@ -7,6 +7,9 @@
         <h4>Payments</h4>
         <p class="ch-subtitle">Stripe payment history and transaction details</p>
     </div>
+    @can('payments.create')
+        <a href="{{ route('admin.payments.instant') }}" class="btn btn-primary">Instant Payout</a>
+    @endcan
 </div>
 
 <div class="card border-0 shadow-sm mb-4">

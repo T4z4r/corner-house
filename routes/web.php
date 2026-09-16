@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\FoodAndDrinkController;
 use App\Http\Controllers\Admin\GalleryController;
 use App\Http\Controllers\Admin\GuestController;
+use App\Http\Controllers\Admin\InstantPayoutController;
 use App\Http\Controllers\Admin\MessageInboxController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PaymentController;
@@ -303,6 +304,9 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
 
     Route::middleware(['can:payments.view', 'password.confirm'])->group(function (): void {
         Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
+        Route::get('/payments/instant-payout', [InstantPayoutController::class, 'index'])->name('payments.instant')->middleware('can:payments.create');
+        Route::post('/payments/instant-payout/review', [InstantPayoutController::class, 'review'])->name('payments.instant.review')->middleware('can:payments.create');
+        Route::post('/payments/instant-payout', [InstantPayoutController::class, 'store'])->name('payments.instant.store')->middleware('can:payments.create');
         Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
         Route::post('/payments/{payment}/refund', [PaymentController::class, 'refund'])->name('payments.refund')->middleware('can:payments.refund');
     });
