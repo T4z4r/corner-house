@@ -137,6 +137,7 @@ class BookingController extends Controller
             $property = $room->property;
 
             $propertyRooms = Room::query()
+                ->with('property')
                 ->where('property_id', $property->id)
                 ->where('status', 'active')
                 ->get();

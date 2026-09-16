@@ -599,7 +599,7 @@
                 <h4 class="mb-2 fs-6 fw-bold text-uppercase" style="letter-spacing:0.08em; color:var(--ch-ivy-deep);"><i class="bi bi-house-door me-2"></i>House Rules</h4>
                 <ul class="small text-muted mb-0 ps-3">
                     <li class="mb-1">Check-in from 3:00 PM · Check-out by 12:00 PM</li>
-                    <li class="mb-1">Minimum stay: {{ \App\Models\Setting::getValue('min_stay_nights', 2) }} nights</li>
+                    <li class="mb-1">Minimum stay: {{ \App\Models\Setting::getValue('min_stay_nights', 2) }} nights (3 on bank holidays and seasonal events)</li>
                     <li class="mb-1">Maximum occupancy: {{ \App\Models\Setting::getValue('max_adults', 12) }} adults</li>
                     <li>No pets or indoor smoking permitted</li>
                 </ul>

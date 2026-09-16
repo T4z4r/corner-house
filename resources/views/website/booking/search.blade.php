@@ -8,6 +8,7 @@
             <p class="kicker">Bookings</p>
             <h1>Find a stay</h1>
             <p class="lede">Choose dates. We will show what is free, with the house rate.</p>
+            <p class="small">Minimum stay: 2 nights (3 on bank holidays and seasonal events).</p>
         </div>
     </div>
 

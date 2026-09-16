@@ -9,10 +9,10 @@ use App\Models\ChannelMapping;
 use App\Models\FoodAndDrink;
 use App\Models\Guest;
 use App\Models\KnowledgeBaseArticle;
+use App\Models\Payment;
 use App\Models\PlacesOfInterest;
 use App\Models\PricingOverride;
 use App\Models\PricingRule;
-use App\Models\Payment;
 use App\Models\Property;
 use App\Models\Refund;
 use App\Models\Reservation;
@@ -1386,5 +1386,56 @@ class AdminResourcesTest extends TestCase
 
         $this->assertDatabaseHas('rooms', ['name' => 'Rose Suite']);
         $this->assertDatabaseCount('room_images', 1);
+    }
+
+    public function test_super_admin_can_create_a_room_as_primary(): void
+    {
+        $property = Property::factory()->create();
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->post(route('admin.rooms.store', $property), [
+                'name' => 'Rose Suite',
+                'status' => 'active',
+                'base_rate' => 150,
+                'is_primary' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('rooms', ['name' => 'Rose Suite', 'is_primary' => true]);
+    }
+
+    public function test_setting_a_room_as_primary_clears_the_previous_primary(): void
+    {
+        $property = Property::factory()->create();
+        $first = Room::factory()->create(['property_id' => $property->id, 'name' => 'Oak Suite', 'is_primary' => true]);
+        $second = Room::factory()->create(['property_id' => $property->id, 'name' => 'Garden Room', 'is_primary' => false]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->put(route('admin.rooms.update', $second), [
+                'name' => 'Garden Room',
+                'status' => 'active',
+                'base_rate' => 100,
+                'is_primary' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('rooms', ['id' => $second->id, 'is_primary' => true]);
+        $this->assertDatabaseHas('rooms', ['id' => $first->id, 'is_primary' => false]);
+    }
+
+    public function test_unchecking_primary_keeps_the_room_non_primary(): void
+    {
+        $property = Property::factory()->create();
+        $room = Room::factory()->create(['property_id' => $property->id, 'name' => 'Oak Suite', 'is_primary' => true]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->put(route('admin.rooms.update', $room), [
+                'name' => 'Oak Suite',
+                'status' => 'active',
+                'base_rate' => 100,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('rooms', ['id' => $room->id, 'is_primary' => false]);
     }
 }

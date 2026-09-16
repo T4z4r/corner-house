@@ -48,7 +48,7 @@
                 <div>
                     <div class="cal-head">
                         <button type="button" id="prev-month" aria-label="Previous month">&lsaquo;</button>
-                        <span class="small">Minimum stay <strong id="min-nights-label">2</strong> nights</span>
+                        <span class="small">Minimum stay <strong id="min-nights-label">2</strong> nights (3 on bank holidays and seasonal events)</span>
                         <button type="button" id="next-month" aria-label="Next month">&rsaquo;</button>
                     </div>
                     <div class="months" id="months"></div>

@@ -102,6 +102,22 @@ class PublicBookingTest extends TestCase
         ]))->assertRedirect(route('booking.search'));
     }
 
+    public function test_prices_defaults_to_the_primary_room_when_no_room_is_supplied(): void
+    {
+        $property = Property::factory()->create(['status' => 'active']);
+        $primary = Room::factory()->create(['property_id' => $property->id, 'name' => 'Lion Suite', 'status' => 'active', 'base_rate' => 100, 'is_primary' => true]);
+        Room::factory()->create(['property_id' => $property->id, 'name' => 'Elephant Room', 'status' => 'active', 'base_rate' => 200]);
+
+        $start = now()->addDays(10)->toDateString();
+        $end = now()->addDays(12)->toDateString();
+
+        $this->getJson(route('booking.prices').'?start='.$start.'&end='.$end)
+            ->assertOk()
+            ->assertJsonPath('room_id', $primary->id)
+            ->assertJsonPath('base_amount', 200);
+
+    }
+
     public function test_hold_requires_an_explicit_room_selection(): void
     {
         $room = Room::factory()->create(['base_rate' => 80, 'status' => 'active']);

@@ -28,7 +28,7 @@ class BookingSearchDefaultRoomTest extends TestCase
     /**
      * @return array{0: Property, 1: Room, 2: Property, 3: Room}
      */
-    private function listings(): array
+    private function listings(bool $marinaRoomPrimary = false): array
     {
         $cornerHouse = Property::factory()->create(['name' => 'Corner House', 'status' => 'active', 'is_primary' => true, 'capacity' => 12]);
         $lion = Room::factory()->create([
@@ -51,6 +51,7 @@ class BookingSearchDefaultRoomTest extends TestCase
             'status' => 'active',
             'base_rate' => 100,
             'capacity' => 12,
+            'is_primary' => $marinaRoomPrimary,
         ]);
 
         return [$cornerHouse, $lion, $marina, $marinaRoom];
@@ -63,9 +64,9 @@ class BookingSearchDefaultRoomTest extends TestCase
         return [$checkIn->toDateString(), $checkIn->copy()->addDays(2)->toDateString()];
     }
 
-    public function test_search_defaults_to_the_marina_listing_when_its_room_is_available(): void
+    public function test_search_defaults_to_the_primary_listing_when_its_room_is_available(): void
     {
-        [$cornerHouse, $lion, $marina, $marinaRoom] = $this->listings();
+        [$cornerHouse, $lion, $marina, $marinaRoom] = $this->listings(true);
         [$checkIn, $checkOut] = $this->dates();
 
         $this->get(route('booking.search', [
@@ -89,9 +90,9 @@ class BookingSearchDefaultRoomTest extends TestCase
             ]));
     }
 
-    public function test_search_falls_back_to_the_lion_listing_when_the_marina_room_is_unavailable(): void
+    public function test_search_falls_back_when_the_primary_room_is_unavailable(): void
     {
-        [$cornerHouse, $lion, $marina, $marinaRoom] = $this->listings();
+        [$cornerHouse, $lion, $marina, $marinaRoom] = $this->listings(true);
         [$checkIn, $checkOut] = $this->dates();
 
         app(BookingService::class)->create([
@@ -123,9 +124,35 @@ class BookingSearchDefaultRoomTest extends TestCase
             ]));
     }
 
-    public function test_search_can_offer_the_whole_house_on_the_marina_listing(): void
+    public function test_search_defaults_to_the_first_active_room_when_no_room_is_primary(): void
     {
         [$cornerHouse, $lion, $marina, $marinaRoom] = $this->listings();
+        [$checkIn, $checkOut] = $this->dates();
+
+        $this->get(route('booking.search', [
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'guests' => 2,
+        ]))
+            ->assertOk()
+            ->assertSee($cornerHouse->name)
+            ->assertSee(route('booking.details', [
+                'room' => $lion,
+                'check_in' => $checkIn,
+                'check_out' => $checkOut,
+                'guests' => 2,
+            ]))
+            ->assertDontSee(route('booking.details', [
+                'room' => $marinaRoom,
+                'check_in' => $checkIn,
+                'check_out' => $checkOut,
+                'guests' => 2,
+            ]));
+    }
+
+    public function test_search_can_offer_the_whole_house_on_the_primary_listing(): void
+    {
+        [$cornerHouse, $lion, $marina, $marinaRoom] = $this->listings(true);
         [$checkIn, $checkOut] = $this->dates();
 
         $this->get(route('booking.search', [

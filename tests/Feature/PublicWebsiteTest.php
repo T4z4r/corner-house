@@ -329,6 +329,51 @@ class PublicWebsiteTest extends TestCase
             ->assertSee('Noise and neighbours', false);
     }
 
+    public function test_minimum_stay_clarification_shows_on_availability_and_policies(): void
+    {
+        Property::factory()->create(['name' => 'Corner House']);
+        $phrase = '3 on bank holidays and seasonal events';
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Minimum stay', false)
+            ->assertSee($phrase, false);
+
+        $this->get(route('booking.search'))
+            ->assertOk()
+            ->assertSee($phrase, false);
+    }
+
+    public function test_minimum_stay_clarification_shows_on_booking_details(): void
+    {
+        $property = Property::factory()->create(['status' => 'active']);
+        $room = Room::factory()->create([
+            'property_id' => $property->id,
+            'name' => 'Garden Room',
+            'status' => 'active',
+            'base_rate' => 550,
+            'capacity' => 2,
+        ]);
+        Setting::updateOrCreate(['key' => 'min_price_weekday'], ['group' => 'booking', 'value' => '550', 'label' => 'Min weekday', 'cast' => 'decimal:2']);
+        Setting::updateOrCreate(['key' => 'min_price_weekend'], ['group' => 'booking', 'value' => '625', 'label' => 'Min weekend', 'cast' => 'decimal:2']);
+        Setting::updateOrCreate(['key' => 'cleaning_fee'], ['group' => 'booking', 'value' => '0', 'label' => 'Cleaning', 'cast' => 'decimal:2']);
+        Setting::updateOrCreate(['key' => 'damage_deposit'], ['group' => 'booking', 'value' => '0', 'label' => 'Deposit', 'cast' => 'decimal:2']);
+
+        cache()->forget('settings.all');
+
+        $checkIn = now()->addDays(10)->startOfDay();
+        $checkOut = $checkIn->copy()->addDays(2);
+
+        $this->get(route('booking.details', [
+            'room' => $room,
+            'check_in' => $checkIn->toDateString(),
+            'check_out' => $checkOut->toDateString(),
+            'guests' => 1,
+        ]))
+            ->assertOk()
+            ->assertSee('3 on bank holidays and seasonal events', false);
+    }
+
     public function test_booking_enquiry_accepts_the_widget_payload(): void
     {
         $this->postJson(route('booking.enquiry'), [
@@ -388,6 +433,17 @@ class PublicWebsiteTest extends TestCase
             ->assertSee('window.__SITE__', false)
             ->assertSee('"availabilityUrl":"\\/booking\\/availability"', false)
             ->assertSee('"bookingEndpoint":"\\/booking\\/enquiry"', false);
+    }
+
+    public function test_website_config_points_direct_bookings_at_the_primary_room(): void
+    {
+        $property = Property::factory()->create(['name' => 'Corner House', 'status' => 'active', 'slug' => 'corner-house']);
+        $primary = Room::factory()->create(['property_id' => $property->id, 'name' => 'Lion', 'status' => 'active', 'is_primary' => true]);
+        Room::factory()->create(['property_id' => $property->id, 'name' => 'Elephant', 'status' => 'active']);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('"bookingRoomId":'.$primary->id, false);
     }
 
     public function test_home_page_amenities_match_template_list(): void

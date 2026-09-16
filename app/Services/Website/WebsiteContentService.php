@@ -322,8 +322,7 @@ class WebsiteContentService
             [
                 'title' => 'Length of stay',
                 'items' => [
-                    'Minimum stay of 2 nights.',
-                    'Minimum of 3 nights over bank holiday weekends, and 3 nights over Christmas and New Year.',
+                    'Minimum 2 nights (3 on bank holidays and seasonal events).',
                     'Check-in from 3:00pm. Check-out by 12:00 noon.',
                     'Earlier check-in or later check-out may be possible if the house is free either side. Please ask; it is never guaranteed.',
                 ],
