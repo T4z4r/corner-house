@@ -37,7 +37,7 @@ class HostNotificationRecipientsTest extends TestCase
     public function test_payment_notifications_reach_all_hosts_once(): void
     {
         Mail::fake();
-        Setting::create(['key' => 'admin_notification_email', 'value' => 'owner@example.com, manager@example.com; OWNER@example.com']);
+        Setting::updateOrCreate(['key' => 'admin_notification_email'], ['value' => 'owner@example.com, manager@example.com; OWNER@example.com']);
         $payment = Payment::factory()->paid()->create();
         app(SystemNotificationService::class)->paymentMarkedPaid($payment);
         Mail::assertSent(SystemNotificationMail::class, fn ($mail): bool => $mail->hasTo('owner@example.com') && $mail->hasTo('manager@example.com') && count($mail->to) === 2);
