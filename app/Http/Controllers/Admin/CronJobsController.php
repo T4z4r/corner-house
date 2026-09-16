@@ -9,7 +9,12 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
 use Illuminate\View\View;
+use Symfony\Component\Process\PhpExecutableFinder;
+use Throwable;
 
 class CronJobsController extends Controller
 {
@@ -78,6 +83,49 @@ class CronJobsController extends Controller
 
         return redirect()->route('admin.cron-jobs')
             ->with('status', "{$label} has been queued to run.");
+    }
+
+    public function processQueue(): RedirectResponse
+    {
+        $connection = (string) config('queue.default');
+        if (in_array(config("queue.connections.{$connection}.driver"), ['sync', 'null', 'deferred', 'background'], true)) {
+            return back()->withErrors(['queue' => 'The configured queue does not support a worker. Configure a database or Redis queue first.']);
+        }
+
+        $lock = Cache::lock('admin-process-queue', 60);
+        if (! $lock->get()) {
+            return back()->withErrors(['queue' => 'A queue batch is already running. Please wait before trying again.']);
+        }
+
+        try {
+            $php = (new PhpExecutableFinder)->find(false);
+            if (! $php) {
+                return back()->withErrors(['queue' => 'The PHP command-line executable could not be found on this server.']);
+            }
+
+            $result = Process::path(base_path())->timeout(25)->run([
+                $php, base_path('artisan'), 'queue:work', $connection,
+                '--stop-when-empty', '--tries=3', '--max-time=15', '--max-jobs=25',
+                '--timeout=15', '--sleep=1', '--no-interaction',
+            ]);
+
+            if (! $result->successful()) {
+                Log::warning('Manual queue worker exited unsuccessfully', [
+                    'exit_code' => $result->exitCode(),
+                    'error' => $result->errorOutput(),
+                ]);
+
+                return back()->withErrors(['queue' => 'The worker did not finish successfully. Check the application logs and failed jobs before trying again.']);
+            }
+
+            return back()->with('status', 'Queue batch finished. If jobs remain, run another batch. Individual jobs may have failed; check the application logs and job history.');
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->withErrors(['queue' => 'The queue batch could not finish within the web request. Use the cPanel cron for long-running jobs.']);
+        } finally {
+            $lock->release();
+        }
     }
 
     /**

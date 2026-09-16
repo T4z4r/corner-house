@@ -13,6 +13,7 @@ use App\Models\Room;
 use App\Models\Setting;
 use App\Services\Availability\AvailabilityService;
 use App\Services\Booking\BookingHoldService;
+use App\Services\Notification\NotificationService;
 use App\Services\Payment\PaymentService;
 use App\Services\Pricing\PricingEngine;
 use App\Services\System\MailConfigurationService;
@@ -34,6 +35,7 @@ class BookingController extends Controller
         private readonly PricingEngine $pricing,
         private readonly BookingHoldService $holds,
         private readonly PaymentService $payments,
+        private readonly NotificationService $notifications,
     ) {}
 
     public function search(Request $request): View
@@ -336,7 +338,7 @@ class BookingController extends Controller
             ]);
 
             $this->sendBookingRequestMail($request, $mailConfigurationService, $enquiry, $room, $hold['expires_at'], $quote);
-            app(\App\Services\Notification\NotificationService::class)->sendEnquiryAcknowledgement($enquiry);
+            $this->notifications->sendEnquiryAcknowledgement($enquiry);
 
             if ($request->expectsJson()) {
                 return response()->json([

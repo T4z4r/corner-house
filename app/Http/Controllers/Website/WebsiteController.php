@@ -15,6 +15,7 @@ use App\Models\Room;
 use App\Models\Setting;
 use App\Services\Area\AreaIntelligenceService;
 use App\Services\Availability\AvailabilityService;
+use App\Services\Notification\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,7 +26,10 @@ use Throwable;
 
 class WebsiteController extends Controller
 {
-    public function __construct(private readonly AvailabilityService $availability) {}
+    public function __construct(
+        private readonly AvailabilityService $availability,
+        private readonly NotificationService $notifications,
+    ) {}
 
     public function home(): View
     {
@@ -199,7 +203,7 @@ class WebsiteController extends Controller
 
         SendNewEnquiryNotificationJob::dispatch($enquiry->id);
 
-        app(\App\Services\Notification\NotificationService::class)->sendEnquiryAcknowledgement($enquiry);
+        $this->notifications->sendEnquiryAcknowledgement($enquiry);
 
         return back()->with('status', 'Thank you. We will get back to you shortly.');
     }
@@ -240,7 +244,7 @@ class WebsiteController extends Controller
 
         SendNewEnquiryNotificationJob::dispatch($enquiry->id);
 
-        app(\App\Services\Notification\NotificationService::class)->sendEnquiryAcknowledgement($enquiry);
+        $this->notifications->sendEnquiryAcknowledgement($enquiry);
 
         return response()->json(['status' => 'ok']);
     }

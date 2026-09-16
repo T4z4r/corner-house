@@ -48,6 +48,21 @@
         </div>
     </div>
 
+    @can('settings.update')
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <h6>Process queued jobs</h6>
+                    <p class="text-muted small mb-0">Run pending emails and other queued work now. Each batch processes up to 25 jobs for about 15 seconds, with up to three attempts per job. Run again if jobs remain. Keep the cPanel cron enabled for automatic processing and longer jobs.</p>
+                </div>
+                <form method="POST" action="{{ route('admin.cron-jobs.process-queue') }}" onsubmit="this.querySelector('button').disabled = true; this.querySelector('button').textContent = 'Processing…';">
+                    @csrf
+                    <button type="submit" class="btn btn-ch-primary text-nowrap">Process queued jobs</button>
+                </form>
+            </div>
+        </div>
+    @endcan
+
     <div class="row g-3 mb-4">
         <div class="col-md-3 col-6">
             <div class="card border-0 shadow-sm">

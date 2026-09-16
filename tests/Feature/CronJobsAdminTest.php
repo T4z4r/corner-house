@@ -7,6 +7,9 @@ use App\Models\CronJobRun;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Process\PendingProcess;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Queue;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -145,6 +148,91 @@ class CronJobsAdminTest extends TestCase
             ->get(route('admin.cron-jobs', ['status' => 'success']))
             ->assertOk()
             ->assertDontSee('snapshot boom');
+    }
+
+    public function test_admin_can_process_a_bounded_queue_batch(): void
+    {
+        Process::fake();
+        config(['queue.default' => 'database']);
+        $user = $this->superAdmin();
+        $this->actingAs($user)->get(route('admin.cron-jobs'))->assertSee('Process queued jobs');
+
+        $this->from(route('admin.cron-jobs'))->post(route('admin.cron-jobs.process-queue'))
+            ->assertRedirect(route('admin.cron-jobs'))->assertSessionHas('status');
+
+        Process::assertRan(fn (PendingProcess $process): bool => $process->path === base_path()
+            && $process->timeout === 25
+            && array_slice($process->command, 1) === [
+                base_path('artisan'), 'queue:work', 'database', '--stop-when-empty', '--tries=3',
+                '--max-time=15', '--max-jobs=25', '--timeout=15', '--sleep=1', '--no-interaction',
+            ]);
+        $lock = Cache::lock('admin-process-queue', 60);
+        $this->assertTrue($lock->get());
+        $lock->release();
+    }
+
+    public function test_queue_processing_requires_write_permission_and_authentication(): void
+    {
+        Process::fake();
+        $this->post(route('admin.cron-jobs.process-queue'))->assertRedirect(route('login'));
+        $role = Role::create(['name' => 'Settings Viewer', 'guard_name' => 'web']);
+        $role->givePermissionTo('settings.view');
+        $user = User::factory()->create();
+        $user->assignRole($role);
+
+        $this->actingAs($user)->post(route('admin.cron-jobs.process-queue'))->assertForbidden();
+        $this->get(route('admin.cron-jobs'))->assertDontSee('Process queued jobs');
+        Process::assertNothingRan();
+    }
+
+    public function test_queue_processing_prevents_overlapping_manual_batches(): void
+    {
+        Process::fake();
+        config(['queue.default' => 'database']);
+        $lock = Cache::lock('admin-process-queue', 60);
+        $lock->get();
+
+        try {
+            $this->actingAs($this->superAdmin())->post(route('admin.cron-jobs.process-queue'))
+                ->assertSessionHasErrors('queue');
+            Process::assertNothingRan();
+        } finally {
+            $lock->release();
+        }
+    }
+
+    public function test_queue_worker_errors_are_reported_without_exposing_process_output(): void
+    {
+        Process::fake(['*' => Process::result(errorOutput: 'private connection details', exitCode: 1)]);
+        config(['queue.default' => 'database']);
+
+        $this->actingAs($this->superAdmin())->post(route('admin.cron-jobs.process-queue'))
+            ->assertSessionHasErrors('queue')->assertSessionMissing('status');
+        $this->assertStringNotContainsString('private connection details', session('errors')->first('queue'));
+        $lock = Cache::lock('admin-process-queue', 60);
+        $this->assertTrue($lock->get());
+        $lock->release();
+    }
+
+    public function test_queue_worker_launch_failure_releases_the_lock(): void
+    {
+        Process::fake(['*' => new \RuntimeException('Process launch unavailable')]);
+        config(['queue.default' => 'database']);
+
+        $this->actingAs($this->superAdmin())->post(route('admin.cron-jobs.process-queue'))
+            ->assertSessionHasErrors('queue')->assertSessionMissing('status');
+        $lock = Cache::lock('admin-process-queue', 60);
+        $this->assertTrue($lock->get());
+        $lock->release();
+    }
+
+    public function test_synchronous_queue_does_not_launch_a_worker(): void
+    {
+        Process::fake();
+        config(['queue.default' => 'sync']);
+        $this->actingAs($this->superAdmin())->post(route('admin.cron-jobs.process-queue'))
+            ->assertSessionHasErrors('queue');
+        Process::assertNothingRan();
     }
 
     private function superAdmin(): User
