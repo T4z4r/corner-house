@@ -108,7 +108,7 @@ class WebsiteContentService
             'bookingRoomId' => Room::defaultForDirectBookings()?->id,
             'nightlyRate' => (int) Setting::getValue('nightly_rate', 950),
             'securityDeposit' => (int) Setting::getValue('damage_deposit', Setting::getValue('nightly_rate', 950)),
-            'cleaningFee' => (int) Setting::getValue('cleaning_fee', 250),
+            'cleaningFee' => (float) Setting::getValue('cleaning_fee', 50),
             'minNights' => (int) Setting::getValue('min_stay_nights', 2),
             'monthsAhead' => (int) Setting::getValue('website_months_ahead', 18),
             'weekdayRate' => (int) (Setting::getValue('min_price_weekday') ?: Setting::getValue('nightly_rate', 950)),

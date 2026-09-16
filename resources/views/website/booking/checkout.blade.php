@@ -675,10 +675,11 @@
                         </div>
                     @endif
 
-                    @if ((float) $reservation->fees_amount > 0)
+                    @php($cleaningFee = (float) \App\Models\Setting::getValue('cleaning_fee', 50))
+                    @if ($cleaningFee > 0)
                         <div class="ch-breakdown-row">
                             <span>Cleaning Fee</span>
-                            <span>&pound;{{ number_format((float) $reservation->fees_amount, 2) }}</span>
+                            <span>&pound;{{ number_format($cleaningFee, 2) }}</span>
                         </div>
                     @endif
 
