@@ -530,14 +530,18 @@
                 @else
                 <h2 class="ch-card-header-title">Choose how much to pay</h2>
                 <p>Full payment is selected by default and includes the refundable deposit. You can choose to pay only the deposit instead.</p>
-                <form method="GET" action="{{ route('booking.checkout', $reservation) }}" class="ch-chip-row" aria-label="Payment amount">
-                    <button type="submit" name="payment_option" value="full" class="ch-chip {{ $paymentOption === 'full' ? 'ch-chip-recommended' : '' }}" aria-pressed="{{ $paymentOption === 'full' ? 'true' : 'false' }}">
+                <form id="paymentAmountForm" method="GET" action="{{ route('booking.checkout', $reservation) }}" class="ch-chip-row" aria-label="Payment amount" data-skip-loading-state>
+                    <label class="ch-chip {{ $paymentOption === 'full' ? 'ch-chip-recommended' : '' }}" style="cursor:pointer; padding:12px;">
+                        <input type="radio" name="payment_option" value="full" @checked($paymentOption === 'full') aria-describedby="paymentAmountHint">
                         Pay in full &middot; &pound;{{ number_format((float) $reservation->total_amount, 2) }}
-                    </button>
-                    <button type="submit" name="payment_option" value="deposit" class="ch-chip {{ $paymentOption === 'deposit' ? 'ch-chip-recommended' : '' }}" aria-pressed="{{ $paymentOption === 'deposit' ? 'true' : 'false' }}">
+                    </label>
+                    <label class="ch-chip {{ $paymentOption === 'deposit' ? 'ch-chip-recommended' : '' }}" style="cursor:pointer; padding:12px;">
+                        <input type="radio" name="payment_option" value="deposit" @checked($paymentOption === 'deposit') aria-describedby="paymentAmountHint">
                         Pay deposit &middot; &pound;{{ number_format($deposit, 2) }}
-                    </button>
+                    </label>
+                    <noscript><button type="submit" class="ch-chip">Update payment amount</button></noscript>
                 </form>
+                <p id="paymentAmountHint">Selecting an option refreshes the payment amount below.</p>
                 <p class="ch-hosted-lead" role="status">
                     Selected: {{ $paymentOption === 'full' ? 'Full booking amount' : 'Refundable deposit' }} &mdash; <strong>&pound;{{ number_format($paymentAmount, 2) }}</strong> due now.
                     @if ($paymentOption === 'full')
@@ -742,6 +746,13 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const paymentAmountForm = document.getElementById('paymentAmountForm');
+    paymentAmountForm?.addEventListener('change', function (event) {
+        if (event.target.matches('input[name="payment_option"]')) {
+            paymentAmountForm.requestSubmit();
+        }
+    });
+
     const key = @json($stripeKey);
     const secret = @json($paymentIntentSecret);
     const returnUrl = @json($paymentReturnUrl);

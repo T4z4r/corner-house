@@ -50,7 +50,7 @@
                     <p class="conf-kicker">{{ $isConfirmed ? 'Booking locked in' : 'Reference issued' }}</p>
                     <h2>
                         @if ($isConfirmed)
-                            {{ $stayLabel }} awaits{{ $nights ? ' &mdash; '.$nights.' night'.($nights > 1 ? 's' : '') : '' }}
+                            {{ $stayLabel }} awaits{{ $nights ? ' for '.$nights.' night'.($nights > 1 ? 's' : '') : '' }}
                         @else
                             Your stay at {{ $stayLabel }}{{ $nights ? ' for '.$nights.' night'.($nights > 1 ? 's' : '') : '' }}
                         @endif

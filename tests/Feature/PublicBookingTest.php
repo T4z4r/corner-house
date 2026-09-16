@@ -398,6 +398,8 @@ class PublicBookingTest extends TestCase
             ->assertViewHas('paymentOption', 'full')
             ->assertViewHas('paymentAmount', 1500.0)
             ->assertViewHas('balanceDue', 0.0)
+            ->assertSee('type="radio" name="payment_option" value="full" checked', false)
+            ->assertDontSee('type="radio" name="payment_option" value="deposit" checked', false)
             ->assertSee('Pay in full')
             ->assertSee('Confirm Full Payment')
             ->assertSee('No booking balance will remain after payment.')
@@ -434,6 +436,8 @@ class PublicBookingTest extends TestCase
         $this->get(route('booking.checkout', [$reservation, 'payment_option' => 'deposit']))
             ->assertOk()
             ->assertViewHas('paymentOption', 'deposit')
+            ->assertSee('type="radio" name="payment_option" value="deposit" checked', false)
+            ->assertDontSee('type="radio" name="payment_option" value="full" checked', false)
             ->assertViewHas('paymentAmount', 950.0);
         $depositPayment = $reservation->payments()->sole();
 
@@ -538,6 +542,7 @@ class PublicBookingTest extends TestCase
             ->assertSee('Booking confirmed')
             ->assertSee($reservation->reference)
             ->assertSee('Your stay')
+            ->assertDontSee('&amp;mdash;', false)
             ->assertSee('Payment summary')
             ->assertSee('Total')
             ->assertSee($reservation->guest->full_name)
