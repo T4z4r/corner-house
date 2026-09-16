@@ -421,8 +421,13 @@ class BookingController extends Controller
         }
     }
 
-    public function checkoutPage(Reservation $reservation): View|RedirectResponse
+    public function checkoutPage(Request $request, Reservation $reservation): View|RedirectResponse
     {
+        $validated = $request->validate([
+            'payment_option' => ['sometimes', 'required', 'in:deposit,full'],
+        ]);
+        $paymentOption = $validated['payment_option'] ?? 'deposit';
+
         $reservation->load(['room.images', 'guest', 'property', 'addons', 'payments']);
 
         $latestPayment = $reservation->payments()->latest()->first();
@@ -434,12 +439,20 @@ class BookingController extends Controller
         }
 
         $deposit = (float) Setting::getValue('damage_deposit', 950);
-        $balanceDue = max(0.0, round((float) $reservation->total_amount - $deposit, 2));
+        $paymentAmount = $paymentOption === 'full' ? (float) $reservation->total_amount : $deposit;
+        $balanceDue = max(0.0, round((float) $reservation->total_amount - $paymentAmount, 2));
 
         // Build Stripe Checkout Session URL for the hosted option.
         $checkoutUrl = null;
-        if ($latestPayment && ! blank($latestPayment->metadata['checkout_url'] ?? null)) {
-            $checkoutUrl = $this->payments->checkoutUrl($latestPayment);
+        $checkoutPayment = $reservation->payments()
+            ->where('provider', 'stripe')
+            ->where('status', 'pending')
+            ->where('amount', $paymentAmount)
+            ->whereNotNull('provider_session_id')
+            ->latest('id')
+            ->first();
+        if ($checkoutPayment && ! blank($checkoutPayment->metadata['checkout_url'] ?? null)) {
+            $checkoutUrl = $this->payments->checkoutUrl($checkoutPayment);
         }
 
         if (! $checkoutUrl) {
@@ -447,8 +460,8 @@ class BookingController extends Controller
                 $payment = $this->payments->startCheckout(
                     $reservation,
                     route('booking.confirmation').'?session_id={CHECKOUT_SESSION_ID}',
-                    route('booking.checkout', $reservation->getRouteKey()).'?cancelled=1',
-                    $deposit,
+                    route('booking.checkout', [$reservation->getRouteKey(), 'cancelled' => 1, 'payment_option' => $paymentOption]),
+                    $paymentAmount,
                 );
                 $checkoutUrl = $this->payments->checkoutUrl($payment);
             } catch (Throwable $e) {
@@ -462,7 +475,7 @@ class BookingController extends Controller
         $paymentIntentSecret = null;
         $paymentIntentId = null;
         try {
-            $intentPayment = $this->payments->createIntent($reservation, $deposit);
+            $intentPayment = $this->payments->createIntent($reservation, $paymentAmount);
             $paymentIntentSecret = $this->payments->clientSecret($intentPayment);
             $paymentIntentId = $intentPayment->provider_payment_id;
         } catch (Throwable $e) {
@@ -487,6 +500,8 @@ class BookingController extends Controller
             'paymentIntentSecret' => $paymentIntentSecret,
             'paymentReturnUrl' => $paymentReturnUrl,
             'deposit' => $deposit,
+            'paymentOption' => $paymentOption,
+            'paymentAmount' => $paymentAmount,
             'balanceDue' => $balanceDue,
         ]);
     }

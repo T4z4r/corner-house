@@ -383,6 +383,102 @@ class PublicBookingTest extends TestCase
         $this->assertSame(1, Reservation::query()->count());
     }
 
+    public function test_guest_can_choose_full_payment_and_confirm_from_stripe_checkout(): void
+    {
+        Setting::updateOrCreate(['key' => 'damage_deposit'], ['value' => '950']);
+        $reservation = Reservation::factory()->create([
+            'status' => 'hold',
+            'payment_status' => 'unpaid',
+            'total_amount' => 1500,
+            'paid_amount' => 0,
+        ]);
+
+        $this->get(route('booking.checkout', [$reservation, 'payment_option' => 'full', 'amount' => 1]))
+            ->assertOk()
+            ->assertViewHas('paymentAmount', 1500.0)
+            ->assertViewHas('balanceDue', 0.0)
+            ->assertSee('Pay in full')
+            ->assertSee('Confirm Full Payment')
+            ->assertSee('No booking balance will remain after payment.')
+            ->assertDontSee('Balance due before arrival');
+
+        $payment = $reservation->payments()->sole();
+        $gateway = app(PaymentGatewayInterface::class);
+        $this->assertSame(1500.0, (float) $payment->amount);
+        $this->assertSame(1500.0, $gateway->sessions[$payment->provider_session_id]['amount']);
+        $this->assertSame(1500.0, $gateway->intents[$payment->provider_payment_id]['amount']);
+        $this->assertStringContainsString('payment_option=full', $gateway->sessions[$payment->provider_session_id]['cancel_url']);
+
+        $this->get(route('booking.confirmation', ['session_id' => $payment->provider_session_id]))
+            ->assertOk()
+            ->assertSee('Booking confirmed');
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'payment_status' => 'paid',
+            'paid_amount' => 1500,
+        ]);
+    }
+
+    public function test_switching_payment_options_uses_the_correct_amount_for_both_stripe_methods(): void
+    {
+        Setting::updateOrCreate(['key' => 'damage_deposit'], ['value' => '950']);
+        $reservation = Reservation::factory()->create([
+            'status' => 'hold',
+            'payment_status' => 'unpaid',
+            'total_amount' => 1500,
+            'paid_amount' => 0,
+        ]);
+
+        $this->get(route('booking.checkout', $reservation))
+            ->assertOk()
+            ->assertViewHas('paymentOption', 'deposit')
+            ->assertViewHas('paymentAmount', 950.0);
+        $depositPayment = $reservation->payments()->sole();
+
+        $this->get(route('booking.checkout', [$reservation, 'payment_option' => 'full']))
+            ->assertOk()
+            ->assertViewHas('paymentAmount', 1500.0);
+        $fullPayment = $reservation->payments()->where('amount', 1500)->sole();
+        $gateway = app(PaymentGatewayInterface::class);
+        $this->assertSame(1500.0, $gateway->sessions[$fullPayment->provider_session_id]['amount']);
+        $this->assertSame(1500.0, $gateway->intents[$fullPayment->provider_payment_id]['amount']);
+
+        $this->get(route('booking.checkout', [$reservation, 'payment_option' => 'deposit']))
+            ->assertOk()
+            ->assertViewHas('paymentAmount', 950.0)
+            ->assertViewHas('balanceDue', 550.0)
+            ->assertViewHas('checkoutUrl', $depositPayment->metadata['checkout_url'])
+            ->assertViewHas('paymentIntentSecret', $depositPayment->metadata['client_secret']);
+
+        $this->get(route('booking.checkout', [$reservation, 'payment_option' => 'full']))
+            ->assertOk()
+            ->assertViewHas('checkoutUrl', $fullPayment->metadata['checkout_url'])
+            ->assertViewHas('paymentIntentSecret', $fullPayment->metadata['client_secret']);
+        $this->assertCount(2, $reservation->payments()->get());
+
+        $this->postJson(route('booking.checkout.confirm', $reservation), [
+            'payment_intent_id' => $fullPayment->provider_payment_id,
+        ])->assertOk()->assertJson(['status' => 'ok']);
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'payment_status' => 'paid',
+            'paid_amount' => 1500,
+        ]);
+    }
+
+    public function test_checkout_rejects_an_invalid_payment_option_without_creating_a_payment(): void
+    {
+        $reservation = Reservation::factory()->create(['payment_status' => 'unpaid']);
+
+        $this->getJson(route('booking.checkout', [$reservation, 'payment_option' => 'custom']))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('payment_option');
+
+        $this->assertDatabaseCount('payments', 0);
+    }
+
     public function test_confirmation_page_renders_premium_summary_for_a_paid_booking(): void
     {
         $reservation = Reservation::factory()->create();

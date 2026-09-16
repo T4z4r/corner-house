@@ -16,7 +16,7 @@
     <div class="wrap">
         <p class="ch-kicker">Direct Booking &middot; Step 3 of 3</p>
         <h1>Complete Your Payment</h1>
-        <p class="ch-page-hero-sub">Pay your refundable &pound;{{ number_format($deposit, 0) }} deposit to secure the booking. The balance is due before arrival.</p>
+        <p class="ch-page-hero-sub">Secure your booking with the refundable deposit, or choose to pay the full booking amount now.</p>
     </div>
 </section>
 
@@ -522,6 +522,25 @@
                 </div>
             </div>
 
+            <div class="ch-card-premium">
+                <h2 class="ch-card-header-title">Choose how much to pay</h2>
+                <p>The refundable deposit is the default. Paying in full is optional and includes the deposit.</p>
+                <form method="GET" action="{{ route('booking.checkout', $reservation) }}" class="ch-chip-row" aria-label="Payment amount">
+                    <button type="submit" name="payment_option" value="deposit" class="ch-chip {{ $paymentOption === 'deposit' ? 'ch-chip-recommended' : '' }}" aria-pressed="{{ $paymentOption === 'deposit' ? 'true' : 'false' }}">
+                        Pay deposit &middot; &pound;{{ number_format($deposit, 2) }}
+                    </button>
+                    <button type="submit" name="payment_option" value="full" class="ch-chip {{ $paymentOption === 'full' ? 'ch-chip-recommended' : '' }}" aria-pressed="{{ $paymentOption === 'full' ? 'true' : 'false' }}">
+                        Pay in full &middot; &pound;{{ number_format((float) $reservation->total_amount, 2) }}
+                    </button>
+                </form>
+                <p class="ch-hosted-lead" role="status">
+                    Selected: {{ $paymentOption === 'full' ? 'Full booking amount' : 'Refundable deposit' }} &mdash; <strong>&pound;{{ number_format($paymentAmount, 2) }}</strong> due now.
+                    @if ($paymentOption === 'full')
+                        No booking balance will remain after payment.
+                    @endif
+                </p>
+            </div>
+
             <!-- Hosted Stripe Checkout option -->
             @if ($checkoutUrl)
                 <div class="ch-card-premium ch-card-hosted">
@@ -537,10 +556,10 @@
                         </div>
                         <span class="ch-chip ch-chip-recommended">Recommended</span>
                     </div>
-                    <p class="ch-hosted-lead">Prefer to pay on Stripe's secure page? Continue there to pay your refundable deposit of <strong>&pound;{{ number_format($deposit, 2) }}</strong>{!! $balanceDueNote !!}.</p>
+                    <p class="ch-hosted-lead">Prefer to pay on Stripe's secure page? Continue there to pay your {{ $paymentOption === 'full' ? 'full booking amount' : 'refundable deposit' }} of <strong>&pound;{{ number_format($paymentAmount, 2) }}</strong>{!! $balanceDueNote !!}.</p>
                     <a href="{{ $checkoutUrl }}" class="btn-ch-pay">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3 8.5-7 10-4-1.5-7-5-7-10V5z"/></svg>
-                        <span>Pay &pound;{{ number_format($deposit, 2) }} via Stripe Checkout</span>
+                        <span>Pay &pound;{{ number_format($paymentAmount, 2) }} via Stripe Checkout</span>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
                     </a>
                     <div class="ch-chip-row">
@@ -583,14 +602,14 @@
                             <input type="checkbox" id="termsCheck" required checked>
                             <span class="ch-check-text">
                                 I confirm the stay details and authorise the charge of
-                                <strong>&pound;{{ number_format($deposit, 2) }}</strong>
+                                <strong>&pound;{{ number_format($paymentAmount, 2) }}</strong>
                                 via Stripe.{!! $balanceDueSentence !!}
                             </span>
                         </label>
 
                         <button type="submit" class="btn-ch-pay" id="confirmPayBtn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3 8.5-7 10-4-1.5-7-5-7-10V5z"/></svg>
-                            <span id="confirmPayText">Confirm Deposit &middot; &pound;{{ number_format($deposit, 2) }}</span>
+                            <span id="confirmPayText">{{ $paymentOption === 'full' ? 'Confirm Full Payment' : 'Confirm Deposit' }} &middot; &pound;{{ number_format($paymentAmount, 2) }}</span>
                         </button>
 
                         <div class="ch-pay-trust">
@@ -664,7 +683,7 @@
 
                     @if ((float) $deposit > 0)
                         <div class="ch-breakdown-row deposit" style="border-top:1px solid var(--ch-line); border-bottom:1px solid var(--ch-line); padding:.7rem 0; margin:.6rem 0;">
-                            <span>Refundable Security Deposit &mdash; due now</span>
+                            <span>Refundable Security Deposit &mdash; included in payment</span>
                             <span style="font-weight:700; color:var(--ch-ink);">&pound;{{ number_format((float) $deposit, 2) }}</span>
                         </div>
                     @endif
@@ -682,6 +701,11 @@
                             <span class="ch-summary-sub">Includes stay, deposit &amp; tax</span>
                         </div>
                         <span class="ch-total-price">&pound;{{ number_format((float) $reservation->total_amount, 2) }}</span>
+                    </div>
+
+                    <div class="ch-breakdown-row">
+                        <span>Due now</span>
+                        <strong>&pound;{{ number_format($paymentAmount, 2) }}</strong>
                     </div>
 
                     @if ($balanceDue > 0)

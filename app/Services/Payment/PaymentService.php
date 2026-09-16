@@ -134,7 +134,8 @@ class PaymentService
         $payment = $reservation->payments()
             ->where('provider', 'stripe')
             ->where('status', 'pending')
-            ->latest()
+            ->where('amount', $chargeAmount)
+            ->latest('id')
             ->first()
             ?? Payment::create([
                 'reservation_id' => $reservation->id,
