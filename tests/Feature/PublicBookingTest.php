@@ -184,7 +184,7 @@ class PublicBookingTest extends TestCase
         $checkIn = now()->addDays(20)->toDateString();
         $checkOut = now()->addDays(22)->toDateString();
 
-        $this->postJson(route('booking.request'), [
+        $response = $this->postJson(route('booking.request'), [
             'roomId' => $room->id,
             'checkIn' => $checkIn,
             'checkOut' => $checkOut,
@@ -199,6 +199,12 @@ class PublicBookingTest extends TestCase
 
         $enquiry = Enquiry::query()->first();
         $this->assertNotNull($enquiry);
+        $response->assertJsonPath('redirect_url', route('booking.requested', ['enquiry' => $enquiry->id]));
+        $this->get($response->json('redirect_url'))
+            ->assertOk()
+            ->assertSee('Your booking request has been received')
+            ->assertSee('Request reference')
+            ->assertSee('#'.$enquiry->id);
         $hold = $enquiry->bookingHold;
 
         $this->assertNotNull($hold);

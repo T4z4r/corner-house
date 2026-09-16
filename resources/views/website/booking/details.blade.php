@@ -751,10 +751,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     if (form && submitBtn) {
-        const successModal = document.getElementById('enquirySuccessModal');
         const failureModal = document.getElementById('enquiryFailureModal');
-        const successRef = document.getElementById('enquirySuccessRef');
-        const successNext = document.getElementById('enquirySuccessNext');
         const failureMessage = document.getElementById('enquiryFailureMessage');
         const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
         const originalBtnHtml = submitBtn.innerHTML;
@@ -806,19 +803,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 try { data = await r.json(); } catch (err) { /* non-JSON body */ }
 
                 if (r.ok && data.status === 'ok') {
-                    successRef.textContent = 'Request reference #' + data.enquiry_id;
-                    const url = new URL(successNext.getAttribute('href'), window.location.origin);
-                    url.searchParams.set('enquiry', String(data.enquiry_id));
-                    successNext.href = url.href;
-                    successModal.showModal();
+                    window.location.assign(data.redirect_url);
                     return;
                 }
 
                 throw new Error(data.error || data.message || 'Your enquiry could not be submitted.');
             } catch (err) {
                 failureMessage.textContent = err.message || 'Your enquiry could not be submitted. Please try again.';
-                setLoading(false);
                 failureModal.showModal();
+            } finally {
+                setLoading(false);
             }
         });
     }

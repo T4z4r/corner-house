@@ -338,7 +338,11 @@ class BookingController extends Controller
             $this->sendBookingRequestMail($request, $mailConfigurationService, $enquiry, $room, $hold['expires_at'], $quote);
 
             if ($request->expectsJson()) {
-                return response()->json(['status' => 'ok', 'enquiry_id' => $enquiry->id]);
+                return response()->json([
+                    'status' => 'ok',
+                    'enquiry_id' => $enquiry->id,
+                    'redirect_url' => route('booking.requested', ['enquiry' => $enquiry->id]),
+                ]);
             }
 
             return redirect()->route('booking.requested', ['enquiry' => $enquiry->id]);

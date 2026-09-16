@@ -259,7 +259,10 @@ if (enquiryForm) {
 
       enquiryForm.hidden = true;
       if (successBox) successBox.hidden = false;
+      window.location.assign(data.redirect_url);
     } catch(err) {
+      setError(err.message || "Your booking request could not be submitted. Please try again.");
+    } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.classList.remove("disabled");
@@ -268,7 +271,6 @@ if (enquiryForm) {
           delete submitBtn.dataset.chOriginalHtml;
         }
       }
-      setError(err.message || "Your booking request could not be submitted. Please try again.");
     }
   });
 }
