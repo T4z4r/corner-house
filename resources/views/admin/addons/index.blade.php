@@ -14,13 +14,6 @@
         @endcan
     </div>
 
-    @if (session('status'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('status') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">

@@ -115,7 +115,7 @@ class GuestEmailTest extends TestCase
         $html = $mail->render();
 
         $this->assertStringContainsString('Corner House', $html);
-        $this->assertStringNotContainsString('https://cornerhousebraunston.uk', $html);
+        $this->assertStringContainsString('https://cornerhousebraunston.uk', $html);
         $this->assertStringContainsString('hello@cornerhousebraunston.uk', $html);
         $this->assertStringContainsString('old road, Braunston', $html);
         $this->assertStringContainsString('NN11 7JB', $html);

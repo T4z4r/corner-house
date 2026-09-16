@@ -64,6 +64,11 @@
                                     <a href="mailto:{{ $contactEmail }}" style="color:#e8a97b; text-decoration:underline;">{{ $contactEmail }}</a>
                                 </td>
                             </tr>
+                            <tr>
+                                <td align="center" style="font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.8;">
+                                    <a href="https://cornerhousebraunston.uk" style="color:#e8a97b; text-decoration:underline;">cornerhousebraunston.uk</a>
+                                </td>
+                            </tr>
                         </table>
                     </td>
                 </tr>
