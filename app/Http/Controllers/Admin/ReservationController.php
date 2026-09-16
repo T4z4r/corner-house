@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\FetchBeds24BookingsJob;
+use App\Mail\PaymentLinkMail;
 use App\Models\Reservation;
 use App\Models\Room;
-use App\Models\Setting;
 use App\Services\Audit\AuditLogger;
 use App\Services\Booking\BookingService;
 use App\Services\Notification\SystemNotificationService;
@@ -191,26 +191,9 @@ class ReservationController extends Controller
             app(MailConfigurationService::class)->apply();
 
             $paymentLink = $this->paymentLinks->createForReservation($reservation, null, $request->user()?->id);
-            $paymentUrl = $this->paymentLinks->urlFor($paymentLink);
             $expiresAt = $paymentLink->expires_at;
 
-            $deposit = (float) Setting::getValue('damage_deposit', 950);
-            $balanceDue = max(0.0, round((float) $reservation->total_amount - $deposit, 2));
-
-            Mail::raw(
-                'Hi '.($reservation->guest->full_name ?: 'there').",\n\n".
-                'Pay for your Corner House stay at '.
-                $reservation->check_in->format('d M Y').' → '.$reservation->check_out->format('d M Y').".\n\n".
-                'Pay your refundable deposit of £'.number_format($deposit, 2)." to confirm the dates:\n".
-                $paymentUrl."\n\n".
-                'This payment link expires '.$expiresAt->format('d M Y H:i').' ('.(int) Setting::getValue('payment_link_hours', 24).' hours).'."\n".
-                ($balanceDue > 0 ? 'The balance of £'.number_format($balanceDue, 2).' is due before arrival.'."\n" : '')."\n".
-                "Many thanks,\nCorner House",
-                function ($message) use ($reservation): void {
-                    $message->to($reservation->guest->email)
-                        ->subject('Pay for your Corner House stay');
-                },
-            );
+            Mail::to($reservation->guest->email)->send(new PaymentLinkMail($reservation, $paymentLink));
 
             $this->auditLogger->log('reservations.payment_link_sent', 'reservations', 'reservation', (string) $reservation->id);
 

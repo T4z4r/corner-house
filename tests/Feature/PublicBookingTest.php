@@ -461,6 +461,34 @@ class PublicBookingTest extends TestCase
         ]);
     }
 
+    public function test_checkout_hosted_option_shows_the_balance_due_when_paying_a_partial_deposit(): void
+    {
+        $room = Room::factory()->create(['name' => 'The Garden Suite', 'base_rate' => 800, 'status' => 'active']);
+        Setting::updateOrCreate(['key' => 'damage_deposit'], ['value' => '950']);
+        $checkIn = now()->addDays(14)->toDateString();
+        $checkOut = now()->addDays(16)->toDateString();
+
+        $reservation = app(BookingService::class)->create([
+            'room_id' => $room->id,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'guests_count' => 2,
+            'guest_first_name' => 'Sarah',
+            'guest_last_name' => 'Connor',
+            'guest_email' => 'sarah@example.com',
+            'damage_deposit' => 950,
+            'status' => 'hold',
+            'source' => 'direct',
+        ])['reservation'];
+
+        $this->get(route('booking.checkout', $reservation->getRouteKey()))
+            ->assertOk()
+            ->assertSee('Stripe Instant Checkout')
+            ->assertSee('&mdash; the balance of &pound;', false)
+            ->assertSee('is due before arrival.', false)
+            ->assertDontSee('&amp;mdash;');
+    }
+
     public function test_payment_link_redirects_to_checkout_and_expires_after_the_configured_hours(): void
     {
         $room = Room::factory()->create(['base_rate' => 80, 'status' => 'active']);

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\BookingApprovalMail;
+use App\Mail\BookingDeclinedMail;
 use App\Models\Enquiry;
 use App\Models\PaymentLink;
 use App\Models\Reservation;
@@ -172,8 +174,10 @@ class EnquiryController extends Controller
 
     private function releaseHold(Enquiry $enquiry): void
     {
-        if ($enquiry->bookingHold && $enquiry->bookingHold->status === 'active') {
-            $this->holds->release($enquiry->bookingHold);
+        $hold = $enquiry->bookingHold?->fresh();
+
+        if ($hold?->status === 'active') {
+            $this->holds->release($hold);
         }
     }
 
@@ -186,24 +190,7 @@ class EnquiryController extends Controller
         try {
             app(MailConfigurationService::class)->apply();
 
-            $deposit = (float) Setting::getValue('damage_deposit', 950);
-            $balanceDue = max(0.0, round((float) $reservation->total_amount - $deposit, 2));
-            $expiresAt = $paymentLink->expires_at;
-
-            Mail::raw(
-                'Hi '.$this->firstName($enquiry).",\n\n".
-                'Great news — your booking request for '.($reservation->room?->name ?? 'Corner House')." at Corner House has been approved.\n\n".
-                $reservation->check_in->format('d M Y').' → '.$reservation->check_out->format('d M Y').($enquiry->nights ? ' ('.$enquiry->nights." nights)\n\n" : "\n\n").
-                'Pay your refundable deposit of £'.number_format($deposit, 2)." to confirm the dates:\n".
-                $this->paymentLinks->urlFor($paymentLink)."\n\n".
-                'This payment link expires '.$expiresAt->format('d M Y H:i').' ('.(int) Setting::getValue('payment_link_hours', 24).' hours).'."\n".
-                ($balanceDue > 0 ? 'The balance of £'.number_format($balanceDue, 2).' is due before arrival.'."\n" : '')."\n".
-                "Many thanks,\nCorner House",
-                function ($message) use ($enquiry): void {
-                    $message->to($enquiry->email)
-                        ->subject('Your Corner House booking is approved');
-                },
-            );
+            Mail::to($enquiry->email)->send(new BookingApprovalMail($enquiry, $reservation, $paymentLink));
         } catch (Throwable $e) {
             Log::warning("Approval email could not be sent for enquiry {$enquiry->id}.", [
                 'error' => $e->getMessage(),
@@ -220,34 +207,11 @@ class EnquiryController extends Controller
         try {
             app(MailConfigurationService::class)->apply();
 
-            Mail::raw(
-                'Hi '.$this->firstName($enquiry).",\n\n".
-                'Thank you for your booking request for Corner House'.($enquiry->check_in ? ' on '.$enquiry->check_in->format('d M Y').' → '.($enquiry->check_out?->format('d M Y') ?? '') : '').".\n\n".
-                "We are sorry, but we are unable to accept this request and the dates have been released.\n\n".
-                "If you would like to discuss alternative dates, or have any questions, just reply to this email and we will do our best to help.\n\n".
-                "Many thanks,\nCorner House",
-                function ($message) use ($enquiry): void {
-                    $message->to($enquiry->email)
-                        ->subject('Your Corner House booking request');
-                },
-            );
+            Mail::to($enquiry->email)->send(new BookingDeclinedMail($enquiry));
         } catch (Throwable $e) {
             Log::warning("Decline email could not be sent for enquiry {$enquiry->id}.", [
                 'error' => $e->getMessage(),
             ]);
         }
-    }
-
-    private function firstName(Enquiry $enquiry): string
-    {
-        $name = trim((string) $enquiry->name);
-
-        if ($name === '') {
-            return 'there';
-        }
-
-        $nameParts = preg_split('/\s+/', $name);
-
-        return (string) $nameParts[0];
     }
 }

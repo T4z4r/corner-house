@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Mail\BookingApprovalMail;
+use App\Mail\BookingDeclinedMail;
 use App\Models\Enquiry;
 use App\Models\PaymentLink;
 use App\Models\Reservation;
@@ -161,7 +163,11 @@ class EnquiryTest extends TestCase
         $this->assertTrue($paymentLink->expires_at->gt(now()->addHours(23)));
         $this->assertTrue($paymentLink->expires_at->lt(now()->addHours(25)));
 
-        Mail::assertSentCount(1);
+        Mail::assertSent(BookingApprovalMail::class, function (BookingApprovalMail $mail) use ($enquiry, $paymentLink): bool {
+            return $mail->hasTo('alex@example.com')
+                && $mail->paymentLink->is($paymentLink)
+                && $mail->enquiry->id === $enquiry->id;
+        });
     }
 
     public function test_user_without_enquiries_update_cannot_approve(): void
@@ -190,6 +196,7 @@ class EnquiryTest extends TestCase
             'check_out' => $enquiry->check_out->toDateString(),
             'guests_count' => 1,
             'status' => 'confirmed',
+            'skip_availability' => true,
         ]);
 
         $this->actingAs($this->superAdmin())
@@ -199,7 +206,8 @@ class EnquiryTest extends TestCase
 
         $this->assertSame(Enquiry::STATUS_NEW, $enquiry->fresh()->status);
         $this->assertSame(1, Reservation::query()->count());
-        Mail::assertNothingSent();
+        Mail::assertNotSent(BookingApprovalMail::class);
+        Mail::assertNotSent(BookingDeclinedMail::class);
     }
 
     public function test_super_admin_can_decline_a_booking_request_and_release_the_hold(): void
@@ -217,7 +225,7 @@ class EnquiryTest extends TestCase
         $this->assertSame('released', $hold->fresh()->status);
         $this->assertDatabaseCount('reservations', 0);
 
-        Mail::assertSentCount(1);
+        Mail::assertSent(BookingDeclinedMail::class, fn (BookingDeclinedMail $mail): bool => $mail->hasTo($enquiry->email));
     }
 
     public function test_contact_enquiries_cannot_be_approved_or_declined(): void

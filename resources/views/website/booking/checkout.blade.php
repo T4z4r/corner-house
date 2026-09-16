@@ -537,7 +537,7 @@
                         </div>
                         <span class="ch-chip ch-chip-recommended">Recommended</span>
                     </div>
-                    <p class="ch-hosted-lead">Prefer to pay on Stripe's secure page? Continue there to pay your refundable deposit of <strong>&pound;{{ number_format($deposit, 2) }}</strong>{{ $balanceDueNote }}.</p>
+                    <p class="ch-hosted-lead">Prefer to pay on Stripe's secure page? Continue there to pay your refundable deposit of <strong>&pound;{{ number_format($deposit, 2) }}</strong>{!! $balanceDueNote !!}.</p>
                     <a href="{{ $checkoutUrl }}" class="btn-ch-pay">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3 8.5-7 10-4-1.5-7-5-7-10V5z"/></svg>
                         <span>Pay &pound;{{ number_format($deposit, 2) }} via Stripe Checkout</span>
@@ -584,7 +584,7 @@
                             <span class="ch-check-text">
                                 I confirm the stay details and authorise the charge of
                                 <strong>&pound;{{ number_format($deposit, 2) }}</strong>
-                                via Stripe.{{ $balanceDueSentence }}
+                                via Stripe.{!! $balanceDueSentence !!}
                             </span>
                         </label>
 
