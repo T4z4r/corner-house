@@ -50,7 +50,7 @@ class WebsiteContentService
             'footer_logo' => Setting::getValue('website_footer_logo') ?: Setting::getValue('website_logo'),
             'favicon' => Setting::getValue('website_favicon') ?: Setting::getValue('website_logo'),
             'og_image' => Setting::getValue('website_og_image'),
-            'footer_address' => Setting::getValue('website_address', 'Braunston, Northamptonshire'),
+            'footer_address' => Setting::getValue('website_address', 'Corner house, old road, Braunston, Daventry, NN11 7JB'),
             'footer_capacity_note' => Setting::getValue('website_footer_capacity', 'Sleeps 12 adults and 2 children in five ensuite bedrooms.'),
             'contact_email' => Setting::getValue('website_contact_email', 'hello@cornerhousebraunston.uk'),
             'contact_phone' => Setting::getValue('website_contact_phone'),

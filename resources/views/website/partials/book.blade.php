@@ -42,7 +42,6 @@
 
             <h2 id="availability" class="band">Availability</h2>
             <p>Choose your check-in and check-out dates, then send us a booking request. We review every request personally and email you a payment link to secure your stay.</p>
-            <p class="notice" id="demo-notice">Availability shown is sample data until the live calendar feed is connected.</p>
 
             <div class="booking">
                 <div>

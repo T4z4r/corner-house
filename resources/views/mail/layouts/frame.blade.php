@@ -1,7 +1,7 @@
 @php
     $brandName = \App\Models\Setting::getValue('property_name', 'Corner House');
     $contactEmail = \App\Models\Setting::getValue('website_contact_email', config('mail.from.address'));
-    $brandAddress = 'Main Street, Braunston, Northamptonshire NN7 7ND';
+    $brandAddress = 'Corner house, old road, Braunston, Daventry, NN11 7JB';
 @endphp
 <!DOCTYPE html>
 <html lang="en-GB">

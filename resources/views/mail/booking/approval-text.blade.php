@@ -22,4 +22,4 @@ After your deposit is paid we'll send your confirmation and arrival details. Hav
 With best wishes,
 The Corner House Team
 
-Corner House, Main Street, Braunston, Northamptonshire NN7 7ND
+Corner house, old road, Braunston, Daventry, NN11 7JB

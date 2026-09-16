@@ -71,7 +71,7 @@ class SettingsSeeder extends Seeder
             ['group' => 'website', 'key' => 'website_hero_subtitle', 'value' => 'Your perfect countryside escape awaits', 'label' => 'Hero subtitle', 'cast' => 'string'],
             ['group' => 'website', 'key' => 'website_contact_email', 'value' => 'hello@cornerhousebraunston.uk', 'label' => 'Contact email', 'cast' => 'string'],
             ['group' => 'website', 'key' => 'website_contact_phone', 'value' => '', 'label' => 'Contact phone', 'cast' => 'string'],
-            ['group' => 'website', 'key' => 'website_address', 'value' => '', 'label' => 'Address', 'cast' => 'string'],
+            ['group' => 'website', 'key' => 'website_address', 'value' => 'Corner house, old road, Braunston, Daventry, NN11 7JB', 'label' => 'Address', 'cast' => 'string'],
             ['group' => 'website', 'key' => 'website_facebook', 'value' => '', 'label' => 'Facebook URL', 'cast' => 'string'],
             ['group' => 'website', 'key' => 'website_instagram', 'value' => '', 'label' => 'Instagram URL', 'cast' => 'string'],
             ['group' => 'website', 'key' => 'website_twitter', 'value' => '', 'label' => 'Twitter / X URL', 'cast' => 'string'],

@@ -14,4 +14,4 @@ Payment is taken securely by Stripe — Apple Pay, Google Pay and all major card
 With best wishes,
 The Corner House Team
 
-Corner House, Main Street, Braunston, Northamptonshire NN7 7ND
+Corner house, old road, Braunston, Daventry, NN11 7JB

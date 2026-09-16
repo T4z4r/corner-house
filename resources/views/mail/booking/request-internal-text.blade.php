@@ -29,4 +29,4 @@ GUEST MESSAGE
 {{ $enquiry->message }}
 @endif
 
-Corner House, Braunston
+Corner house, old road, Braunston, Daventry, NN11 7JB
