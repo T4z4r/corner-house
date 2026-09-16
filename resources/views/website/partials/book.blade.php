@@ -41,7 +41,7 @@
             </ul>
 
             <h2 id="availability" class="band">Availability</h2>
-            <p>Choose your check-in and check-out dates, then enter your details below to proceed to instant Stripe Checkout.</p>
+            <p>Choose your check-in and check-out dates, then send us a booking request. We review every request personally and email you a payment link to secure your stay.</p>
             <p class="notice" id="demo-notice">Availability shown is sample data until the live calendar feed is connected.</p>
 
             <div class="booking">
@@ -72,8 +72,9 @@
                         <div class="total"><span>Estimated total</span><span id="q-total"></span></div>
                         <div class="dep"><span>Refundable security deposit</span><span id="q-dep"></span></div>
                     </div>
-                    <p class="hint" id="q-hint">Whole-house booking for up to 12 adults and 2 children. Instant online payment via Stripe Checkout.</p>
+                    <p class="hint" id="q-hint">Whole-house booking for up to 12 adults and 2 children. No payment is taken now &mdash; we email a secure payment link after reviewing your request.</p>
                     <p class="err" id="q-err" hidden></p>
+                    <p class="ok" id="q-success" hidden><strong>Thank you &mdash; your booking request has been received.</strong><br>Your dates are held for 48 hours while we review your request. We will email you about the security check and payment.</p>
 
                     <form class="enquiry" id="enquiry" data-skip-loading-state>
                         <div class="row">
@@ -105,9 +106,9 @@
                         <label>Occasion or message<textarea name="message" placeholder="Birthday, family get-together, walking weekend&hellip;"></textarea></label>
                         <label class="check"><input type="checkbox" name="drinks">Add a Serengeti Spirits drinks package to my stay</label>
                         <label class="check"><input type="checkbox" name="agree" required>I have read the <a href="#rules">booking rules</a>, <a href="#house-rules">house rules</a> and <a href="#terms">terms and conditions</a></label>
-                        <button class="btn btn-primary" type="submit">Proceed to Stripe Checkout</button>
+                        <button class="btn btn-primary" type="submit">Send booking request</button>
                     </form>
-                    <p class="alt-book">Your selected dates will be reserved upon completing Stripe Checkout, subject to identity verification and signing the rental agreement.</p>
+                    <p class="alt-book">Your selected dates are held for 48 hours while we review your request. We will ask the lead guest for a photo ID and a signed rental agreement, then email a payment link to secure the booking with a refundable &pound;950 deposit.</p>
                 </aside>
             </div>
         </div>

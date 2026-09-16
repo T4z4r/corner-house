@@ -337,7 +337,7 @@
         </div>
         <div class="ch-step-item">
             <div class="ch-step-circle">3</div>
-            <span class="ch-step-label">3. Payment</span>
+            <span class="ch-step-label">3. Confirmation</span>
         </div>
     </div>
 
@@ -371,7 +371,7 @@
     <div class="row g-5">
         <!-- Main Form Column -->
         <div class="col-lg-7">
-            <form method="POST" action="{{ route('booking.pay') }}" id="bookingForm" data-skip-loading-state>
+            <form method="POST" action="{{ route('booking.request') }}" id="bookingForm" data-skip-loading-state>
                 @csrf
                 <input type="hidden" name="room_id" value="{{ $room->id }}">
                 <input type="hidden" name="check_in" value="{{ $checkIn->toDateString() }}">
@@ -422,6 +422,12 @@
                             <div class="small text-muted mt-1">Dial code defaults to United Kingdom (+44). Used for pre-arrival notification and key access.</div>
                         </div>
                     </div>
+
+                        <div class="ch-form-group mb-0">
+                            <label class="ch-form-label" for="message">Occasion or message</label>
+                            <textarea name="message" id="message" rows="3" class="ch-form-control" placeholder="Birthday, family get-together, walking weekend &hellip; anything that helps us prepare for your stay.">{{ old('message') }}</textarea>
+                            <div class="small text-muted mt-1">No payment is needed now &mdash; we will email you a payment link after reviewing your request.</div>
+                        </div>
                 </div>
 
                 <!-- Section 2: Optional Enhancements -->
@@ -455,51 +461,52 @@
                     </div>
                 @endif
 
-                <!-- Section 3: Stripe Payment Method -->
+                <!-- Section 3: Booking Request -->
                 <div class="ch-card-premium">
                     <h2 class="ch-card-header-title">
                         <span class="ch-step-badge">{{ $addons->isNotEmpty() ? '3' : '2' }}</span>
-                        Secure Instant Checkout
+                        Send Your Booking Request
                     </h2>
-                    <p class="small text-muted mb-4">You will be securely redirected to Stripe's encrypted payment checkout page.</p>
+                    <p class="small text-muted mb-4">No payment is taken now. Your dates are held for 48 hours while we review your request, then we email you a secure payment link.</p>
 
                     <div class="ch-payment-box mb-4">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <div class="d-flex align-items-center gap-3">
-                                <i class="bi bi-shield-check-fill fs-3" style="color:var(--ch-ivy-deep);"></i>
+                                <i class="bi bi-clock-history fs-3" style="color:var(--ch-ivy-deep);"></i>
                                 <div>
-                                    <strong class="d-block text-dark" style="font-family:'Fraunces',serif; font-size:1.15rem;">Stripe Hosted Payment Gateway</strong>
-                                    <span class="small text-muted">Supports Credit Cards, Debit Cards, Apple Pay &amp; Google Pay</span>
+                                    <strong class="d-block text-dark" style="font-family:'Fraunces',serif; font-size:1.15rem;">Enquiry-first booking</strong>
+                                    <span class="small text-muted">Dates held 48 hours &middot; no charge until we confirm</span>
                                 </div>
                             </div>
-                            <span class="badge" style="background:var(--ch-ivy-deep); color:var(--ch-stone-light); font-size:0.75rem; letter-spacing:0.06em; text-transform:uppercase; padding:0.35rem 0.7rem;">Verified</span>
+                            <span class="badge" style="background:var(--ch-ivy-deep); color:var(--ch-stone-light); font-size:0.75rem; letter-spacing:0.06em; text-transform:uppercase; padding:0.35rem 0.7rem;">No payment now</span>
                         </div>
-                        <div class="d-flex flex-wrap align-items-center gap-2 mt-3 pt-3 border-top" style="border-color:var(--ch-line) !important;">
-                            <span class="badge bg-white text-dark border px-2.5 py-1.5 small"><i class="bi bi-credit-card me-1"></i>Visa</span>
-                            <span class="badge bg-white text-dark border px-2.5 py-1.5 small"><i class="bi bi-credit-card me-1"></i>Mastercard</span>
-                            <span class="badge bg-white text-dark border px-2.5 py-1.5 small"><i class="bi bi-credit-card me-1"></i>American Express</span>
-                            <span class="badge bg-white text-dark border px-2.5 py-1.5 small"><i class="bi bi-apple me-1"></i>Apple Pay</span>
-                            <span class="badge bg-white text-dark border px-2.5 py-1.5 small"><i class="bi bi-google me-1"></i>Google Pay</span>
+                        <div class="small text-muted border-top pt-3" style="border-color:var(--ch-line) !important;">
+                            <strong class="d-block text-dark mb-1">What happens next?</strong>
+                            <ol class="mb-0 ps-3">
+                                <li>We review your request and hold your dates for 48 hours.</li>
+                                <li>We ask the lead guest for a photo ID and a signed rental agreement.</li>
+                                <li>We email you a payment link (or you pay on this website) to secure the booking with a refundable &pound;950 deposit.</li>
+                            </ol>
                         </div>
                     </div>
 
                     <div class="form-check mb-4">
-                        <input class="form-check-input" type="checkbox" name="agree_terms" id="agree_terms" required checked>
+                        <input class="form-check-input" type="checkbox" name="agree" id="agree_terms" required checked>
                         <label class="form-check-label small text-muted" for="agree_terms">
-                            I accept the <a href="#house-rules" class="text-decoration-underline" style="color:var(--ch-terracotta-deep);">House Rules</a> and acknowledge that direct bookings include a 10% direct-booking discount.
+                            I have read the <a href="#house-rules" class="text-decoration-underline" style="color:var(--ch-terracotta-deep);">House Rules</a> and the <a href="{{ route('terms') }}" class="text-decoration-underline" style="color:var(--ch-terracotta-deep);">Terms and Conditions</a>, and acknowledge that direct bookings include a 10% direct-booking discount. Direct bookings require photo ID and a signed rental agreement.
                         </label>
                     </div>
 
                     <button class="btn-ch-pay" type="submit" id="submitPaymentBtn">
-                        <i class="bi bi-shield-lock-fill"></i>
-                        <span>Proceed to Stripe Secure Checkout</span>
+                        <i class="bi bi-envelope-check"></i>
+                        <span>Send Booking Request</span>
                         <i class="bi bi-arrow-right ms-1"></i>
                     </button>
 
                     <div class="d-flex align-items-center justify-content-center gap-4 mt-4 text-muted small">
-                        <span><i class="bi bi-lock-fill me-1" style="color:var(--ch-ivy-deep);"></i>256-Bit SSL Encryption</span>
+                        <span><i class="bi bi-calendar-check me-1" style="color:var(--ch-ivy-deep);"></i>48-hour hold</span>
                         <span>·</span>
-                        <span><i class="bi bi-shield-check me-1" style="color:var(--ch-ivy-deep);"></i>PCI-DSS Compliant</span>
+                        <span><i class="bi bi-shield-check me-1" style="color:var(--ch-ivy-deep);"></i>No charge today</span>
                     </div>
                 </div>
             </form>
@@ -646,7 +653,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             submitBtn.disabled = true;
             submitBtn.style.opacity = '0.8';
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Redirecting to Stripe Secure Payment...';
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Sending booking request...';
         });
     }
 });

@@ -6,15 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Jobs\FetchBeds24BookingsJob;
 use App\Models\Reservation;
 use App\Models\Room;
+use App\Models\Setting;
 use App\Services\Audit\AuditLogger;
 use App\Services\Booking\BookingService;
 use App\Services\Notification\SystemNotificationService;
+use App\Services\System\MailConfigurationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class ReservationController extends Controller
 {
@@ -167,7 +172,50 @@ class ReservationController extends Controller
     {
         return view('admin.reservations.show', [
             'reservation' => $reservation->load(['property', 'room', 'guest', 'guests']),
+            'paymentUrl' => route('booking.checkout', $reservation->getRouteKey()),
         ]);
+    }
+
+    /**
+     * Email the guest a link to the website payment page (refundable deposit).
+     */
+    public function sendPaymentLink(Request $request, Reservation $reservation): RedirectResponse
+    {
+        if (! $reservation->guest?->email) {
+            return back()->withErrors(['error' => 'This booking has no guest email to send the payment link to.']);
+        }
+
+        try {
+            app(MailConfigurationService::class)->apply();
+
+            $deposit = (float) Setting::getValue('damage_deposit', 950);
+            $balanceDue = max(0.0, round((float) $reservation->total_amount - $deposit, 2));
+            $paymentUrl = route('booking.checkout', $reservation->getRouteKey());
+
+            Mail::raw(
+                "Hi ".($reservation->guest->full_name ?: 'there').",\n\n".
+                "Your booking {$reservation->reference} is confirmed for ".
+                $reservation->check_in->format('d M Y').' → '.$reservation->check_out->format('d M Y').".\n\n".
+                'Pay your refundable deposit of £'.number_format($deposit, 2)." to secure the stay:\n".
+                $paymentUrl."\n\n".
+                ($balanceDue > 0 ? 'The balance of £'.number_format($balanceDue, 2).' is due before arrival.'."\n\n" : "\n").
+                "Many thanks,\nCorner House",
+                function ($message) use ($reservation): void {
+                    $message->to($reservation->guest->email)
+                        ->subject('Pay for your Corner House stay');
+                },
+            );
+
+            $this->auditLogger->log('reservations.payment_link_sent', 'reservations', 'reservation', (string) $reservation->id);
+
+            return back()->with('status', 'Payment link emailed to '.$reservation->guest->email.'.');
+        } catch (\Throwable $e) {
+            Log::warning('Failed to email payment link for reservation '.$reservation->id, [
+                'message' => $e->getMessage(),
+            ]);
+
+            return back()->withErrors(['error' => 'The payment link could not be emailed. Please check the mail configuration.']);
+        }
     }
 
     public function edit(Reservation $reservation): View

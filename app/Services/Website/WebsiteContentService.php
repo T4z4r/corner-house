@@ -102,7 +102,7 @@ class WebsiteContentService
             'enquiryEmail' => Setting::getValue('website_contact_email', 'hello@cornerhousebraunston.uk'),
             // Relative paths keep the browser on the site's own origin, whatever
             // host/scheme it is served over (APP_URL is only ever a fallback).
-            'bookingEndpoint' => Route::has('booking.pay') ? route('booking.pay', [], false) : '',
+            'bookingEndpoint' => Route::has('booking.request') ? route('booking.request', [], false) : '',
             'availabilityUrl' => Route::has('booking.availability') ? route('booking.availability', [], false) : '',
             'pricingUrl' => Route::has('booking.prices') ? route('booking.prices', [], false) : '',
             'bookingRoomId' => Room::defaultForDirectBookings()?->id,

@@ -61,7 +61,8 @@ Route::get('/ical/{room}', [IcalController::class, '__invoke'])->name('ical.room
 
 Route::get('/book', [BookingController::class, 'search'])->name('booking.search');
 Route::get('/book/room/{room}', [BookingController::class, 'details'])->name('booking.details');
-Route::post('/book/pay', [BookingController::class, 'holdAndPay'])->name('booking.pay');
+Route::post('/book/request', [BookingController::class, 'requestBooking'])->name('booking.request');
+Route::get('/book/requested', [BookingController::class, 'requestReceived'])->name('booking.requested');
 Route::get('/book/pay/{reservation}', [BookingController::class, 'checkoutPage'])->name('booking.checkout');
 Route::post('/book/pay/{reservation}/confirm', [BookingController::class, 'confirmDirectPayment'])->name('booking.checkout.confirm');
 Route::get('/book/confirmation', [BookingController::class, 'confirmation'])->name('booking.confirmation');
@@ -71,13 +72,12 @@ Route::get('/booking/availability', [WebsiteController::class, 'availability'])-
 Route::get('/booking/prices', [BookingController::class, 'prices'])->name('booking.prices');
 
 Route::middleware('throttle:5,1')->group(function (): void {
-    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [LoginController::class, 'login']);
+    Route::get('/control-hub-q91x', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/control-hub-q91x', [LoginController::class, 'login']);
     Route::get('/register', [RegisterController::class, 'showRegisterForm'])->name('register');
     Route::post('/register', [RegisterController::class, 'register']);
 });
 
-Route::redirect('/control-hub-q91x', '/login');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
 Route::middleware(['auth'])->group(function (): void {
@@ -261,6 +261,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
         Route::post('/reservations/{reservation}/check-in', [ReservationController::class, 'checkIn'])->name('reservations.check-in')->middleware('can:reservations.update');
         Route::post('/reservations/{reservation}/check-out', [ReservationController::class, 'checkOut'])->name('reservations.check-out')->middleware('can:reservations.update');
         Route::post('/reservations/fetch-beds24', [ReservationController::class, 'fetchFromBeds24'])->name('reservations.fetch-beds24')->middleware('can:channels.sync');
+        Route::post('/reservations/{reservation}/payment-link', [ReservationController::class, 'sendPaymentLink'])->name('reservations.payment-link')->middleware('can:communications.send');
     });
 
     Route::middleware(['can:calendar.view', 'password.confirm'])->group(function (): void {

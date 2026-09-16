@@ -4,23 +4,26 @@ namespace App\Http\Controllers\Website;
 
 use App\Http\Controllers\Controller;
 use App\Models\AddOn;
+use App\Models\Enquiry;
 use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\Setting;
 use App\Services\Availability\AvailabilityService;
 use App\Services\Booking\BookingHoldService;
-use App\Services\Booking\BookingService;
 use App\Services\Payment\PaymentService;
 use App\Services\Pricing\PricingEngine;
+use App\Services\System\MailConfigurationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Throwable;
 
 class BookingController extends Controller
 {
@@ -28,7 +31,6 @@ class BookingController extends Controller
         private readonly AvailabilityService $availability,
         private readonly PricingEngine $pricing,
         private readonly BookingHoldService $holds,
-        private readonly BookingService $bookings,
         private readonly PaymentService $payments,
     ) {}
 
@@ -219,54 +221,39 @@ class BookingController extends Controller
         ]);
     }
 
-    public function holdAndPay(Request $request): RedirectResponse|JsonResponse
+    /**
+     * Accept a booking request from the website widget or the guest-details form.
+     *
+     * Direct bookings are enquiry-first: no payment is taken here. A 48-hour
+     * hold is placed on the requested dates, the enquiry is stored against the
+     * room and hold, and the booking team is emailed. Once the guest's photo ID
+     * and signed rental agreement have been reviewed, the team emails a payment
+     * link so a refundable £950 deposit can be taken online.
+     */
+    public function requestBooking(Request $request, MailConfigurationService $mailConfigurationService): RedirectResponse|JsonResponse
     {
-        if (! $request->has('guest_first_name') && $request->has('name')) {
-            $parts = explode(' ', trim((string) $request->input('name')), 2);
-            $request->merge([
-                'guest_first_name' => $parts[0] ?? 'Guest',
-                'guest_last_name' => $parts[1] ?? ($parts[0] ?? 'Guest'),
-            ]);
-        }
-
-        if (! $request->has('guest_email') && $request->has('email')) {
-            $request->merge(['guest_email' => (string) $request->input('email')]);
-        }
-
-        if (! $request->has('guest_phone') && $request->has('phone')) {
-            $request->merge(['guest_phone' => (string) $request->input('phone')]);
-        }
-
-        if (! $request->has('check_in') && $request->has('checkIn')) {
-            $request->merge(['check_in' => (string) $request->input('checkIn')]);
-        }
-
-        if (! $request->has('check_out') && $request->has('checkOut')) {
-            $request->merge(['check_out' => (string) $request->input('checkOut')]);
-        }
-
-        if (! $request->has('guests_count')) {
-            $rawGuests = $request->input('guests', $request->input('guests_count', 12));
-            $guestsNum = (int) preg_replace('/[^0-9]/', '', (string) $rawGuests) ?: 12;
-            $request->merge(['guests_count' => $guestsNum]);
-        }
-
-        // The website booking widget sends the room under its camelCase JSON key.
-        if (! $request->has('room_id') && $request->has('roomId')) {
-            $request->merge(['room_id' => (int) $request->input('roomId')]);
-        }
+        $request->merge([
+            'name' => $request->input('name', trim(($request->input('guest_first_name') ?? 'Guest').' '.($request->input('guest_last_name') ?? ''))),
+            'email' => $request->input('email', $request->input('guest_email')),
+            'phone' => $request->input('phone', $request->input('guest_phone')),
+            'guests' => $request->input('guests', (string) ($request->input('guests_count') ?? 12)),
+            'check_in' => $request->input('check_in', $request->input('checkIn')),
+            'check_out' => $request->input('check_out', $request->input('checkOut')),
+            'room_id' => $request->input('room_id', $request->input('roomId')),
+        ]);
 
         try {
             $data = $request->validate([
                 'room_id' => ['required', 'exists:rooms,id'],
                 'check_in' => ['required', 'date'],
                 'check_out' => ['required', 'date', 'after:check_in'],
-                'guests_count' => ['required', 'integer', 'min:1'],
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'email'],
+                'phone' => ['nullable', 'string', 'max:60'],
+                'guests' => ['nullable', 'string', 'max:60'],
+                'message' => ['nullable', 'string', 'max:5000'],
                 'drinks' => ['nullable', 'boolean'],
-                'guest_first_name' => ['required', 'string', 'max:255'],
-                'guest_last_name' => ['required', 'string', 'max:255'],
-                'guest_email' => ['required', 'email'],
-                'guest_phone' => ['nullable', 'string', 'max:50'],
+                'agree' => ['nullable', 'boolean'],
                 'addon_ids' => ['nullable', 'array'],
                 'addon_ids.*' => ['integer', 'exists:add_ons,id'],
             ]);
@@ -281,82 +268,44 @@ class BookingController extends Controller
         $room = Room::query()->findOrFail($data['room_id']);
         $checkIn = Carbon::parse($data['check_in']);
         $checkOut = Carbon::parse($data['check_out']);
+        $guestCount = (int) preg_replace('/[^0-9]/', '', (string) ($data['guests'] ?? '')) ?: 12;
 
         // 24-hour advance notice
         $minAdvanceDays = (int) Setting::getValue('min_advance_days', 1);
         if ($checkIn->lt(Carbon::today()->addDays($minAdvanceDays))) {
-            $msg = 'Bookings require at least '.$minAdvanceDays.' days advance notice.';
-            if ($request->expectsJson()) {
-                return response()->json(['error' => $msg], 422);
-            }
-
-            return back()->withInput()->withErrors(['error' => $msg]);
+            return $this->requestFailure($request, 'Bookings require at least '.$minAdvanceDays.' days advance notice.');
         }
 
         // Max occupancy
         $maxAdults = (int) Setting::getValue('max_adults', 12);
-        if ((int) $data['guests_count'] > $maxAdults) {
-            $msg = 'Maximum '.$maxAdults.' adults allowed.';
-            if ($request->expectsJson()) {
-                return response()->json(['error' => $msg], 422);
-            }
-
-            return back()->withInput()->withErrors(['error' => $msg]);
+        if ($guestCount > $maxAdults) {
+            return $this->requestFailure($request, 'Maximum '.$maxAdults.' adults allowed.');
         }
 
-        $maxInfants = (int) Setting::getValue('max_infants', 2);
-        $maxCots = (int) Setting::getValue('max_cots', 2);
-        $infants = (int) ($data['infants'] ?? 0);
-        $cots = (int) ($data['cots'] ?? 0);
-
-        if ($infants > $maxInfants) {
-            $msg = 'Maximum '.$maxInfants.' infants allowed.';
-            if ($request->expectsJson()) {
-                return response()->json(['error' => $msg], 422);
-            }
-
-            return back()->withInput()->withErrors(['error' => $msg]);
-        }
-        if ($cots > $maxCots) {
-            $msg = 'Maximum '.$maxCots.' cots allowed.';
-            if ($request->expectsJson()) {
-                return response()->json(['error' => $msg], 422);
-            }
-
-            return back()->withInput()->withErrors(['error' => $msg]);
-        }
-
-        $quote = $this->pricing->calculateForRange($room, $checkIn, $checkOut, (int) $data['guests_count'], null, true);
+        $quote = $this->pricing->calculateForRange($room, $checkIn, $checkOut, $guestCount, null, true);
 
         if ($checkIn->diffInDays($checkOut) < $quote['minimum_stay']) {
-            $msg = 'This stay does not meet the '.$quote['minimum_stay'].'-night minimum.';
-            if ($request->expectsJson()) {
-                return response()->json(['error' => $msg], 422);
-            }
-
-            return back()->withInput()->withErrors(['error' => $msg]);
+            return $this->requestFailure($request, 'This stay does not meet the '.$quote['minimum_stay'].'-night minimum.');
         }
 
         if (($quote['maximum_stay'] ?? null) !== null && $checkIn->diffInDays($checkOut) > $quote['maximum_stay']) {
-            $msg = 'This stay exceeds the '.$quote['maximum_stay'].'-night maximum.';
-            if ($request->expectsJson()) {
-                return response()->json(['error' => $msg], 422);
-            }
-
-            return back()->withInput()->withErrors(['error' => $msg]);
+            return $this->requestFailure($request, 'This stay exceeds the '.$quote['maximum_stay'].'-night maximum.');
         }
 
-        // Add damage deposit to total
+        // The refundable deposit (£950) is quoted now and collected later via a
+        // payment link once the lead guest has been verified.
         $damageDeposit = (float) Setting::getValue('damage_deposit', 950);
         $quote['total'] = round($quote['total'] + $damageDeposit, 2);
-        $quote['damage_deposit'] = $damageDeposit;
 
-        // Calculate add-ons total
         $addonIds = $data['addon_ids'] ?? [];
         $addons = AddOn::query()->whereIn('id', $addonIds)->where('is_active', true)->get();
         $addonsTotal = (float) $addons->sum('price');
-        $quote['addons_total'] = $addonsTotal;
         $quote['total'] = round($quote['total'] + $addonsTotal, 2);
+
+        $message = trim((string) ($data['message'] ?? ''));
+        if ($addons->isNotEmpty()) {
+            $message = trim($message.' '.($message ? '- ' : '').'Add-ons requested: '.$addons->pluck('name')->join(', ').'.');
+        }
 
         try {
             $hold = $this->holds->createHold(
@@ -365,57 +314,110 @@ class BookingController extends Controller
                 $checkOut,
                 $request->session()->getId(),
                 $quote['total'],
+                (int) Setting::getValue('booking_request_hold_hours', 48) * 60,
             );
 
-            $result = $this->bookings->create([
-                ...$data,
-                'status' => 'hold',
-                'source' => 'direct',
-                'hold_token' => $hold['hold']->hold_token,
-                'damage_deposit' => $damageDeposit,
-                'addons_total' => $addonsTotal,
+            $enquiry = Enquiry::create([
+                'type' => Enquiry::TYPE_BOOKING,
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'phone' => $data['phone'] ?? null,
+                'room_id' => $room->id,
+                'guests' => $data['guests'] ?? (string) $guestCount,
+                'check_in' => $checkIn->toDateString(),
+                'check_out' => $checkOut->toDateString(),
+                'nights' => $checkIn->diffInDays($checkOut),
+                'message' => $message,
                 'drinks_package' => (bool) ($data['drinks'] ?? false),
+                'terms_accepted' => (bool) ($data['agree'] ?? false),
+                'booking_hold_id' => $hold['hold']->id,
             ]);
 
-            // Attach add-ons to reservation
-            $reservation = $result['reservation'];
-            foreach ($addons as $addon) {
-                $reservation->addons()->attach($addon->id, [
-                    'quantity' => 1,
-                    'unit_price' => $addon->price,
-                    'total_price' => $addon->price,
-                ]);
-            }
-
-            $reservation->load(['room', 'guest', 'property', 'addons']);
-
-            $payment = $this->payments->startCheckout(
-                $reservation,
-                route('booking.confirmation').'?session_id={CHECKOUT_SESSION_ID}',
-                route('booking.checkout', $reservation->getRouteKey()).'?cancelled=1',
-            );
-
-            $url = $this->payments->checkoutUrl($payment);
-
-            $request->session()->put('booking.reservation_id', $reservation->id);
-
-            $checkoutRoute = route('booking.checkout', $reservation->getRouteKey());
+            $this->sendBookingRequestMail($request, $mailConfigurationService, $enquiry, $room, $hold['expires_at'], $quote);
 
             if ($request->expectsJson()) {
-                return response()->json(['url' => $checkoutRoute, 'stripe_url' => $url, 'status' => 'ok']);
+                return response()->json(['status' => 'ok', 'enquiry_id' => $enquiry->id]);
             }
 
-            return redirect()->route('booking.checkout', $reservation->getRouteKey());
+            return redirect()->route('booking.requested', ['enquiry' => $enquiry->id]);
+        } catch (\DomainException $e) {
+            return $this->requestFailure($request, $e->getMessage());
         } catch (\Throwable $e) {
-            Log::error('Direct booking Stripe payment error', [
+            Log::error('Booking request could not be stored', [
                 'message' => $e->getMessage(),
             ]);
 
-            if ($request->expectsJson()) {
-                return response()->json(['error' => $e->getMessage()], 422);
-            }
+            return $this->requestFailure($request, 'Your booking request could not be submitted. Please try again.');
+        }
+    }
 
-            return back()->withInput()->withErrors(['error' => $e->getMessage()]);
+    public function requestReceived(Request $request): View
+    {
+        $enquiry = null;
+
+        if ($request->filled('enquiry')) {
+            $enquiry = Enquiry::query()->with('room')->find($request->query('enquiry'));
+        }
+
+        return view('website.booking.requested', ['enquiry' => $enquiry]);
+    }
+
+    private function requestFailure(Request $request, string $message): RedirectResponse|JsonResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json(['error' => $message], 422);
+        }
+
+        return back()->withInput()->withErrors(['error' => $message]);
+    }
+
+    /**
+     * Notify the booking team about a new booking request. Best-effort: the
+     * enquiry is already stored, so a failed mail must not block the request.
+     */
+    private function sendBookingRequestMail(
+        Request $request,
+        MailConfigurationService $mailConfigurationService,
+        Enquiry $enquiry,
+        Room $room,
+        Carbon $expiresAt,
+        array $quote,
+    ): void {
+        try {
+            $mailConfigurationService->apply();
+
+            $holdHours = (int) Setting::getValue('booking_request_hold_hours', 48);
+            $deposit = (float) Setting::getValue('damage_deposit', 950);
+
+            $lines = [
+                'New booking request (direct)',
+                '---',
+                "Name: {$enquiry->name}",
+                "Email: {$enquiry->email}",
+                $enquiry->phone ? "Phone: {$enquiry->phone}" : '',
+                "Room: {$room->name}",
+                "Check in: {$enquiry->check_in->format('d M Y')}",
+                "Check out: {$enquiry->check_out->format('d M Y')}",
+                "Nights: {$enquiry->nights}",
+                "Guests: {$enquiry->guests}",
+                "Quoted total: £".number_format((float) $quote['total'], 2),
+                $enquiry->drinks_package ? 'Drinks package: requested' : '',
+                $enquiry->terms_accepted ? 'Terms and house rules: accepted' : '',
+                "Dates held until {$expiresAt->format('d M Y H:i')} ({$holdHours} hours).",
+                'Payment: email the guest a payment link (refundable £'.number_format($deposit, 0).' deposit) once ID and the signed rental agreement are received.',
+                '---',
+                $enquiry->message ?: 'No message.',
+            ];
+
+            Mail::raw(implode("\n", array_filter($lines)), function ($message): void {
+                $message->to(Setting::getValue('booking_notify_email', Setting::getValue('admin_notification_email', config('mail.from.address'))))
+                    ->subject('Booking request');
+            });
+        } catch (\Throwable $e) {
+            Log::warning("Booking request email could not be sent for enquiry {$enquiry->id}.", [
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
         }
     }
 
@@ -431,6 +433,9 @@ class BookingController extends Controller
             ]);
         }
 
+        $deposit = (float) Setting::getValue('damage_deposit', 950);
+        $balanceDue = max(0.0, round((float) $reservation->total_amount - $deposit, 2));
+
         // Build Stripe Checkout Session URL for the hosted option.
         $checkoutUrl = null;
         if ($latestPayment && ! blank($latestPayment->metadata['checkout_url'] ?? null)) {
@@ -443,6 +448,7 @@ class BookingController extends Controller
                     $reservation,
                     route('booking.confirmation').'?session_id={CHECKOUT_SESSION_ID}',
                     route('booking.checkout', $reservation->getRouteKey()).'?cancelled=1',
+                    $deposit,
                 );
                 $checkoutUrl = $this->payments->checkoutUrl($payment);
             } catch (\Throwable $e) {
@@ -456,7 +462,7 @@ class BookingController extends Controller
         $paymentIntentSecret = null;
         $paymentIntentId = null;
         try {
-            $intentPayment = $this->payments->createIntent($reservation);
+            $intentPayment = $this->payments->createIntent($reservation, $deposit);
             $paymentIntentSecret = $this->payments->clientSecret($intentPayment);
             $paymentIntentId = $intentPayment->provider_payment_id;
         } catch (\Throwable $e) {
@@ -480,6 +486,8 @@ class BookingController extends Controller
             'stripeKey' => $stripeKey,
             'paymentIntentSecret' => $paymentIntentSecret,
             'paymentReturnUrl' => $paymentReturnUrl,
+            'deposit' => $deposit,
+            'balanceDue' => $balanceDue,
         ]);
     }
 

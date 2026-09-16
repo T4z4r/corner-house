@@ -4,7 +4,7 @@
    ========================================================= */
 const CONFIG = Object.assign({
   enquiryEmail: "bookings@example.com",      // where enquiries go if no endpoint is set
-  bookingEndpoint: "",                        // e.g. "/booking/enquiry" - POSTs JSON
+  bookingEndpoint: "",                        // e.g. "/book/request" - POSTs JSON booking request
   availabilityUrl: "",                        // e.g. "/availability.json" - returns [{start:"YYYY-MM-DD", end:"YYYY-MM-DD"}] (end exclusive)
   pricingUrl: "",                             // per-night pricing API (admin-set overrides, rules)
   nightlyRate: 950,                           // per night, whole house - placeholder
@@ -210,8 +210,9 @@ function renderQuote(){
   } else lines.hidden=true;
 }
 
-/* ---------- Direct Booking Stripe Checkout form ---------- */
+/* ---------- Direct booking request form ---------- */
 const enquiryForm = document.getElementById("enquiry");
+const successBox = document.getElementById("q-success");
 if (enquiryForm) {
   enquiryForm.addEventListener("submit", async e=>{
     e.preventDefault();
@@ -231,15 +232,16 @@ if (enquiryForm) {
     };
 
     setError("");
+    if (successBox) successBox.hidden = true;
     const submitBtn = enquiryForm.querySelector('button[type="submit"]');
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.textContent = "Redirecting to Stripe Checkout...";
+      submitBtn.textContent = "Sending booking request...";
     }
 
     try {
       const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-      const endpoint = CONFIG.bookingEndpoint || "/book/pay";
+      const endpoint = CONFIG.bookingEndpoint || "/book/request";
       const r = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -251,17 +253,18 @@ if (enquiryForm) {
       });
 
       const data = await r.json();
-      if (!r.ok || !data.url) {
-        throw new Error(data.error || data.message || "Unable to start payment session.");
+      if (!r.ok || data.status !== "ok") {
+        throw new Error(data.error || data.message || "Your booking request could not be submitted.");
       }
 
-      window.location.href = data.url;
+      enquiryForm.hidden = true;
+      if (successBox) successBox.hidden = false;
     } catch(err) {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.textContent = "Proceed to Stripe Checkout";
+        submitBtn.textContent = "Send booking request";
       }
-      setError(err.message || "The payment checkout session could not be started. Please try again.");
+      setError(err.message || "Your booking request could not be submitted. Please try again.");
     }
   });
 }

@@ -14,7 +14,7 @@
     <div class="wrap">
         <p class="ch-kicker">Direct Booking &middot; Step 3 of 3</p>
         <h1>Complete Your Payment</h1>
-        <p class="ch-page-hero-sub">Secure your stay with instant, encrypted Stripe payment processing.</p>
+        <p class="ch-page-hero-sub">Pay your refundable &pound;{{ number_format($deposit, 0) }} deposit to secure the booking. The balance is due before arrival.</p>
     </div>
 </section>
 
@@ -535,10 +535,10 @@
                         </div>
                         <span class="ch-chip ch-chip-recommended">Recommended</span>
                     </div>
-                    <p class="ch-hosted-lead">Prefer to pay on Stripe's secure page? Continue there to complete your reservation for <strong>&pound;{{ number_format($reservation->total_amount, 2) }}</strong>.</p>
+                    <p class="ch-hosted-lead">Prefer to pay on Stripe's secure page? Continue there to pay your refundable deposit of <strong>&pound;{{ number_format($deposit, 2) }}</strong>@if ($balanceDue > 0) &mdash; the balance of &pound;{{ number_format($balanceDue, 2) }} is due before arrival@endif.</p>
                     <a href="{{ $checkoutUrl }}" class="btn-ch-pay">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3 8.5-7 10-4-1.5-7-5-7-10V5z"/></svg>
-                        <span>Pay &pound;{{ number_format($reservation->total_amount, 2) }} via Stripe Checkout</span>
+                        <span>Pay &pound;{{ number_format($deposit, 2) }} via Stripe Checkout</span>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
                     </a>
                     <div class="ch-chip-row">
@@ -581,14 +581,14 @@
                             <input type="checkbox" id="termsCheck" required checked>
                             <span class="ch-check-text">
                                 I confirm the stay details and authorise the charge of
-                                <strong>&pound;{{ number_format($reservation->total_amount, 2) }}</strong>
-                                via Stripe.
+                                <strong>&pound;{{ number_format($deposit, 2) }}</strong>
+                                via Stripe.@if ($balanceDue > 0) The balance of &pound;{{ number_format($balanceDue, 2) }} is due before arrival.@endif
                             </span>
                         </label>
 
                         <button type="submit" class="btn-ch-pay" id="confirmPayBtn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3 8.5-7 10-4-1.5-7-5-7-10V5z"/></svg>
-                            <span id="confirmPayText">Confirm Payment &middot; &pound;{{ number_format($reservation->total_amount, 2) }}</span>
+                            <span id="confirmPayText">Confirm Deposit &middot; &pound;{{ number_format($deposit, 2) }}</span>
                         </button>
 
                         <div class="ch-pay-trust">
@@ -660,10 +660,10 @@
                         @endforeach
                     @endif
 
-                    @if ((float) $reservation->damage_deposit > 0)
+                    @if ((float) $deposit > 0)
                         <div class="ch-breakdown-row deposit" style="border-top:1px solid var(--ch-line); border-bottom:1px solid var(--ch-line); padding:.7rem 0; margin:.6rem 0;">
-                            <span>Refundable Security Deposit</span>
-                            <span style="font-weight:700; color:var(--ch-ink);">&pound;{{ number_format((float) $reservation->damage_deposit, 2) }}</span>
+                            <span>Refundable Security Deposit &mdash; due now</span>
+                            <span style="font-weight:700; color:var(--ch-ink);">&pound;{{ number_format((float) $deposit, 2) }}</span>
                         </div>
                     @endif
 
@@ -681,6 +681,13 @@
                         </div>
                         <span class="ch-total-price">&pound;{{ number_format((float) $reservation->total_amount, 2) }}</span>
                     </div>
+
+                    @if ($balanceDue > 0)
+                        <div class="ch-breakdown-row" style="border-top:1px solid var(--ch-line); margin-top:.6rem; padding-top:.6rem; font-size:.85rem; color:var(--ch-ink-soft);">
+                            <span>Balance due before arrival</span>
+                            <span style="font-weight:700; color:var(--ch-terracotta-deep);">&pound;{{ number_format($balanceDue, 2) }}</span>
+                        </div>
+                    @endif
 
                     <div class="ch-badge-guarantee">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>

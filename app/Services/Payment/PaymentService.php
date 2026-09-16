@@ -23,68 +23,84 @@ class PaymentService
         private readonly SystemNotificationService $systemNotifications,
     ) {}
 
-    public function startCheckout(Reservation $reservation, string $successUrl, string $cancelUrl): Payment
+    public function startCheckout(Reservation $reservation, string $successUrl, string $cancelUrl, ?float $amount = null): Payment
     {
+        $chargeAmount = $amount ?? (float) $reservation->total_amount;
+        $chargeFullBalance = abs($chargeAmount - (float) $reservation->total_amount) <= 0.01;
+
         $payment = Payment::create([
             'reservation_id' => $reservation->id,
             'guest_id' => $reservation->guest_id,
             'provider' => 'stripe',
-            'amount' => $reservation->total_amount,
+            'amount' => $chargeAmount,
             'currency' => $reservation->property?->currency ?? 'GBP',
             'status' => 'pending',
         ]);
 
         $lineItems = [];
-        $roomName = $reservation->room?->name ?? 'Accommodation';
-        $nights = $reservation->nights_count;
-        $stayDates = $reservation->check_in?->format('d M Y').' → '.$reservation->check_out?->format('d M Y').' ('.$nights.' night'.($nights > 1 ? 's' : '').')';
 
-        $subtotal = (float) $reservation->subtotal_amount;
-        if ($subtotal > 0) {
-            $lineItems[] = [
-                'name' => 'Stay at '.$roomName,
-                'description' => $stayDates,
-                'amount' => $subtotal,
-                'quantity' => 1,
-            ];
-        }
+        if ($chargeFullBalance) {
+            $roomName = $reservation->room?->name ?? 'Accommodation';
+            $nights = $reservation->nights_count;
+            $stayDates = $reservation->check_in?->format('d M Y').' → '.$reservation->check_out?->format('d M Y').' ('.$nights.' night'.($nights > 1 ? 's' : '').')';
 
-        if ((float) $reservation->damage_deposit > 0) {
-            $lineItems[] = [
-                'name' => 'Damage Deposit (refundable)',
-                'description' => 'Refunded after check-out inspection',
-                'amount' => (float) $reservation->damage_deposit,
-                'quantity' => 1,
-            ];
-        }
+            $subtotal = (float) $reservation->subtotal_amount;
+            if ($subtotal > 0) {
+                $lineItems[] = [
+                    'name' => 'Stay at '.$roomName,
+                    'description' => $stayDates,
+                    'amount' => $subtotal,
+                    'quantity' => 1,
+                ];
+            }
 
-        if ($reservation->relationLoaded('addons') || $reservation->addons()->exists()) {
-            foreach ($reservation->addons as $addon) {
-                $unitPrice = (float) ($addon->pivot->unit_price ?? $addon->price);
-                $qty = (int) ($addon->pivot->quantity ?? 1);
-                if ($unitPrice > 0) {
-                    $lineItems[] = [
-                        'name' => $addon->name,
-                        'description' => 'Add-on package',
-                        'amount' => $unitPrice,
-                        'quantity' => $qty,
-                    ];
+            if ((float) $reservation->damage_deposit > 0) {
+                $lineItems[] = [
+                    'name' => 'Damage Deposit (refundable)',
+                    'description' => 'Refunded after check-out inspection',
+                    'amount' => (float) $reservation->damage_deposit,
+                    'quantity' => 1,
+                ];
+            }
+
+            if ($reservation->relationLoaded('addons') || $reservation->addons()->exists()) {
+                foreach ($reservation->addons as $addon) {
+                    $unitPrice = (float) ($addon->pivot->unit_price ?? $addon->price);
+                    $qty = (int) ($addon->pivot->quantity ?? 1);
+                    if ($unitPrice > 0) {
+                        $lineItems[] = [
+                            'name' => $addon->name,
+                            'description' => 'Add-on package',
+                            'amount' => $unitPrice,
+                            'quantity' => $qty,
+                        ];
+                    }
                 }
             }
-        }
 
-        // Use itemized line items only if they match the reservation total
-        $lineItemsSum = 0;
-        foreach ($lineItems as $item) {
-            $lineItemsSum += ((float) $item['amount']) * ((int) ($item['quantity'] ?? 1));
-        }
+            // Use itemized line items only if they match the reservation total
+            $lineItemsSum = 0;
+            foreach ($lineItems as $item) {
+                $lineItemsSum += ((float) $item['amount']) * ((int) ($item['quantity'] ?? 1));
+            }
 
-        if ($lineItems === [] || abs($lineItemsSum - (float) $reservation->total_amount) > 0.01) {
-            $lineItems = [];
+            if ($lineItems === [] || abs($lineItemsSum - (float) $reservation->total_amount) > 0.01) {
+                $lineItems = [];
+            }
+        } else {
+            $balanceDue = max(0.0, round((float) $reservation->total_amount - $chargeAmount, 2));
+            $lineItems[] = [
+                'name' => 'Corner House deposit (refundable)',
+                'description' => $balanceDue > 0
+                    ? 'Refundable security deposit - full balance of £'.number_format($balanceDue, 2).' due before arrival'
+                    : 'Refundable security deposit',
+                'amount' => $chargeAmount,
+                'quantity' => 1,
+            ];
         }
 
         $session = $this->gateway->createCheckoutSession([
-            'amount' => (float) $reservation->total_amount,
+            'amount' => $chargeAmount,
             'currency' => $payment->currency,
             'description' => 'Corner House booking '.$reservation->reference,
             'customer_email' => $reservation->guest?->email,
@@ -111,8 +127,10 @@ class PaymentService
         return $payment->metadata['checkout_url'] ?? null;
     }
 
-    public function createIntent(Reservation $reservation): Payment
+    public function createIntent(Reservation $reservation, ?float $amount = null): Payment
     {
+        $chargeAmount = $amount ?? (float) $reservation->total_amount;
+
         $payment = $reservation->payments()
             ->where('provider', 'stripe')
             ->where('status', 'pending')
@@ -122,7 +140,7 @@ class PaymentService
                 'reservation_id' => $reservation->id,
                 'guest_id' => $reservation->guest_id,
                 'provider' => 'stripe',
-                'amount' => $reservation->total_amount,
+                'amount' => $chargeAmount,
                 'currency' => $reservation->property?->currency ?? 'GBP',
                 'status' => 'pending',
             ]);
@@ -132,7 +150,7 @@ class PaymentService
         }
 
         $intent = $this->gateway->createPaymentIntent([
-            'amount' => (float) $reservation->total_amount,
+            'amount' => $chargeAmount,
             'currency' => $payment->currency,
             'description' => 'Corner House booking '.$reservation->reference,
             'customer_email' => $reservation->guest?->email,
@@ -145,7 +163,7 @@ class PaymentService
 
         $payment->update([
             'provider_payment_id' => $intent['id'],
-            'amount' => $reservation->total_amount,
+            'amount' => $chargeAmount,
             'metadata' => array_merge($payment->metadata ?? [], [
                 'intent_status' => $intent['status'],
                 'client_secret' => $intent['client_secret'],
@@ -277,9 +295,11 @@ class PaymentService
 
             $reservation = Reservation::query()->whereKey($locked->reservation_id)->lockForUpdate()->firstOrFail();
             $wasAlreadyConfirmed = $reservation->status === 'confirmed';
+
+            $fullyPaid = $locked->amount >= (float) $reservation->total_amount - 0.01;
             $reservation->update([
                 'paid_amount' => $locked->amount,
-                'payment_status' => 'paid',
+                'payment_status' => $fullyPaid ? 'paid' : 'partial',
             ]);
 
             $this->bookingService->confirm($reservation);

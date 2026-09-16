@@ -144,6 +144,20 @@
                     </span>
                     <hr>
                     <div class="small">
+                        <div class="ch-detail-label mb-1">Guest payment link</div>
+                        <div class="input-group input-group-sm mb-2">
+                            <input type="text" class="form-control" id="paymentUrlInput" value="{{ $paymentUrl }}" readonly>
+                            <button type="button" class="btn btn-outline-secondary" data-copy-target="paymentUrlInput"><i class="bi bi-clipboard me-1"></i>Copy</button>
+                        </div>
+                        @if ($reservation->guest?->email)
+                            <form method="POST" action="{{ route('admin.reservations.payment-link', $reservation) }}">
+                                @csrf
+                                <button class="btn btn-sm btn-outline-primary w-100"><i class="bi bi-envelope me-1"></i>Email payment link to {{ $reservation->guest->email }}</button>
+                            </form>
+                        @endif
+                    </div>
+                    <hr>
+                    <div class="small">
                         <div class="ch-detail-label mb-1">Channel sync</div>
                         <span class="ch-badge ch-badge-{{ $reservation->sync_status === 'synced' ? 'success' : ($reservation->sync_status === 'failed' ? 'danger' : 'muted') }}">
                             <span class="dot"></span>{{ ucfirst($reservation->sync_status) }}
@@ -176,3 +190,24 @@
         </div>
     @endif
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-copy-target]').forEach(function (button) {
+        button.addEventListener('click', async function () {
+            const target = document.getElementById(button.getAttribute('data-copy-target'));
+            if (!target) return;
+            try {
+                await navigator.clipboard.writeText(target.value || target.textContent || '');
+                const original = button.innerHTML;
+                button.innerHTML = '<i class="bi bi-check-lg me-1"></i>Copied';
+                setTimeout(() => { button.innerHTML = original; }, 1500);
+            } catch (e) {
+                button.textContent = 'Copy failed';
+            }
+        });
+    });
+});
+</script>
+@endpush

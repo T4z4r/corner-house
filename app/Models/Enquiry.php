@@ -27,6 +27,7 @@ class Enquiry extends Model
         'name',
         'email',
         'phone',
+        'room_id',
         'guests',
         'check_in',
         'check_out',
@@ -36,6 +37,7 @@ class Enquiry extends Model
         'terms_accepted',
         'status',
         'reservation_id',
+        'booking_hold_id',
     ];
 
     protected $casts = [
@@ -58,5 +60,15 @@ class Enquiry extends Model
     public function reservation(): BelongsTo
     {
         return $this->belongsTo(Reservation::class);
+    }
+
+    public function room(): BelongsTo
+    {
+        return $this->belongsTo(Room::class);
+    }
+
+    public function bookingHold(): BelongsTo
+    {
+        return $this->belongsTo(BookingHold::class);
     }
 }
