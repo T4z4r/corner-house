@@ -553,6 +553,8 @@
 
             <!-- Hosted Stripe Checkout option -->
             @if ($checkoutUrl)
+                <details style="margin-bottom:1.5rem;">
+                    <summary style="cursor:pointer;">Prefer Stripe’s hosted payment page?</summary>
                 <div class="ch-card-premium ch-card-hosted">
                     <div class="ch-hosted-head">
                         <div class="ch-hosted-title">
@@ -564,7 +566,7 @@
                                 <span style="font-size:.85rem; color:var(--ch-ink-soft);">Secure hosted gateway &middot; Apple Pay, Google Pay &amp; cards</span>
                             </div>
                         </div>
-                        <span class="ch-chip ch-chip-recommended">Recommended</span>
+                        <span class="ch-chip">Alternative payment option</span>
                     </div>
                     <p class="ch-hosted-lead">Prefer to pay on Stripe's secure page? Continue there to pay your {{ $isBalancePayment ? 'remaining balance' : ($paymentOption === 'full' ? 'full booking amount' : 'refundable deposit') }} of <strong>&pound;{{ number_format($paymentAmount, 2) }}</strong>{!! $balanceDueNote !!}.</p>
                     <a href="{{ $checkoutUrl }}" class="btn-ch-pay">
@@ -580,6 +582,7 @@
                         <span class="ch-chip">Google Pay</span>
                     </div>
                 </div>
+                </details>
             @endif
 
             <!-- Direct card payment with Stripe Payment Element -->
@@ -587,11 +590,17 @@
                 <div class="ch-card-head">
                     <h2 class="ch-card-header-title">
                         <span class="ch-step-badge">2</span>
-                        Pay with Card on This Page
+                        Pay securely on this page
                     </h2>
                 </div>
 
                 @if ($paymentIntentSecret)
+                    <div id="express-checkout-section" style="visibility:hidden; margin-bottom:1.5rem;">
+                        <p class="ch-form-label">Apple Pay or Google Pay</p>
+                        <p class="ch-field-help">Pay &pound;{{ number_format($paymentAmount, 2) }} securely using your wallet.</p>
+                        <div id="express-checkout-element" aria-label="Pay with Apple Pay or Google Pay"></div>
+                        <p class="ch-field-help" style="text-align:center; margin-top:1rem;">Or enter your card details below</p>
+                    </div>
                     <form id="directCardForm" method="POST" action="{{ route('booking.checkout.confirm', $reservation) }}" novalidate data-skip-loading-state>
                         @csrf
 
@@ -764,13 +773,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const btn = document.getElementById('confirmPayBtn');
     const btnText = document.getElementById('confirmPayText');
     const errorsBox = document.getElementById('cardErrors');
+    let processing = false;
+    let cardComplete = false;
 
     function showError(msg) {
         errorsBox.textContent = msg;
         errorsBox.hidden = false;
     }
     function setLoading(loading) {
-        btn.disabled = loading;
+        processing = loading;
+        btn.disabled = loading || !cardComplete;
+        paymentAmountForm?.querySelectorAll('input, button').forEach(input => { input.disabled = loading; });
         if (loading) {
             btnText.textContent = 'Processing Payment\u2026';
         } else {
@@ -800,16 +813,41 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         const paymentElement = elements.create('payment', { layout: 'tabs' });
         paymentElement.mount('#payment-element');
-        paymentElement.on('ready', function () { btn.disabled = false; });
-        paymentElement.on('change', function (e) { btn.disabled = !e.complete; });
+        paymentElement.on('change', function (e) { cardComplete = e.complete; btn.disabled = processing || !cardComplete; });
 
-        form.addEventListener('submit', async function (ev) {
+        const expressSection = document.getElementById('express-checkout-section');
+        const expressCheckout = elements.create('expressCheckout', {
+            buttonHeight: 48,
+            paymentMethods: { applePay: 'auto', googlePay: 'auto', link: 'never', paypal: 'never', amazonPay: 'never', klarna: 'never' },
+        });
+        expressCheckout.on('ready', function (event) {
+            const available = event.availablePaymentMethods;
+            expressSection.hidden = !(available && (available.applePay || available.googlePay));
+            expressSection.style.visibility = 'visible';
+        });
+        expressCheckout.on('loaderror', function () { expressSection.hidden = true; });
+        expressCheckout.on('confirm', function (event) { return completePayment(event); });
+        expressCheckout.mount('#express-checkout-element');
+
+        form.addEventListener('submit', function (ev) {
             ev.preventDefault();
             if (btn.disabled) { return; }
+            completePayment();
+        });
+
+        async function completePayment(walletEvent = null) {
+            if (processing) { walletEvent?.paymentFailed({ reason: 'fail' }); return; }
+            if (!document.getElementById('termsCheck').checked) {
+                walletEvent?.paymentFailed({ reason: 'fail' });
+                showError('Please confirm the stay details and authorise the payment before continuing.');
+                return;
+            }
             setLoading(true);
             if (errorsBox) { errorsBox.hidden = true; }
 
             try {
+                const submitted = await elements.submit();
+                if (submitted.error) throw new Error(submitted.error.message || 'Please check your payment details.');
                 const result = await stripe.confirmPayment({
                     elements: elements,
                     confirmParams: {
@@ -844,10 +882,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 /* 3-D Secure challenge is the only other outcome with redirect 'if_required' */
                 window.location.assign(returnUrl);
             } catch (e) {
+                walletEvent?.paymentFailed({ reason: 'fail' });
                 showError(e && e.message ? e.message : 'Payment could not be completed. Please try again.');
                 setLoading(false);
             }
-        });
+        }
     };
     script.onerror = function () {
         showError('Unable to load Stripe securely. Please use the Stripe Checkout option above.');
