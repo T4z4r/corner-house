@@ -21,7 +21,7 @@
     ]
   },
   "resources/css/website.css": {
-    "file": "assets/website-CLqjXRWQ.css",
+    "file": "assets/website-CUaW9GVY.css",
     "name": "website",
     "names": [
       "website.css"
@@ -43,7 +43,7 @@
     ]
   },
   "resources/js/website.js": {
-    "file": "assets/website-06HXOMtr.js",
+    "file": "assets/website-BIPbStXy.js",
     "name": "website",
     "src": "resources/js/website.js",
     "isEntry": true
