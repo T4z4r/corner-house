@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
 use App\Models\PricingOverride;
 use App\Models\Property;
 use App\Models\Room;
@@ -159,6 +160,10 @@ class CalendarPricingTest extends TestCase
         $this->assertSame('2026-01-06', $override->start_date->toDateString());
         $this->assertSame('2026-01-07', $override->end_date->toDateString());
         $this->assertSame(999.0, (float) $override->rate);
+
+        $audit = AuditLog::query()->where('action', 'calendar.price_set')->sole();
+        $this->assertSame($override->getRouteKey(), $audit->record_id);
+        $this->assertSame([$override->getRouteKey()], $audit->new_values['override_ids']);
 
         $this->actingAs($this->actingAsSuperAdmin())
             ->getJson(route('admin.calendar.prices', [
@@ -402,6 +407,35 @@ class CalendarPricingTest extends TestCase
         $this->assertSame('2026-03-03', $overrides->first()->end_date->toDateString());
     }
 
+    public function test_setting_calendar_prices_for_six_rooms_preserves_all_audit_ids(): void
+    {
+        $property = Property::factory()->create();
+        $rooms = Room::factory()->count(6)->create(['property_id' => $property->id]);
+
+        $this->actingAs($this->actingAsSuperAdmin())
+            ->postJson(route('admin.calendar.prices.store'), [
+                'property_id' => $property->id,
+                'room_id' => '',
+                'start_date' => '2026-09-21',
+                'end_date' => '2026-09-21',
+                'rate' => 1,
+            ])
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('count', 6);
+
+        $this->assertDatabaseCount('pricing_overrides', 6);
+        $audit = AuditLog::query()->where('action', 'calendar.price_set')->sole();
+        $this->assertNull($audit->record_id);
+        $this->assertSame($rooms->modelKeys(), $audit->new_values['room_ids']);
+        $this->assertCount(6, $audit->new_values['override_ids']);
+
+        foreach (PricingOverride::query()->get() as $override) {
+            $this->assertContains($override->getRouteKey(), $audit->new_values['override_ids']);
+            $this->assertSame(1.0, (float) $override->rate);
+        }
+    }
+
     public function test_calendar_prices_require_the_calendar_view_permission(): void
     {
         $role = Role::create(['name' => 'No Calendar Access', 'guard_name' => 'web']);
@@ -412,5 +446,37 @@ class CalendarPricingTest extends TestCase
         $this->actingAs($user)
             ->getJson(route('admin.calendar.prices'))
             ->assertForbidden();
+    }
+
+    public function test_single_day_override_event_uses_an_exclusive_end_date(): void
+    {
+        $property = Property::factory()->create();
+        $room = Room::factory()->create(['property_id' => $property->id, 'name' => 'Oak Suite']);
+
+        $override = PricingOverride::query()->create([
+            'room_id' => $room->id,
+            'start_date' => '2026-04-10',
+            'end_date' => '2026-04-10',
+            'rate' => 185,
+            'is_enabled' => true,
+            'notes' => 'beds24-sync',
+        ]);
+
+        $rateEvents = collect($this->actingAs($this->actingAsSuperAdmin())
+            ->getJson(route('admin.calendar.events', [
+                'property_id' => $property->id,
+                'room_id' => $room->id,
+                'start' => '2026-04-01',
+                'end' => '2026-04-30',
+            ]))
+            ->assertOk()
+            ->json())
+            ->where('extendedProps.type', 'rate')
+            ->values();
+
+        $this->assertCount(1, $rateEvents);
+        $this->assertSame('2026-04-10', $rateEvents[0]['start']);
+        $this->assertSame('2026-04-11', $rateEvents[0]['end']);
+        $this->assertSame($override->getRouteKey(), $rateEvents[0]['extendedProps']['override_id']);
     }
 }

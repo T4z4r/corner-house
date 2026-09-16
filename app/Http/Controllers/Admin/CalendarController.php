@@ -425,7 +425,8 @@ class CalendarController extends Controller
             ]);
         }
 
-        $this->auditLogger->log('calendar.price_set', 'calendar', 'pricing_override', collect($created)->map->getRouteKey()->implode(','), newValues: [
+        $this->auditLogger->log('calendar.price_set', 'calendar', 'pricing_override', count($created) === 1 ? $created[0]->getRouteKey() : null, newValues: [
+            'override_ids' => collect($created)->map->getRouteKey()->all(),
             'room_ids' => collect($created)->pluck('room_id')->all(),
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
