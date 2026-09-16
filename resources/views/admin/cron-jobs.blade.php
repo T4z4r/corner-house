@@ -55,10 +55,20 @@
                     <h6>Process queued jobs</h6>
                     <p class="text-muted small mb-0">Run pending emails and other queued work now. Each batch processes up to 25 jobs for about 15 seconds, with up to three attempts per job. Run again if jobs remain. Keep the cPanel cron enabled for automatic processing and longer jobs.</p>
                 </div>
-                <form method="POST" action="{{ route('admin.cron-jobs.process-queue') }}" onsubmit="this.querySelector('button').disabled = true; this.querySelector('button').textContent = 'Processing…';">
+                <form id="queue-worker-form" method="POST" action="{{ route('admin.cron-jobs.process-queue') }}">
                     @csrf
                     <button type="submit" class="btn btn-ch-primary text-nowrap">Process queued jobs</button>
                 </form>
+            </div>
+            <div class="card-body pt-0">
+                <div class="bg-dark text-light rounded p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small">Queue terminal</span>
+                        <span id="queue-worker-status" class="small" role="status">Ready</span>
+                    </div>
+                    <pre id="queue-worker-output" class="text-light mb-0 small" tabindex="0" aria-label="Queue worker output" style="min-height: 160px; max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere;">Ready. Click Process queued jobs to run a batch.
+Output appears when the batch finishes (last 64 KB).</pre>
+                </div>
             </div>
         </div>
     @endcan
@@ -231,3 +241,47 @@
         </div>
     </div>
 @endsection
+
+@can('settings.update')
+@push('scripts')
+    <script>
+        (() => {
+            const form = document.getElementById('queue-worker-form');
+            if (!form) return;
+            const output = document.getElementById('queue-worker-output');
+            const status = document.getElementById('queue-worker-status');
+            const button = form.querySelector('button');
+
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                if (button.disabled) return;
+                button.disabled = true;
+                button.textContent = 'Processing…';
+                status.textContent = 'Running';
+                output.textContent = 'Starting queue worker…\nWaiting for this batch to finish.\n';
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form),
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'same-origin',
+                    });
+                    const data = await response.json();
+                    output.textContent = (data.output || 'No worker output was returned.') + '\n\n'
+                        + (data.exit_code != null ? 'Exit code: ' + data.exit_code + '\n' : '')
+                        + (data.message || 'Unable to run this batch. Refresh the page and try again.');
+                    status.textContent = response.ok && data.successful ? 'Finished' : 'Failed';
+                } catch (error) {
+                    status.textContent = 'Connection lost';
+                    output.textContent += '\nCould not retrieve the result. The worker may still be running. Check job history before retrying.';
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Process queued jobs';
+                    output.scrollTop = output.scrollHeight;
+                }
+            });
+        })();
+    </script>
+@endpush
+@endcan

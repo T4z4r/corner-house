@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\CronJobRun;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -85,29 +87,34 @@ class CronJobsController extends Controller
             ->with('status', "{$label} has been queued to run.");
     }
 
-    public function processQueue(): RedirectResponse
+    public function processQueue(Request $request): RedirectResponse|JsonResponse
     {
         $connection = (string) config('queue.default');
         if (in_array(config("queue.connections.{$connection}.driver"), ['sync', 'null', 'deferred', 'background'], true)) {
-            return back()->withErrors(['queue' => 'The configured queue does not support a worker. Configure a database or Redis queue first.']);
+            return $this->queueResponse($request, 'The configured queue does not support a worker. Configure a database or Redis queue first.', false);
         }
 
         $lock = Cache::lock('admin-process-queue', 60);
         if (! $lock->get()) {
-            return back()->withErrors(['queue' => 'A queue batch is already running. Please wait before trying again.']);
+            return $this->queueResponse($request, 'A queue batch is already running. Please wait before trying again.', false);
         }
 
         try {
             $php = (new PhpExecutableFinder)->find(false);
             if (! $php) {
-                return back()->withErrors(['queue' => 'The PHP command-line executable could not be found on this server.']);
+                return $this->queueResponse($request, 'The PHP command-line executable could not be found on this server.', false);
             }
 
             $result = Process::path(base_path())->timeout(25)->run([
                 $php, base_path('artisan'), 'queue:work', $connection,
                 '--stop-when-empty', '--tries=3', '--max-time=15', '--max-jobs=25',
-                '--timeout=15', '--sleep=1', '--no-interaction',
+                '--timeout=15', '--sleep=1', '--no-interaction', '--no-ansi',
             ]);
+
+            $output = $result->output();
+            if ($result->errorOutput() !== '') {
+                $output .= "\n[stderr]\n".$result->errorOutput();
+            }
 
             if (! $result->successful()) {
                 Log::warning('Manual queue worker exited unsuccessfully', [
@@ -115,17 +122,35 @@ class CronJobsController extends Controller
                     'error' => $result->errorOutput(),
                 ]);
 
-                return back()->withErrors(['queue' => 'The worker did not finish successfully. Check the application logs and failed jobs before trying again.']);
+                return $this->queueResponse($request, 'The worker did not finish successfully. Check the application logs and failed jobs before trying again.', false, $output, $result->exitCode());
             }
 
-            return back()->with('status', 'Queue batch finished. If jobs remain, run another batch. Individual jobs may have failed; check the application logs and job history.');
+            return $this->queueResponse($request, 'Queue batch finished. If jobs remain, run another batch. Individual jobs may have failed; check the application logs and job history.', true, $output, $result->exitCode());
         } catch (Throwable $exception) {
             report($exception);
 
-            return back()->withErrors(['queue' => 'The queue batch could not finish within the web request. Use the cPanel cron for long-running jobs.']);
+            $output = $exception instanceof ProcessTimedOutException
+                ? $exception->result->output()."\n".$exception->result->errorOutput()
+                : '';
+
+            return $this->queueResponse($request, 'The queue batch could not finish. Use the cPanel cron for long-running jobs or check the application logs.', false, $output);
         } finally {
             $lock->release();
         }
+    }
+
+    private function queueResponse(Request $request, string $message, bool $successful, string $output = '', ?int $exitCode = null): RedirectResponse|JsonResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'successful' => $successful,
+                'message' => $message,
+                'output' => mb_strcut($output, -65536, null, 'UTF-8'),
+                'exit_code' => $exitCode,
+            ], $successful ? 200 : 422)->header('Cache-Control', 'no-store');
+        }
+
+        return $successful ? back()->with('status', $message) : back()->withErrors(['queue' => $message]);
     }
 
     /**

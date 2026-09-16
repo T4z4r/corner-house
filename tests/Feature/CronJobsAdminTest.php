@@ -164,7 +164,7 @@ class CronJobsAdminTest extends TestCase
             && $process->timeout === 25
             && array_slice($process->command, 1) === [
                 base_path('artisan'), 'queue:work', 'database', '--stop-when-empty', '--tries=3',
-                '--max-time=15', '--max-jobs=25', '--timeout=15', '--sleep=1', '--no-interaction',
+                '--max-time=15', '--max-jobs=25', '--timeout=15', '--sleep=1', '--no-interaction', '--no-ansi',
             ]);
         $lock = Cache::lock('admin-process-queue', 60);
         $this->assertTrue($lock->get());
@@ -233,6 +233,51 @@ class CronJobsAdminTest extends TestCase
         $this->actingAs($this->superAdmin())->post(route('admin.cron-jobs.process-queue'))
             ->assertSessionHasErrors('queue');
         Process::assertNothingRan();
+    }
+
+    public function test_terminal_returns_worker_output_and_exit_code(): void
+    {
+        Process::fake(['*' => Process::result(output: "SendPaymentRefundEmailJob RUNNING\nSendPaymentRefundEmailJob DONE\n")]);
+        config(['queue.default' => 'database']);
+
+        $this->actingAs($this->superAdmin())->postJson(route('admin.cron-jobs.process-queue'))
+            ->assertOk()->assertJson([
+                'successful' => true,
+                'output' => "SendPaymentRefundEmailJob RUNNING\nSendPaymentRefundEmailJob DONE\n",
+                'exit_code' => 0,
+            ]);
+        $this->get(route('admin.cron-jobs'))->assertSee('Queue terminal')->assertSee('queue-worker-output');
+    }
+
+    public function test_terminal_returns_stderr_on_worker_failure(): void
+    {
+        Process::fake(['*' => Process::result(output: 'Starting', errorOutput: 'Worker failed', exitCode: 1)]);
+        config(['queue.default' => 'database']);
+
+        $this->actingAs($this->superAdmin())->postJson(route('admin.cron-jobs.process-queue'))
+            ->assertUnprocessable()->assertJson([
+                'successful' => false,
+                'output' => "Starting\n\n[stderr]\nWorker failed\n",
+                'exit_code' => 1,
+            ]);
+    }
+
+    public function test_terminal_limits_large_output(): void
+    {
+        Process::fake(['*' => Process::result(output: str_repeat('x', 70000).'DONE')]);
+        config(['queue.default' => 'database']);
+        $response = $this->actingAs($this->superAdmin())->postJson(route('admin.cron-jobs.process-queue'))->assertOk();
+
+        $this->assertSame(65536, strlen($response->json('output')));
+        $this->assertStringEndsWith("DONE\n", $response->json('output'));
+    }
+
+    public function test_terminal_launch_failure_returns_json(): void
+    {
+        Process::fake(['*' => new \RuntimeException('Process launch unavailable')]);
+        config(['queue.default' => 'database']);
+        $this->actingAs($this->superAdmin())->postJson(route('admin.cron-jobs.process-queue'))
+            ->assertUnprocessable()->assertJson(['successful' => false, 'output' => '', 'exit_code' => null]);
     }
 
     private function superAdmin(): User
