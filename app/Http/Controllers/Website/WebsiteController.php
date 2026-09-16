@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Website;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendNewEnquiryNotificationJob;
 use App\Models\AddOn;
 use App\Models\Amenity;
 use App\Models\Enquiry;
@@ -14,13 +15,11 @@ use App\Models\Room;
 use App\Models\Setting;
 use App\Services\Area\AreaIntelligenceService;
 use App\Services\Availability\AvailabilityService;
-use App\Services\System\MailConfigurationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Throwable;
 
@@ -141,7 +140,7 @@ class WebsiteController extends Controller
         return view('website.contact', $this->propertyData());
     }
 
-    public function robots(): \Illuminate\Http\Response
+    public function robots(): Response
     {
         $lines = [
             'User-agent: *',
@@ -159,8 +158,7 @@ class WebsiteController extends Controller
         return response(implode("\n", $lines), 200)->header('Content-Type', 'text/plain');
     }
 
-
-    public function sitemap(): \Illuminate\Http\Response
+    public function sitemap(): Response
     {
         $staticRoutes = [
             'home', 'about', 'property', 'amenities', 'gallery', 'location',
@@ -199,16 +197,7 @@ class WebsiteController extends Controller
             'message' => $data['message'],
         ]);
 
-        $this->sendEnquiryMail(
-            request: $request,
-            mailConfigurationService: app(MailConfigurationService::class),
-            body: "From: {$data['name']} <{$data['email']}>\n\n{$data['message']}",
-            buildMessage: function ($message) use ($data): void {
-                $message->to(config('mail.from.address'))
-                    ->subject('Website enquiry from '.$data['name']);
-            },
-            enquiryId: $enquiry->id,
-        );
+        SendNewEnquiryNotificationJob::dispatch($enquiry->id);
 
         return back()->with('status', 'Thank you. We will get back to you shortly.');
     }
@@ -218,7 +207,7 @@ class WebsiteController extends Controller
      *
      * @return JsonResponse
      */
-    public function enquiry(Request $request, MailConfigurationService $mailConfigurationService)
+    public function enquiry(Request $request)
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -247,58 +236,9 @@ class WebsiteController extends Controller
             'terms_accepted' => (bool) ($data['acceptedTerms'] ?? false),
         ]);
 
-        $lines = [
-            'New booking enquiry from the website',
-            '---',
-            "Name: {$data['name']}",
-            "Email: {$data['email']}",
-            $data['phone'] ? "Phone: {$data['phone']}" : '',
-            $data['guests'] ? "Guests: {$data['guests']}" : '',
-            $data['checkIn'] ? "Check in: {$data['checkIn']}" : '',
-            $data['checkOut'] ? "Check out: {$data['checkOut']}" : '',
-            $data['nights'] ? "Nights: {$data['nights']}" : '',
-            ($data['drinksPackage'] ?? false) ? 'Drinks package: requested' : '',
-            ($data['acceptedTerms'] ?? false) ? 'Terms and house rules: accepted' : '',
-            '---',
-            $data['message'] ?: 'No message.',
-        ];
-
-        $this->sendEnquiryMail(
-            request: $request,
-            mailConfigurationService: $mailConfigurationService,
-            body: implode("\n", array_filter($lines)),
-            buildMessage: function ($message): void {
-                $message->to(Setting::getValue('website_contact_email', config('mail.from.address')))
-                    ->subject('Booking enquiry');
-            },
-            enquiryId: $enquiry->id,
-        );
+        SendNewEnquiryNotificationJob::dispatch($enquiry->id);
 
         return response()->json(['status' => 'ok']);
-    }
-
-    /**
-     * Send the enquiry email as a best-effort extra. The enquiry is already
-     * stored, so a missing or failing mail configuration must never block a
-     * successful submission.
-     */
-    private function sendEnquiryMail(
-        Request $request,
-        MailConfigurationService $mailConfigurationService,
-        string $body,
-        callable $buildMessage,
-        int $enquiryId,
-    ): void {
-        try {
-            $mailConfigurationService->apply();
-
-            Mail::raw($body, $buildMessage);
-        } catch (Throwable $e) {
-            Log::warning("Booking enquiry email could not be sent for enquiry {$enquiryId}.", [
-                'error' => $e->getMessage(),
-                'ip' => $request->ip(),
-            ]);
-        }
     }
 
     /**

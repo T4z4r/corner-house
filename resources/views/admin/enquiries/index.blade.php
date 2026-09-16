@@ -42,6 +42,8 @@
                         <option value="">All statuses</option>
                         <option value="new" @selected(request('status') === 'new')>New</option>
                         <option value="read" @selected(request('status') === 'read')>Read</option>
+                        <option value="approved" @selected(request('status') === 'approved')>Approved</option>
+                        <option value="declined" @selected(request('status') === 'declined')>Declined</option>
                     </select>
                 </div>
                 <div class="col-md-1">
@@ -77,6 +79,10 @@
                                 <td>
                                     @if ($item->status === 'new')
                                         <span class="ch-badge ch-badge-warning"><span class="dot"></span>New</span>
+                                    @elseif ($item->status === 'approved')
+                                        <span class="ch-badge ch-badge-success"><span class="dot"></span>Approved</span>
+                                    @elseif ($item->status === 'declined')
+                                        <span class="ch-badge ch-badge-danger"><span class="dot"></span>Declined</span>
                                     @else
                                         <span class="ch-badge ch-badge-muted"><span class="dot"></span>Read</span>
                                     @endif
@@ -96,6 +102,7 @@
                                 </td>
                                 <td class="small">
                                     @if ($item->check_in)
+                                        <div>{{ $item->room?->name ?? '' }}</div>
                                         <div>{{ $item->check_in->format('d M Y') }} &rarr; {{ $item->check_out ? $item->check_out->format('d M Y') : '?' }} ({{ $item->nights }} night{{ $item->nights === 1 ? '' : 's' }})</div>
                                         <div class="text-muted">{{ $item->guests }} guests{{ $item->drinks_package ? ' · drinks package' : '' }}{{ $item->terms_accepted ? '' : ' · terms NOT accepted' }}</div>
                                     @else
@@ -106,6 +113,18 @@
                                 <td class="small">{{ $item->created_at->format('d M Y, H:i') }}</td>
                                 <td class="text-end">
                                     @can('enquiries.update')
+                                        @if ($item->type === 'booking' && $item->status === 'new')
+                                            <form method="POST" action="{{ route('admin.enquiries.approve', $item) }}" class="d-inline">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-success" data-confirm="Approve this booking request? This creates the reservation and emails the guest a payment link." title="Approve and send payment link"><i class="bi bi-check2-circle"></i> Approve</button>
+                                            </form>
+                                        @endif
+                                        @if ($item->type === 'booking' && in_array($item->status, ['new', 'read'], true))
+                                            <form method="POST" action="{{ route('admin.enquiries.decline', $item) }}" class="d-inline">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" data-confirm="Decline this booking request and release the dates?" title="Decline and release dates"><i class="bi bi-x-circle"></i> Decline</button>
+                                            </form>
+                                        @endif
                                         @if ($item->status === 'new')
                                             <form method="POST" action="{{ route('admin.enquiries.read', $item) }}" class="d-inline">
                                                 @csrf

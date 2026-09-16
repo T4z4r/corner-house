@@ -29,6 +29,7 @@ class SettingsSeeder extends Seeder
             ['group' => 'communication', 'key' => 'guest_checkout_time', 'value' => '12:00', 'label' => 'Standard check-out time', 'cast' => 'string'],
             ['group' => 'booking', 'key' => 'booking_hold_minutes', 'value' => '15', 'label' => 'Booking hold duration (minutes)', 'cast' => 'integer'],
             ['group' => 'booking', 'key' => 'booking_request_hold_hours', 'value' => '48', 'label' => 'Booking request hold duration (hours)', 'cast' => 'integer'],
+            ['group' => 'booking', 'key' => 'payment_link_hours', 'value' => '24', 'label' => 'Payment link expiry (hours)', 'cast' => 'integer'],
             ['group' => 'booking', 'key' => 'min_advance_days', 'value' => '1', 'label' => 'Minimum advance booking (days)', 'cast' => 'integer'],
             ['group' => 'booking', 'key' => 'min_stay_nights', 'value' => '2', 'label' => 'Minimum stay (nights)', 'cast' => 'integer'],
             ['group' => 'booking', 'key' => 'min_stay_bank_holiday_nights', 'value' => '3', 'label' => 'Minimum stay on bank holiday weekends (nights)', 'cast' => 'integer'],

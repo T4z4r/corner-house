@@ -145,10 +145,17 @@
                     <hr>
                     <div class="small">
                         <div class="ch-detail-label mb-1">Guest payment link</div>
-                        <div class="input-group input-group-sm mb-2">
-                            <input type="text" class="form-control" id="paymentUrlInput" value="{{ $paymentUrl }}" readonly>
-                            <button type="button" class="btn btn-outline-secondary" data-copy-target="paymentUrlInput"><i class="bi bi-clipboard me-1"></i>Copy</button>
-                        </div>
+                        @if ($paymentLink)
+                            <div class="input-group input-group-sm mb-2">
+                                <input type="text" class="form-control" id="paymentUrlInput" value="{{ route('booking.pay-link', $paymentLink->token) }}" readonly>
+                                <button type="button" class="btn btn-outline-secondary" data-copy-target="paymentUrlInput"><i class="bi bi-clipboard me-1"></i>Copy</button>
+                            </div>
+                            <div class="text-muted mb-2">
+                                <i class="bi bi-clock-history me-1"></i>Expires {{ $paymentLink->expires_at->format('d M Y H:i') }}
+                            </div>
+                        @else
+                            <p class="text-muted small mb-2">No active payment link yet.</p>
+                        @endif
                         @if ($reservation->guest?->email)
                             <form method="POST" action="{{ route('admin.reservations.payment-link', $reservation) }}">
                                 @csrf

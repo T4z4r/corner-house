@@ -99,6 +99,11 @@ class Reservation extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function paymentLinks(): HasMany
+    {
+        return $this->hasMany(PaymentLink::class)->latest();
+    }
+
     public function communications(): HasMany
     {
         return $this->hasMany(Communication::class);

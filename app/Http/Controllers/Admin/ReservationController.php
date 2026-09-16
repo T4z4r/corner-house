@@ -10,13 +10,14 @@ use App\Models\Setting;
 use App\Services\Audit\AuditLogger;
 use App\Services\Booking\BookingService;
 use App\Services\Notification\SystemNotificationService;
+use App\Services\Payment\PaymentLinkService;
 use App\Services\System\MailConfigurationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
@@ -27,6 +28,7 @@ class ReservationController extends Controller
         private readonly AuditLogger $auditLogger,
         private readonly BookingService $bookingService,
         private readonly SystemNotificationService $systemNotifications,
+        private readonly PaymentLinkService $paymentLinks,
     ) {}
 
     public function index(Request $request): View
@@ -60,8 +62,8 @@ class ReservationController extends Controller
     public function fetchFromBeds24(): RedirectResponse
     {
         try {
-            Bus::dispatchSync(new FetchBeds24BookingsJob());
-        } catch (\Throwable $e) {
+            Bus::dispatchSync(new FetchBeds24BookingsJob);
+        } catch (Throwable $e) {
             return back()->withErrors(['error' => 'Beds24 bookings fetch failed: '.$e->getMessage()]);
         }
 
@@ -172,12 +174,12 @@ class ReservationController extends Controller
     {
         return view('admin.reservations.show', [
             'reservation' => $reservation->load(['property', 'room', 'guest', 'guests']),
-            'paymentUrl' => route('booking.checkout', $reservation->getRouteKey()),
+            'paymentLink' => $this->paymentLinks->activeFor($reservation),
         ]);
     }
 
     /**
-     * Email the guest a link to the website payment page (refundable deposit).
+     * Create an expiring payment link (default 24 hours) and email it to the guest.
      */
     public function sendPaymentLink(Request $request, Reservation $reservation): RedirectResponse
     {
@@ -188,17 +190,21 @@ class ReservationController extends Controller
         try {
             app(MailConfigurationService::class)->apply();
 
+            $paymentLink = $this->paymentLinks->createForReservation($reservation, null, $request->user()?->id);
+            $paymentUrl = $this->paymentLinks->urlFor($paymentLink);
+            $expiresAt = $paymentLink->expires_at;
+
             $deposit = (float) Setting::getValue('damage_deposit', 950);
             $balanceDue = max(0.0, round((float) $reservation->total_amount - $deposit, 2));
-            $paymentUrl = route('booking.checkout', $reservation->getRouteKey());
 
             Mail::raw(
-                "Hi ".($reservation->guest->full_name ?: 'there').",\n\n".
-                "Your booking {$reservation->reference} is confirmed for ".
+                'Hi '.($reservation->guest->full_name ?: 'there').",\n\n".
+                'Pay for your Corner House stay at '.
                 $reservation->check_in->format('d M Y').' → '.$reservation->check_out->format('d M Y').".\n\n".
-                'Pay your refundable deposit of £'.number_format($deposit, 2)." to secure the stay:\n".
+                'Pay your refundable deposit of £'.number_format($deposit, 2)." to confirm the dates:\n".
                 $paymentUrl."\n\n".
-                ($balanceDue > 0 ? 'The balance of £'.number_format($balanceDue, 2).' is due before arrival.'."\n\n" : "\n").
+                'This payment link expires '.$expiresAt->format('d M Y H:i').' ('.(int) Setting::getValue('payment_link_hours', 24).' hours).'."\n".
+                ($balanceDue > 0 ? 'The balance of £'.number_format($balanceDue, 2).' is due before arrival.'."\n" : '')."\n".
                 "Many thanks,\nCorner House",
                 function ($message) use ($reservation): void {
                     $message->to($reservation->guest->email)
@@ -208,8 +214,8 @@ class ReservationController extends Controller
 
             $this->auditLogger->log('reservations.payment_link_sent', 'reservations', 'reservation', (string) $reservation->id);
 
-            return back()->with('status', 'Payment link emailed to '.$reservation->guest->email.'.');
-        } catch (\Throwable $e) {
+            return back()->with('status', 'Payment link emailed to '.$reservation->guest->email.'. It expires '.$expiresAt->format('d M Y H:i').'.');
+        } catch (Throwable $e) {
             Log::warning('Failed to email payment link for reservation '.$reservation->id, [
                 'message' => $e->getMessage(),
             ]);

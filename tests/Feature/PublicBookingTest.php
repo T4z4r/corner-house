@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Enquiry;
 use App\Models\Payment;
 use App\Models\PricingRule;
 use App\Models\Property;
@@ -9,6 +10,8 @@ use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\Setting;
 use App\Services\Booking\BookingService;
+use App\Services\Payment\PaymentGatewayInterface;
+use App\Services\Payment\PaymentLinkService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -118,11 +121,11 @@ class PublicBookingTest extends TestCase
 
     }
 
-    public function test_hold_requires_an_explicit_room_selection(): void
+    public function test_booking_request_requires_an_explicit_room_selection(): void
     {
         $room = Room::factory()->create(['base_rate' => 80, 'status' => 'active']);
 
-        $this->post(route('booking.pay'), [
+        $this->post(route('booking.request'), [
             'check_in' => now()->addDays(14)->toDateString(),
             'check_out' => now()->addDays(16)->toDateString(),
             'guests_count' => 2,
@@ -132,16 +135,17 @@ class PublicBookingTest extends TestCase
         ])
             ->assertSessionHasErrors('room_id');
 
-        $this->assertDatabaseMissing('reservations', ['room_id' => $room->id]);
+        $this->assertDatabaseCount('reservations', 0);
+        $this->assertDatabaseCount('enquiries', 0);
     }
 
-    public function test_hold_accepts_the_room_id_from_the_website_widget_payload(): void
+    public function test_booking_request_accepts_the_room_id_from_the_website_widget_payload(): void
     {
         $room = Room::factory()->create(['base_rate' => 80, 'status' => 'active']);
         $checkIn = now()->addDays(14)->toDateString();
         $checkOut = now()->addDays(16)->toDateString();
 
-        $this->post(route('booking.pay'), [
+        $this->post(route('booking.request'), [
             'roomId' => $room->id,
             'checkIn' => $checkIn,
             'checkOut' => $checkOut,
@@ -154,11 +158,50 @@ class PublicBookingTest extends TestCase
             ->assertSessionHasNoErrors()
             ->assertRedirect();
 
-        $this->assertDatabaseHas('reservations', [
+        $this->assertDatabaseCount('reservations', 0);
+        $this->assertDatabaseHas('enquiries', [
+            'type' => 'booking',
             'room_id' => $room->id,
-            'status' => 'hold',
-            'source' => 'direct',
+            'name' => 'Alex Guest',
+            'email' => 'alex@example.com',
+            'terms_accepted' => true,
         ]);
+
+        $enquiry = Enquiry::query()->first();
+        $this->assertNotNull($enquiry->booking_hold_id);
+        $this->assertDatabaseHas('booking_holds', [
+            'id' => $enquiry->booking_hold_id,
+            'room_id' => $room->id,
+            'status' => 'active',
+        ]);
+    }
+
+    public function test_booking_request_creates_a_48_hour_hold_from_the_widget_payload(): void
+    {
+        $room = Room::factory()->create(['base_rate' => 80, 'status' => 'active']);
+        $checkIn = now()->addDays(20)->toDateString();
+        $checkOut = now()->addDays(22)->toDateString();
+
+        $this->postJson(route('booking.request'), [
+            'roomId' => $room->id,
+            'checkIn' => $checkIn,
+            'checkOut' => $checkOut,
+            'name' => 'Jane Doe',
+            'email' => 'jane@example.com',
+            'guests' => 2,
+            'drinks' => true,
+            'agree' => true,
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', 'ok');
+
+        $enquiry = Enquiry::query()->first();
+        $this->assertNotNull($enquiry);
+        $hold = $enquiry->bookingHold;
+
+        $this->assertNotNull($hold);
+        $this->assertTrue($hold->expires_at->gt(now()->addHours(47)));
+        $this->assertTrue($hold->expires_at->lt(now()->addHours(49)));
     }
 
     public function test_details_page_total_includes_damage_deposit(): void
@@ -240,7 +283,7 @@ class PublicBookingTest extends TestCase
             'status' => 'confirmed',
         ]);
 
-        $this->post(route('booking.pay'), [
+        $this->post(route('booking.request'), [
             'room_id' => $room->id,
             'check_in' => $checkOut,
             'check_out' => now()->addDays(14)->toDateString(),
@@ -255,41 +298,45 @@ class PublicBookingTest extends TestCase
         $this->assertDatabaseMissing('booking_holds', ['room_id' => $room->id]);
     }
 
-    public function test_guest_can_hold_and_pay_then_confirm_from_session(): void
+    public function test_guest_can_pay_the_refundable_deposit_then_confirm_from_session(): void
     {
         $room = Room::factory()->create(['base_rate' => 80, 'status' => 'active']);
+        Setting::updateOrCreate(['key' => 'damage_deposit'], ['value' => '950']);
         $checkIn = now()->addDays(14)->toDateString();
         $checkOut = now()->addDays(16)->toDateString();
 
-        $response = $this->post(route('booking.pay'), [
+        $result = app(BookingService::class)->create([
             'room_id' => $room->id,
             'check_in' => $checkIn,
             'check_out' => $checkOut,
             'guests_count' => 2,
-            'guest_first_name' => 'Alex',
-            'guest_last_name' => 'Guest',
-            'guest_email' => 'alex@example.com',
-            'drinks' => '1',
-        ]);
-
-        $response->assertRedirect();
-        $this->assertDatabaseHas('reservations', [
-            'source' => 'direct',
+            'damage_deposit' => 950,
             'status' => 'hold',
-            'payment_status' => 'unpaid',
-            'drinks_package' => true,
+            'source' => 'direct',
         ]);
-        $this->assertDatabaseHas('payments', ['status' => 'pending']);
 
-        $payment = Payment::query()->first();
+        $reservation = $result['reservation'];
+
+        $this->get(route('booking.checkout', $reservation->getRouteKey()))
+            ->assertOk()
+            ->assertSee('Complete Your Payment')
+            ->assertSee('Refundable Security Deposit');
+
+        $payment = Payment::query()->where('reservation_id', $reservation->id)->first();
+        $this->assertNotNull($payment);
+        $this->assertSame(950.0, (float) $payment->amount);
+        $this->assertNotNull($payment->provider_session_id);
+
         $this->get(route('booking.confirmation', ['session_id' => $payment->provider_session_id]))
             ->assertOk()
             ->assertSee('Booking confirmed');
 
         $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
             'status' => 'confirmed',
-            'payment_status' => 'paid',
+            'payment_status' => 'partial',
         ]);
+        $this->assertSame(950.0, (float) $reservation->fresh()->paid_amount);
         $this->assertSame(1, Reservation::query()->count());
     }
 
@@ -335,13 +382,14 @@ class PublicBookingTest extends TestCase
             ->assertSee('could not find that booking');
     }
 
-    public function test_stripe_checkout_receives_customer_email_and_itemized_line_items(): void
+    public function test_stripe_checkout_receives_customer_email_and_deposit_line_item(): void
     {
         $room = Room::factory()->create(['name' => 'The Garden Suite', 'base_rate' => 100, 'status' => 'active']);
+        Setting::updateOrCreate(['key' => 'damage_deposit'], ['value' => '950']);
         $checkIn = now()->addDays(25)->toDateString();
         $checkOut = now()->addDays(27)->toDateString();
 
-        $response = $this->post(route('booking.pay'), [
+        $result = app(BookingService::class)->create([
             'room_id' => $room->id,
             'check_in' => $checkIn,
             'check_out' => $checkOut,
@@ -349,25 +397,36 @@ class PublicBookingTest extends TestCase
             'guest_first_name' => 'Jane',
             'guest_last_name' => 'Doe',
             'guest_email' => 'jane@example.com',
+            'damage_deposit' => 950,
+            'status' => 'hold',
+            'source' => 'direct',
         ]);
 
-        $response->assertRedirect();
-        $reservation = Reservation::query()->first();
-        $this->assertNotNull($reservation);
-        $this->assertSame('jane@example.com', $reservation->guest->email);
+        $reservation = $result['reservation'];
+
+        $this->get(route('booking.checkout', $reservation->getRouteKey()))
+            ->assertOk();
 
         $payment = Payment::query()->where('reservation_id', $reservation->id)->first();
         $this->assertNotNull($payment);
         $this->assertNotNull($payment->provider_session_id);
+
+        $gateway = app(PaymentGatewayInterface::class);
+        $session = $gateway->sessions[$payment->provider_session_id];
+
+        $this->assertSame('jane@example.com', $session['customer_email']);
+        $this->assertSame(950.0, (float) $session['amount']);
+        $this->assertSame('Corner House deposit (refundable)', $session['line_items'][0]['name']);
     }
 
-    public function test_guest_can_view_stripe_checkout_page_and_confirm_payment(): void
+    public function test_guest_can_view_stripe_checkout_page_and_confirm_the_deposit(): void
     {
         $room = Room::factory()->create(['name' => 'The Garden Suite', 'base_rate' => 100, 'status' => 'active']);
+        Setting::updateOrCreate(['key' => 'damage_deposit'], ['value' => '950']);
         $checkIn = now()->addDays(30)->toDateString();
         $checkOut = now()->addDays(32)->toDateString();
 
-        $response = $this->post(route('booking.pay'), [
+        $result = app(BookingService::class)->create([
             'room_id' => $room->id,
             'check_in' => $checkIn,
             'check_out' => $checkOut,
@@ -375,11 +434,12 @@ class PublicBookingTest extends TestCase
             'guest_first_name' => 'Sarah',
             'guest_last_name' => 'Connor',
             'guest_email' => 'sarah@example.com',
+            'damage_deposit' => 950,
+            'status' => 'hold',
+            'source' => 'direct',
         ]);
 
-        $reservation = Reservation::query()->first();
-        $this->assertNotNull($reservation);
-        $response->assertRedirect(route('booking.checkout', $reservation->getRouteKey()));
+        $reservation = $result['reservation'];
 
         $this->get(route('booking.checkout', $reservation->getRouteKey()))
             ->assertOk()
@@ -397,8 +457,35 @@ class PublicBookingTest extends TestCase
         $this->assertDatabaseHas('reservations', [
             'id' => $reservation->id,
             'status' => 'confirmed',
-            'payment_status' => 'paid',
+            'payment_status' => 'partial',
         ]);
+    }
+
+    public function test_payment_link_redirects_to_checkout_and_expires_after_the_configured_hours(): void
+    {
+        $room = Room::factory()->create(['base_rate' => 80, 'status' => 'active']);
+        $checkIn = now()->addDays(14)->toDateString();
+        $checkOut = now()->addDays(16)->toDateString();
+
+        $reservation = app(BookingService::class)->create([
+            'room_id' => $room->id,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'guests_count' => 2,
+            'status' => 'hold',
+            'source' => 'direct',
+        ])['reservation'];
+
+        $link = app(PaymentLinkService::class)->createForReservation($reservation, now()->addHours(24));
+
+        $this->get(route('booking.pay-link', $link->token))
+            ->assertRedirect(route('booking.checkout', $reservation->getRouteKey()));
+
+        $link->update(['expires_at' => now()->subMinute()]);
+
+        $this->get(route('booking.pay-link', $link->token))
+            ->assertOk()
+            ->assertSee('This payment link has expired');
     }
 
     public function test_api_calculates_price_and_creates_hold(): void
@@ -428,7 +515,7 @@ class PublicBookingTest extends TestCase
     {
         $room = Room::factory()->create(['base_rate' => 100, 'min_stay' => 3, 'status' => 'active']);
 
-        $this->post(route('booking.pay'), [
+        $this->post(route('booking.request'), [
             'room_id' => $room->id,
             'check_in' => now()->addDays(10)->toDateString(),
             'check_out' => now()->addDays(11)->toDateString(),
@@ -439,6 +526,7 @@ class PublicBookingTest extends TestCase
         ])->assertSessionHasErrors();
 
         $this->assertDatabaseCount('reservations', 0);
+        $this->assertDatabaseCount('enquiries', 0);
     }
 
     public function test_maximum_stay_rule_blocks_long_booking(): void
@@ -456,7 +544,7 @@ class PublicBookingTest extends TestCase
             'priority' => 5,
         ]);
 
-        $this->post(route('booking.pay'), [
+        $this->post(route('booking.request'), [
             'room_id' => $room->id,
             'check_in' => now()->addDays(10)->toDateString(),
             'check_out' => now()->addDays(13)->toDateString(),
@@ -467,5 +555,6 @@ class PublicBookingTest extends TestCase
         ])->assertSessionHasErrors();
 
         $this->assertDatabaseCount('reservations', 0);
+        $this->assertDatabaseCount('enquiries', 0);
     }
 }

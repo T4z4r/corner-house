@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Website;
 use App\Http\Controllers\Controller;
 use App\Models\AddOn;
 use App\Models\Enquiry;
+use App\Models\PaymentLink;
 use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Room;
@@ -236,7 +237,7 @@ class BookingController extends Controller
             'name' => $request->input('name', trim(($request->input('guest_first_name') ?? 'Guest').' '.($request->input('guest_last_name') ?? ''))),
             'email' => $request->input('email', $request->input('guest_email')),
             'phone' => $request->input('phone', $request->input('guest_phone')),
-            'guests' => $request->input('guests', (string) ($request->input('guests_count') ?? 12)),
+            'guests' => (string) $request->input('guests', $request->input('guests_count', 12)),
             'check_in' => $request->input('check_in', $request->input('checkIn')),
             'check_out' => $request->input('check_out', $request->input('checkOut')),
             'room_id' => $request->input('room_id', $request->input('roomId')),
@@ -342,13 +343,30 @@ class BookingController extends Controller
             return redirect()->route('booking.requested', ['enquiry' => $enquiry->id]);
         } catch (\DomainException $e) {
             return $this->requestFailure($request, $e->getMessage());
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('Booking request could not be stored', [
                 'message' => $e->getMessage(),
             ]);
 
             return $this->requestFailure($request, 'Your booking request could not be submitted. Please try again.');
         }
+    }
+
+    /**
+     * Resolve an expiring payment link to the guest payment page.
+     *
+     * A link is single-reservation: expiry is enforced server-side, so a stale
+     * or revoked link never reaches the payment page.
+     */
+    public function payLink(Request $request, string $token): View|RedirectResponse
+    {
+        $paymentLink = PaymentLink::query()->with('reservation')->where('token', $token)->first();
+
+        if (! $paymentLink || $paymentLink->isExpired()) {
+            return view('website.booking.payment-link-expired');
+        }
+
+        return redirect()->route('booking.checkout', $paymentLink->reservation->getRouteKey());
     }
 
     public function requestReceived(Request $request): View
@@ -400,7 +418,7 @@ class BookingController extends Controller
                 "Check out: {$enquiry->check_out->format('d M Y')}",
                 "Nights: {$enquiry->nights}",
                 "Guests: {$enquiry->guests}",
-                "Quoted total: £".number_format((float) $quote['total'], 2),
+                'Quoted total: £'.number_format((float) $quote['total'], 2),
                 $enquiry->drinks_package ? 'Drinks package: requested' : '',
                 $enquiry->terms_accepted ? 'Terms and house rules: accepted' : '',
                 "Dates held until {$expiresAt->format('d M Y H:i')} ({$holdHours} hours).",
@@ -413,7 +431,7 @@ class BookingController extends Controller
                 $message->to(Setting::getValue('booking_notify_email', Setting::getValue('admin_notification_email', config('mail.from.address'))))
                     ->subject('Booking request');
             });
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning("Booking request email could not be sent for enquiry {$enquiry->id}.", [
                 'error' => $e->getMessage(),
                 'ip' => $request->ip(),
@@ -451,7 +469,7 @@ class BookingController extends Controller
                     $deposit,
                 );
                 $checkoutUrl = $this->payments->checkoutUrl($payment);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 Log::warning('Failed to generate Stripe checkout session', [
                     'message' => $e->getMessage(),
                 ]);
@@ -465,7 +483,7 @@ class BookingController extends Controller
             $intentPayment = $this->payments->createIntent($reservation, $deposit);
             $paymentIntentSecret = $this->payments->clientSecret($intentPayment);
             $paymentIntentId = $intentPayment->provider_payment_id;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('Failed to prepare Stripe payment intent', [
                 'message' => $e->getMessage(),
             ]);
@@ -503,7 +521,7 @@ class BookingController extends Controller
             if ($payment->reservation_id !== $reservation->id) {
                 throw new \DomainException('Payment does not belong to this reservation.');
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             if ($request->expectsJson()) {
                 return response()->json(['error' => $e->getMessage()], 422);
             }
@@ -530,7 +548,7 @@ class BookingController extends Controller
             try {
                 $payment = $this->payments->confirmFromSession($sessionId);
                 $reservation = $payment->reservation;
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 $reservation = Reservation::query()
                     ->whereHas('payments', fn ($q) => $q->where('provider_session_id', $sessionId))
                     ->first();
@@ -541,7 +559,7 @@ class BookingController extends Controller
             try {
                 $payment = $this->payments->confirmFromIntent($intentId);
                 $reservation = $payment->reservation;
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 $reservation = Reservation::query()
                     ->whereHas('payments', fn ($q) => $q->where('provider_payment_id', $intentId))
                     ->first();

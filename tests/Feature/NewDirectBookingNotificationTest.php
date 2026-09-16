@@ -28,6 +28,7 @@ class NewDirectBookingNotificationTest extends TestCase
     public function test_new_direct_booking_sends_notification_email_to_configured_recipient(): void
     {
         $recipient = 'owner@example.com';
+        Setting::where('key', 'admin_notification_email')->firstOrFail()->update(['value' => $recipient]);
         Setting::where('key', 'booking_notify_email')->firstOrFail()->update(['value' => $recipient]);
 
         Mail::fake();
@@ -57,6 +58,7 @@ class NewDirectBookingNotificationTest extends TestCase
 
     public function test_notification_not_sent_when_recipient_email_is_empty(): void
     {
+        Setting::where('key', 'admin_notification_email')->firstOrFail()->update(['value' => '']);
         Setting::where('key', 'booking_notify_email')->firstOrFail()->update(['value' => '']);
 
         Mail::fake();

@@ -22,6 +22,10 @@ class Enquiry extends Model
 
     public const STATUS_READ = 'read';
 
+    public const STATUS_APPROVED = 'approved';
+
+    public const STATUS_DECLINED = 'declined';
+
     protected $fillable = [
         'type',
         'name',

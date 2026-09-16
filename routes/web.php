@@ -67,6 +67,8 @@ Route::get('/book/pay/{reservation}', [BookingController::class, 'checkoutPage']
 Route::post('/book/pay/{reservation}/confirm', [BookingController::class, 'confirmDirectPayment'])->name('booking.checkout.confirm');
 Route::get('/book/confirmation', [BookingController::class, 'confirmation'])->name('booking.confirmation');
 
+Route::get('/pay/{token:uuid}', [BookingController::class, 'payLink'])->name('booking.pay-link');
+
 Route::post('/booking/enquiry', [WebsiteController::class, 'enquiry'])->name('booking.enquiry');
 Route::get('/booking/availability', [WebsiteController::class, 'availability'])->name('booking.availability');
 Route::get('/booking/prices', [BookingController::class, 'prices'])->name('booking.prices');
@@ -183,6 +185,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function ():
     Route::middleware('can:enquiries.view')->group(function (): void {
         Route::get('/enquiries', [EnquiryController::class, 'index'])->name('enquiries.index');
         Route::post('/enquiries/{enquiry}/read', [EnquiryController::class, 'markRead'])->name('enquiries.read')->middleware('can:enquiries.update');
+        Route::post('/enquiries/{enquiry}/approve', [EnquiryController::class, 'approve'])->name('enquiries.approve')->middleware('can:enquiries.update');
+        Route::post('/enquiries/{enquiry}/decline', [EnquiryController::class, 'decline'])->name('enquiries.decline')->middleware('can:enquiries.update');
         Route::delete('/enquiries/{enquiry}', [EnquiryController::class, 'destroy'])->name('enquiries.destroy')->middleware('can:enquiries.delete');
     });
 

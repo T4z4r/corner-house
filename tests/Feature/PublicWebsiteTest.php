@@ -432,7 +432,7 @@ class PublicWebsiteTest extends TestCase
             ->assertOk()
             ->assertSee('window.__SITE__', false)
             ->assertSee('"availabilityUrl":"\\/booking\\/availability"', false)
-            ->assertSee('"bookingEndpoint":"\\/booking\\/enquiry"', false);
+            ->assertSee('"bookingEndpoint":"\\/book\\/request"', false);
     }
 
     public function test_website_config_points_direct_bookings_at_the_primary_room(): void
