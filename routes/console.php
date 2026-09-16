@@ -37,6 +37,10 @@ Schedule::job(SendPreArrivalMessageJob::class)->dailyAt('09:00');
 Schedule::job(SendCheckInNotificationJob::class)->dailyAt('08:00');
 Schedule::job(SendCheckoutNotificationJob::class)->dailyAt('08:30');
 Schedule::job(GenerateRevenueSnapshotJob::class)->dailyAt('01:00');
+Schedule::command('optimize:clear', ['--except' => 'cache'])
+    ->dailyAt('03:30')
+    ->withoutOverlapping()
+    ->description('Automatic compiled cache cleanup');
 
 if ($scheduleSetting('pricing_auto_generate_enabled', false)) {
     $frequency = $scheduleSetting('pricing_auto_generate_frequency', 'weekly');

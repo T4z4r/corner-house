@@ -45,6 +45,7 @@
             <div class="ch-breadcrumb">System / Cron Jobs</div>
             <h4>Cron Jobs</h4>
             <p class="ch-subtitle">Scheduled jobs and their recent run history. Use Run now to queue a job for immediate execution.</p>
+            <p class="small text-muted mb-0">Compiled caches are cleared automatically each day at 03:30 ({{ config('app.timezone') }}). Settings refresh when saved. The server scheduler must be running.</p>
         </div>
     </div>
 

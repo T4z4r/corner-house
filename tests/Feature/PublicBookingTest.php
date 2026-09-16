@@ -14,6 +14,7 @@ use App\Models\Setting;
 use App\Services\Booking\BookingService;
 use App\Services\Payment\PaymentGatewayInterface;
 use App\Services\Payment\PaymentLinkService;
+use App\Services\Website\WebsiteContentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -439,6 +440,22 @@ class PublicBookingTest extends TestCase
             'payment_status' => 'paid',
             'paid_amount' => 1500,
         ]);
+    }
+
+    public function test_checkout_displays_configured_cleaning_fee_separately_from_combined_fees(): void
+    {
+        Setting::updateOrCreate(['key' => 'cleaning_fee'], ['value' => '50.25']);
+        Setting::updateOrCreate(['key' => 'damage_deposit'], ['value' => '950']);
+        $reservation = Reservation::factory()->create([
+            'status' => 'hold', 'payment_status' => 'unpaid', 'paid_amount' => 0,
+            'total_amount' => 1500.25, 'fees_amount' => 1000.25,
+        ]);
+        $response = $this->get(route('booking.checkout', $reservation))->assertOk();
+        $this->assertMatchesRegularExpression('/Cleaning Fee<\/span>\s*<span>&pound;50\.25<\/span>/', $response->getContent());
+        $this->assertSame(50.25, app(WebsiteContentService::class)->data()['config']['cleaningFee']);
+        Setting::where('key', 'cleaning_fee')->update(['value' => '0']);
+        cache()->forget('settings.all');
+        $this->get(route('booking.checkout', $reservation))->assertOk()->assertDontSee('Cleaning Fee');
     }
 
     public function test_switching_payment_options_uses_the_correct_amount_for_both_stripe_methods(): void
