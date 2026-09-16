@@ -595,10 +595,11 @@
                 </div>
 
                 @if ($paymentIntentSecret)
-                    <div id="express-checkout-section" style="visibility:hidden; margin-bottom:1.5rem;">
+                    <div id="express-checkout-section" style="margin-bottom:1.5rem;">
                         <p class="ch-form-label">Apple Pay or Google Pay</p>
                         <p class="ch-field-help">Pay &pound;{{ number_format($paymentAmount, 2) }} securely using your wallet.</p>
                         <div id="express-checkout-element" aria-label="Pay with Apple Pay or Google Pay"></div>
+                        <p id="express-checkout-status" class="ch-field-help" role="status">Checking wallet availability&hellip;</p>
                         <p class="ch-field-help" style="text-align:center; margin-top:1rem;">Or enter your card details below</p>
                     </div>
                     <form id="directCardForm" method="POST" action="{{ route('booking.checkout.confirm', $reservation) }}" novalidate data-skip-loading-state>
@@ -815,17 +816,22 @@ document.addEventListener('DOMContentLoaded', function () {
         paymentElement.mount('#payment-element');
         paymentElement.on('change', function (e) { cardComplete = e.complete; btn.disabled = processing || !cardComplete; });
 
-        const expressSection = document.getElementById('express-checkout-section');
+        const walletStatus = document.getElementById('express-checkout-status');
         const expressCheckout = elements.create('expressCheckout', {
             buttonHeight: 48,
-            paymentMethods: { applePay: 'auto', googlePay: 'auto', link: 'never', paypal: 'never', amazonPay: 'never', klarna: 'never' },
+            paymentMethods: { applePay: 'always', googlePay: 'always', link: 'never', paypal: 'never', amazonPay: 'never', klarna: 'never' },
         });
-        expressCheckout.on('ready', function (event) {
+        function updateWalletAvailability(event) {
             const available = event.availablePaymentMethods;
-            expressSection.hidden = !(available && (available.applePay || available.googlePay));
-            expressSection.style.visibility = 'visible';
+            walletStatus.hidden = !!(available && (available.applePay || available.googlePay));
+            walletStatus.textContent = 'Apple Pay and Google Pay are unavailable for this checkout in your current browser. You can pay by card below or try another browser with your wallet set up.';
+        }
+        expressCheckout.on('ready', updateWalletAvailability);
+        expressCheckout.on('availablepaymentmethodschange', updateWalletAvailability);
+        expressCheckout.on('loaderror', function () {
+            walletStatus.hidden = false;
+            walletStatus.textContent = 'Wallet payments could not load. Please refresh the page or pay by card below.';
         });
-        expressCheckout.on('loaderror', function () { expressSection.hidden = true; });
         expressCheckout.on('confirm', function (event) { return completePayment(event); });
         expressCheckout.mount('#express-checkout-element');
 

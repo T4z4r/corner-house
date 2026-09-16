@@ -11,7 +11,7 @@ function checkout(result = { paymentIntent: { id: 'pi_wallet', status: 'succeede
     };
     const element = () => ({ events: {}, mount() {}, on(type, fn) { this.events[type] = fn; } });
     const card = element(), wallet = element(), calls = [], redirects = [], requests = [];
-    const elements = { create: type => type === 'payment' ? card : wallet, submit: async () => ({}) };
+    const elements = { create: (type, options) => { const target = type === 'payment' ? card : wallet; target.options = options; return target; }, submit: async () => ({}) };
     const stripe = { elements: () => elements, confirmPayment: async options => { calls.push(options); return result; } };
     const document = { getElementById: node, createElement: () => ({}), addEventListener: (_, fn) => fn(), head: { appendChild: script => script.onload() } };
     let script = fs.readFileSync('resources/views/website/booking/checkout.blade.php', 'utf8').split('<script>')[1].split('</script>')[0];
@@ -20,12 +20,24 @@ function checkout(result = { paymentIntent: { id: 'pi_wallet', status: 'succeede
     return { node, card, wallet, calls, redirects, requests };
 }
 
-test('wallet availability displays supported wallets and hides unsupported ones', () => {
+test('wallets request broader browser support and explain unavailable methods', () => {
     const page = checkout();
+    assert.equal(page.wallet.options.paymentMethods.applePay, 'always');
+    assert.equal(page.wallet.options.paymentMethods.googlePay, 'always');
     page.wallet.events.ready({ availablePaymentMethods: { applePay: true } });
-    assert.equal(page.node('express-checkout-section').hidden, false);
+    assert.equal(page.node('express-checkout-status').hidden, true);
     page.wallet.events.ready({ availablePaymentMethods: undefined });
-    assert.equal(page.node('express-checkout-section').hidden, true);
+    assert.equal(page.node('express-checkout-status').hidden, false);
+    assert.match(page.node('express-checkout-status').textContent, /unavailable/);
+    page.wallet.events.availablepaymentmethodschange({ availablePaymentMethods: { googlePay: true } });
+    assert.equal(page.node('express-checkout-status').hidden, true);
+});
+
+test('wallet loading failure explains how to continue paying', () => {
+    const page = checkout();
+    page.wallet.events.loaderror();
+    assert.equal(page.node('express-checkout-status').hidden, false);
+    assert.match(page.node('express-checkout-status').textContent, /pay by card/);
 });
 
 test('wallet confirms on site without requiring card form completion', async () => {
