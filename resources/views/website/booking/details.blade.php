@@ -321,6 +321,95 @@
   font-size: 1.3rem;
   flex-shrink: 0;
 }
+
+/* Enquiry submission modals */
+.ch-modal {
+  border: none;
+  border-radius: 16px;
+  padding: 0;
+  max-width: 460px;
+  width: 100%;
+  box-shadow: 0 24px 70px -20px rgba(31,56,38,0.35);
+  color: var(--ch-ink);
+}
+.ch-modal::backdrop {
+  background: rgba(31,56,38,0.55);
+  backdrop-filter: blur(2px);
+}
+.ch-modal-inner {
+  padding: 2.5rem 2.1rem;
+  text-align: center;
+}
+.ch-modal-icon {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.9rem;
+  margin-bottom: 1.1rem;
+}
+.ch-modal-icon.success {
+  background: var(--ch-ivy-deep);
+  color: #ffffff;
+}
+.ch-modal-icon.failure {
+  background: var(--ch-terracotta-tint);
+  color: var(--ch-terracotta-deep);
+}
+.ch-modal h3 {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.5rem;
+  color: var(--ch-ivy-deep);
+  margin-bottom: 0.4rem;
+}
+.ch-modal-text {
+  color: var(--ch-ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  margin-bottom: 0.25rem;
+}
+.ch-modal-ref {
+  display: inline-block;
+  margin-top: 0.9rem;
+  padding: 0.4rem 1rem;
+  background: var(--ch-stone-light);
+  border: 1px solid var(--ch-sage);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ch-ivy-deep);
+}
+.ch-modal-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.ch-modal-actions .btn-ch-pay {
+  width: 100%;
+  padding: 0.95rem 1.4rem;
+  font-size: 1rem;
+  text-decoration: none;
+}
+.ch-modal-actions .btn-ch-ghost {
+  width: 100%;
+  padding: 0.85rem 1.4rem;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  border: 1px solid var(--ch-line);
+  background: var(--ch-stone-light);
+  color: var(--ch-ivy-deep);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.ch-modal-actions .btn-ch-ghost:hover {
+  border-color: var(--ch-ivy-soft);
+  background: #ffffff;
+}
 </style>
 
 <div class="wrap ch-checkout-container">
@@ -491,7 +580,7 @@
                     </div>
 
                     <div class="form-check mb-4">
-                        <input class="form-check-input" type="checkbox" name="agree" id="agree_terms" required checked>
+                        <input class="form-check-input" type="checkbox" name="agree" id="agree_terms" value="1" required checked>
                         <label class="form-check-label small text-muted" for="agree_terms">
                             I have read the <a href="#house-rules" class="text-decoration-underline" style="color:var(--ch-terracotta-deep);">House Rules</a> and the <a href="{{ route('terms') }}" class="text-decoration-underline" style="color:var(--ch-terracotta-deep);">Terms and Conditions</a>, and acknowledge that direct bookings include a 10% direct-booking discount. Direct bookings require photo ID and a signed rental agreement.
                         </label>
@@ -499,7 +588,7 @@
 
                     <button class="btn-ch-pay" type="submit" id="submitPaymentBtn">
                         <i class="bi bi-envelope-check"></i>
-                        <span>Send Booking Request</span>
+                        <span>Submit Enquiry</span>
                         <i class="bi bi-arrow-right ms-1"></i>
                     </button>
 
@@ -615,6 +704,34 @@
     </div>
 </div>
 
+<!-- Success Modal -->
+<dialog class="ch-modal" id="enquirySuccessModal" aria-labelledby="enquirySuccessTitle">
+    <div class="ch-modal-inner">
+        <div class="ch-modal-icon success"><i class="bi bi-check-lg"></i></div>
+        <h3 id="enquirySuccessTitle">Your enquiry has been sent</h3>
+        <p class="ch-modal-text">
+            Thank you &mdash; your dates are held for 48 hours while we review your request. We will email you to confirm, then send a secure payment link for the refundable &pound;950 deposit.
+        </p>
+        <span class="ch-modal-ref" id="enquirySuccessRef"></span>
+        <div class="ch-modal-actions">
+            <a class="btn-ch-pay" id="enquirySuccessNext" href="{{ route('booking.requested') }}">View next steps <i class="bi bi-arrow-right ms-2"></i></a>
+            <button type="button" class="btn-ch-ghost" data-close-modal="enquirySuccessModal">Close</button>
+        </div>
+    </div>
+</dialog>
+
+<!-- Failure Modal -->
+<dialog class="ch-modal" id="enquiryFailureModal" aria-labelledby="enquiryFailureTitle">
+    <div class="ch-modal-inner">
+        <div class="ch-modal-icon failure"><i class="bi bi-exclamation-triangle"></i></div>
+        <h3 id="enquiryFailureTitle">Sorry, we could not submit your enquiry</h3>
+        <p class="ch-modal-text" id="enquiryFailureMessage">Please try again in a moment.</p>
+        <div class="ch-modal-actions">
+            <button type="button" class="btn-ch-ghost" data-close-modal="enquiryFailureModal">Try again</button>
+        </div>
+    </div>
+</dialog>
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -645,15 +762,75 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     if (form && submitBtn) {
-        form.addEventListener('submit', function () {
+        const successModal = document.getElementById('enquirySuccessModal');
+        const failureModal = document.getElementById('enquiryFailureModal');
+        const successRef = document.getElementById('enquirySuccessRef');
+        const successNext = document.getElementById('enquirySuccessNext');
+        const failureMessage = document.getElementById('enquiryFailureMessage');
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const originalBtnHtml = submitBtn.innerHTML;
+
+        document.querySelectorAll('[data-close-modal]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const target = document.getElementById(btn.dataset.closeModal);
+                if (target && target.open) target.close();
+            });
+        });
+
+        function setLoading(loading) {
+            submitBtn.disabled = loading;
+            submitBtn.style.opacity = loading ? '0.8' : '1';
+            submitBtn.innerHTML = loading
+                ? '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Submitting enquiry...'
+                : originalBtnHtml;
+        }
+
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
             const code = document.getElementById('phoneCode');
             const phone = document.getElementById('guestPhone');
             if (code && phone && phone.value && !phone.value.startsWith('+')) {
                 phone.value = (code.value + ' ' + phone.value).trim();
             }
-            submitBtn.disabled = true;
-            submitBtn.style.opacity = '0.8';
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Sending booking request...';
+
+            if (typeof form.checkValidity === 'function' && !form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                const fd = new FormData(form);
+                const r = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: fd,
+                });
+
+                let data = {};
+                try { data = await r.json(); } catch (err) { /* non-JSON body */ }
+
+                if (r.ok && data.status === 'ok') {
+                    successRef.textContent = 'Request reference #' + data.enquiry_id;
+                    const url = new URL(successNext.getAttribute('href'), window.location.origin);
+                    url.searchParams.set('enquiry', String(data.enquiry_id));
+                    successNext.href = url.href;
+                    successModal.showModal();
+                    return;
+                }
+
+                throw new Error(data.error || data.message || 'Your enquiry could not be submitted.');
+            } catch (err) {
+                failureMessage.textContent = err.message || 'Your enquiry could not be submitted. Please try again.';
+                setLoading(false);
+                failureModal.showModal();
+            }
         });
     }
 });
