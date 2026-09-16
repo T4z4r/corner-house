@@ -31,7 +31,7 @@ class PaymentLinkService
     {
         return $reservation->paymentLinks()
             ->where('expires_at', '>', now())
-            ->latest()
+            ->latest('id')
             ->first();
     }
 

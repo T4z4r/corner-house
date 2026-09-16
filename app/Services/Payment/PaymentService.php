@@ -87,6 +87,13 @@ class PaymentService
             if ($lineItems === [] || abs($lineItemsSum - (float) $reservation->total_amount) > 0.01) {
                 $lineItems = [];
             }
+        } elseif ((float) $reservation->paid_amount > 0) {
+            $lineItems[] = [
+                'name' => 'Corner House booking balance',
+                'description' => 'Remaining balance for booking '.$reservation->reference,
+                'amount' => $chargeAmount,
+                'quantity' => 1,
+            ];
         } else {
             $balanceDue = max(0.0, round((float) $reservation->total_amount - $chargeAmount, 2));
             $lineItems[] = [
@@ -297,9 +304,10 @@ class PaymentService
             $reservation = Reservation::query()->whereKey($locked->reservation_id)->lockForUpdate()->firstOrFail();
             $wasAlreadyConfirmed = $reservation->status === 'confirmed';
 
-            $fullyPaid = $locked->amount >= (float) $reservation->total_amount - 0.01;
+            $paidAmount = round((float) $reservation->paid_amount + (float) $locked->amount, 2);
+            $fullyPaid = $paidAmount >= (float) $reservation->total_amount - 0.01;
             $reservation->update([
-                'paid_amount' => $locked->amount,
+                'paid_amount' => $paidAmount,
                 'payment_status' => $fullyPaid ? 'paid' : 'partial',
             ]);
 

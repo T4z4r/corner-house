@@ -29,7 +29,10 @@ class PaymentLinkMail extends Mailable
     public function content(): Content
     {
         $deposit = (float) Setting::getValue('damage_deposit', 950);
-        $balanceDue = max(0.0, round((float) $this->reservation->total_amount - $deposit, 2));
+        $isBalancePayment = (float) $this->reservation->paid_amount > 0;
+        $outstandingAmount = max(0.0, round((float) $this->reservation->total_amount - (float) $this->reservation->paid_amount, 2));
+        $paymentAmount = $isBalancePayment ? $outstandingAmount : $deposit;
+        $balanceDue = max(0.0, round($outstandingAmount - $paymentAmount, 2));
 
         return new Content(
             view: 'mail.booking.payment-link-html',
@@ -43,6 +46,8 @@ class PaymentLinkMail extends Mailable
                 'nights' => $this->reservation->check_in->diffInDays($this->reservation->check_out) ?: 1,
                 'guests' => $this->reservation->guests_count,
                 'deposit' => $deposit,
+                'isBalancePayment' => $isBalancePayment,
+                'paymentAmount' => $paymentAmount,
                 'balanceDue' => $balanceDue,
                 'paymentUrl' => app(PaymentLinkService::class)->urlFor($this->paymentLink),
                 'expiresAt' => $this->paymentLink->expires_at,

@@ -16,7 +16,7 @@
     <div class="wrap">
         <p class="ch-kicker">Direct Booking &middot; Step 3 of 3</p>
         <h1>Complete Your Payment</h1>
-        <p class="ch-page-hero-sub">Secure your booking with the refundable deposit, or choose to pay the full booking amount now.</p>
+        <p class="ch-page-hero-sub">{{ $isBalancePayment ? 'Pay the remaining balance for your booking below.' : 'Secure your booking with the refundable deposit, or choose to pay the full booking amount now.' }}</p>
     </div>
 </section>
 
@@ -523,6 +523,11 @@
             </div>
 
             <div class="ch-card-premium">
+                @if ($isBalancePayment)
+                    <h2 class="ch-card-header-title">Pay your remaining balance</h2>
+                    <p>You have already paid &pound;{{ number_format((float) $reservation->paid_amount, 2) }}.</p>
+                    <p class="ch-hosted-lead">Remaining balance: <strong>&pound;{{ number_format($paymentAmount, 2) }}</strong> due now.</p>
+                @else
                 <h2 class="ch-card-header-title">Choose how much to pay</h2>
                 <p>The refundable deposit is the default. Paying in full is optional and includes the deposit.</p>
                 <form method="GET" action="{{ route('booking.checkout', $reservation) }}" class="ch-chip-row" aria-label="Payment amount">
@@ -539,6 +544,7 @@
                         No booking balance will remain after payment.
                     @endif
                 </p>
+                @endif
             </div>
 
             <!-- Hosted Stripe Checkout option -->
@@ -556,7 +562,7 @@
                         </div>
                         <span class="ch-chip ch-chip-recommended">Recommended</span>
                     </div>
-                    <p class="ch-hosted-lead">Prefer to pay on Stripe's secure page? Continue there to pay your {{ $paymentOption === 'full' ? 'full booking amount' : 'refundable deposit' }} of <strong>&pound;{{ number_format($paymentAmount, 2) }}</strong>{!! $balanceDueNote !!}.</p>
+                    <p class="ch-hosted-lead">Prefer to pay on Stripe's secure page? Continue there to pay your {{ $isBalancePayment ? 'remaining balance' : ($paymentOption === 'full' ? 'full booking amount' : 'refundable deposit') }} of <strong>&pound;{{ number_format($paymentAmount, 2) }}</strong>{!! $balanceDueNote !!}.</p>
                     <a href="{{ $checkoutUrl }}" class="btn-ch-pay">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3 8.5-7 10-4-1.5-7-5-7-10V5z"/></svg>
                         <span>Pay &pound;{{ number_format($paymentAmount, 2) }} via Stripe Checkout</span>
@@ -609,7 +615,7 @@
 
                         <button type="submit" class="btn-ch-pay" id="confirmPayBtn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l7 3v6c0 5-3 8.5-7 10-4-1.5-7-5-7-10V5z"/></svg>
-                            <span id="confirmPayText">{{ $paymentOption === 'full' ? 'Confirm Full Payment' : 'Confirm Deposit' }} &middot; &pound;{{ number_format($paymentAmount, 2) }}</span>
+                            <span id="confirmPayText">{{ $isBalancePayment ? 'Confirm Balance Payment' : ($paymentOption === 'full' ? 'Confirm Full Payment' : 'Confirm Deposit') }} &middot; &pound;{{ number_format($paymentAmount, 2) }}</span>
                         </button>
 
                         <div class="ch-pay-trust">
@@ -683,7 +689,7 @@
 
                     @if ((float) $deposit > 0)
                         <div class="ch-breakdown-row deposit" style="border-top:1px solid var(--ch-line); border-bottom:1px solid var(--ch-line); padding:.7rem 0; margin:.6rem 0;">
-                            <span>Refundable Security Deposit &mdash; included in payment</span>
+                            <span>Refundable Security Deposit &mdash; {{ $isBalancePayment ? 'included in booking total' : 'included in payment' }}</span>
                             <span style="font-weight:700; color:var(--ch-ink);">&pound;{{ number_format((float) $deposit, 2) }}</span>
                         </div>
                     @endif
@@ -703,6 +709,12 @@
                         <span class="ch-total-price">&pound;{{ number_format((float) $reservation->total_amount, 2) }}</span>
                     </div>
 
+                    @if ($isBalancePayment)
+                        <div class="ch-breakdown-row">
+                            <span>Already paid</span>
+                            <strong>&pound;{{ number_format((float) $reservation->paid_amount, 2) }}</strong>
+                        </div>
+                    @endif
                     <div class="ch-breakdown-row">
                         <span>Due now</span>
                         <strong>&pound;{{ number_format($paymentAmount, 2) }}</strong>

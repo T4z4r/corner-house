@@ -187,6 +187,10 @@ class ReservationController extends Controller
             return back()->withErrors(['error' => 'This booking has no guest email to send the payment link to.']);
         }
 
+        if ($reservation->payment_status === 'paid' || (float) $reservation->paid_amount >= (float) $reservation->total_amount) {
+            return back()->withErrors(['error' => 'This booking has no outstanding balance.']);
+        }
+
         try {
             app(MailConfigurationService::class)->apply();
 

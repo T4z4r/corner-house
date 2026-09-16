@@ -20,7 +20,11 @@
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                     <td style="font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#1e211c;">
-                        Thanks for choosing Corner House. To confirm your stay, please settle your refundable security deposit using the secure link below.
+                        @if ($isBalancePayment)
+                            Thank you for your payment. Please settle the remaining balance for your stay using the secure link below.
+                        @else
+                            Thanks for choosing Corner House. To confirm your stay, please settle your refundable security deposit using the secure link below.
+                        @endif
                     </td>
                 </tr>
             </table>

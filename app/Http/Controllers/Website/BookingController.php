@@ -432,15 +432,20 @@ class BookingController extends Controller
 
         $latestPayment = $reservation->payments()->latest()->first();
 
-        if ($reservation->isPaid() || ($latestPayment && $latestPayment->isPaid())) {
+        $outstandingAmount = max(0.0, round((float) $reservation->total_amount - (float) $reservation->paid_amount, 2));
+        $isBalancePayment = (float) $reservation->paid_amount > 0;
+
+        if ($reservation->payment_status === 'paid' || $outstandingAmount <= 0) {
+            $request->session()->put('booking.reservation_id', $reservation->id);
+
             return redirect()->route('booking.confirmation', [
                 'session_id' => $latestPayment?->provider_session_id ?? 'paid',
             ]);
         }
 
         $deposit = (float) Setting::getValue('damage_deposit', 950);
-        $paymentAmount = $paymentOption === 'full' ? (float) $reservation->total_amount : $deposit;
-        $balanceDue = max(0.0, round((float) $reservation->total_amount - $paymentAmount, 2));
+        $paymentAmount = $isBalancePayment || $paymentOption === 'full' ? $outstandingAmount : $deposit;
+        $balanceDue = max(0.0, round($outstandingAmount - $paymentAmount, 2));
 
         // Build Stripe Checkout Session URL for the hosted option.
         $checkoutUrl = null;
@@ -502,6 +507,7 @@ class BookingController extends Controller
             'deposit' => $deposit,
             'paymentOption' => $paymentOption,
             'paymentAmount' => $paymentAmount,
+            'isBalancePayment' => $isBalancePayment,
             'balanceDue' => $balanceDue,
         ]);
     }

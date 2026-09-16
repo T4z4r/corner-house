@@ -156,10 +156,13 @@
                         @else
                             <p class="text-muted small mb-2">No active payment link yet.</p>
                         @endif
-                        @if ($reservation->guest?->email)
+                        @if ($reservation->guest?->email && $reservation->payment_status !== 'paid' && (float) $reservation->paid_amount < (float) $reservation->total_amount)
+                            @if ((float) $reservation->paid_amount > 0)
+                                <p>Remaining balance: <strong>&pound;{{ number_format((float) $reservation->total_amount - (float) $reservation->paid_amount, 2) }}</strong></p>
+                            @endif
                             <form method="POST" action="{{ route('admin.reservations.payment-link', $reservation) }}">
                                 @csrf
-                                <button class="btn btn-sm btn-outline-primary w-100"><i class="bi bi-envelope me-1"></i>Email payment link to {{ $reservation->guest->email }}</button>
+                                <button class="btn btn-sm btn-outline-primary w-100"><i class="bi bi-envelope me-1"></i>{{ (float) $reservation->paid_amount > 0 ? 'Generate and email balance payment link to' : 'Email payment link to' }} {{ $reservation->guest->email }}</button>
                             </form>
                         @endif
                     </div>

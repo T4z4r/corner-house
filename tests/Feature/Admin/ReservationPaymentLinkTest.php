@@ -7,6 +7,7 @@ use App\Models\Guest;
 use App\Models\PaymentLink;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Services\Payment\PaymentLinkService;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -27,7 +28,7 @@ class ReservationPaymentLinkTest extends TestCase
     {
         Mail::fake();
 
-        $reservation = Reservation::factory()->create(['guests_count' => 2]);
+        $reservation = Reservation::factory()->create(['guests_count' => 2, 'payment_status' => 'unpaid', 'paid_amount' => 0]);
         $user = $this->actingSuperAdmin();
 
         $this->post(route('admin.reservations.payment-link', $reservation))
@@ -76,6 +77,52 @@ class ReservationPaymentLinkTest extends TestCase
             ->withSession(['auth.password_confirmed_at' => time()])
             ->post(route('admin.reservations.payment-link', $reservation))
             ->assertForbidden();
+
+        $this->assertDatabaseCount('payment_links', 0);
+        Mail::assertNothingSent();
+    }
+
+    public function test_admin_can_generate_and_email_another_link_for_a_partial_booking(): void
+    {
+        Mail::fake();
+        $reservation = Reservation::factory()->create(['total_amount' => 1500, 'paid_amount' => 950, 'payment_status' => 'partial']);
+        $oldLink = app(PaymentLinkService::class)->createForReservation($reservation);
+        $this->actingSuperAdmin();
+
+        $this->get(route('admin.reservations.show', $reservation))
+            ->assertOk()
+            ->assertSee('Generate and email balance payment link');
+        $this->post(route('admin.reservations.payment-link', $reservation))
+            ->assertRedirect()
+            ->assertSessionHas('status');
+
+        $newLink = $reservation->paymentLinks()->latest('id')->firstOrFail();
+        $this->assertNotSame($oldLink->token, $newLink->token);
+        $this->assertTrue(app(PaymentLinkService::class)->activeFor($reservation)->is($newLink));
+        Mail::assertSent(PaymentLinkMail::class, fn (PaymentLinkMail $mail): bool => $mail->paymentLink->is($newLink) && $mail->hasTo($reservation->guest->email));
+    }
+
+    public function test_balance_payment_email_shows_the_outstanding_amount_in_html_and_text(): void
+    {
+        $reservation = Reservation::factory()->create(['total_amount' => 1500, 'paid_amount' => 950, 'payment_status' => 'partial']);
+        $link = app(PaymentLinkService::class)->createForReservation($reservation);
+
+        $mail = new PaymentLinkMail($reservation, $link);
+
+        $mail->assertSeeInHtml('remaining balance of &pound;550.00', false);
+        $mail->assertSeeInHtml('Proceed to Pay');
+        $mail->assertDontSeeInHtml('Pay Refundable Deposit');
+        $mail->assertSeeInText('remaining balance of £550.00');
+    }
+
+    public function test_a_fully_paid_booking_cannot_receive_another_payment_request(): void
+    {
+        Mail::fake();
+        $reservation = Reservation::factory()->create();
+        $this->actingSuperAdmin();
+
+        $this->post(route('admin.reservations.payment-link', $reservation))
+            ->assertSessionHasErrors(['error' => 'This booking has no outstanding balance.']);
 
         $this->assertDatabaseCount('payment_links', 0);
         Mail::assertNothingSent();

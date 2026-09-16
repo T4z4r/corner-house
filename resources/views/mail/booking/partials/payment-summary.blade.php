@@ -54,7 +54,11 @@
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
                 <td style="font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#1e211c;">
-                    To confirm your booking, pay your <strong>refundable security deposit of &pound;{{ number_format($deposit, 2) }}</strong> below. Once settled, your dates are locked in and nothing else is due today.
+                    @if ($isBalancePayment ?? false)
+                        You have already paid <strong>&pound;{{ number_format((float) $reservation->paid_amount, 2) }}</strong>. Pay your <strong>remaining balance of &pound;{{ number_format($paymentAmount, 2) }}</strong> below to complete payment for your booking.
+                    @else
+                        To confirm your booking, pay your <strong>refundable security deposit of &pound;{{ number_format($deposit, 2) }}</strong> below. Once settled, your dates are locked in and nothing else is due today.
+                    @endif
                 </td>
             </tr>
         </table>
@@ -65,7 +69,7 @@
         <table role="presentation" cellpadding="0" cellspacing="0" border="0">
             <tr>
                 <td style="border-radius:8px; background-color:#b4552b;">
-                    <a href="{{ $paymentUrl }}" target="_blank" rel="noopener" style="display:inline-block; padding:14px 34px; font-family:Arial, Helvetica, sans-serif; font-size:15px; font-weight:bold; color:#ffffff; text-decoration:none; border-radius:8px;">Pay Refundable Deposit &nbsp;&rarr;</a>
+                    <a href="{{ $paymentUrl }}" target="_blank" rel="noopener" style="display:inline-block; padding:14px 34px; font-family:Arial, Helvetica, sans-serif; font-size:15px; font-weight:bold; color:#ffffff; text-decoration:none; border-radius:8px;">Proceed to Pay</a>
                 </td>
             </tr>
         </table>

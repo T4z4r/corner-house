@@ -479,6 +479,53 @@ class PublicBookingTest extends TestCase
         $this->assertDatabaseCount('payments', 0);
     }
 
+    public function test_a_partial_booking_can_pay_its_balance_by_card_without_losing_the_deposit(): void
+    {
+        $reservation = Reservation::factory()->create(['total_amount' => 1500, 'paid_amount' => 950, 'payment_status' => 'partial']);
+        Payment::factory()->create(['reservation_id' => $reservation->id, 'amount' => 950, 'status' => 'paid']);
+        $link = app(PaymentLinkService::class)->createForReservation($reservation);
+
+        $this->get(route('booking.pay-link', $link->token))
+            ->assertRedirect(route('booking.checkout', $reservation));
+        $this->get(route('booking.checkout', $reservation))
+            ->assertOk()
+            ->assertViewHas('paymentAmount', 550.0)
+            ->assertViewHas('balanceDue', 0.0)
+            ->assertSee('Pay your remaining balance')
+            ->assertDontSee('Choose how much to pay');
+
+        $payment = $reservation->payments()->where('status', 'pending')->sole();
+        $gateway = app(PaymentGatewayInterface::class);
+        $this->assertSame(550.0, $gateway->intents[$payment->provider_payment_id]['amount']);
+        $this->assertSame(550.0, $gateway->sessions[$payment->provider_session_id]['amount']);
+        $this->assertSame('Corner House booking balance', $gateway->sessions[$payment->provider_session_id]['line_items'][0]['name']);
+
+        $this->postJson(route('booking.checkout.confirm', $reservation), ['payment_intent_id' => $payment->provider_payment_id])
+            ->assertOk();
+        $this->postJson(route('booking.checkout.confirm', $reservation), ['payment_intent_id' => $payment->provider_payment_id])
+            ->assertOk();
+
+        $this->assertDatabaseHas('reservations', ['id' => $reservation->id, 'payment_status' => 'paid', 'paid_amount' => 1500]);
+        $this->get(route('booking.checkout', $reservation))->assertRedirect();
+        $this->assertCount(2, $reservation->payments()->get());
+    }
+
+    public function test_a_partial_booking_can_pay_its_balance_through_hosted_checkout(): void
+    {
+        $reservation = Reservation::factory()->create(['total_amount' => 1500, 'paid_amount' => 950, 'payment_status' => 'partial']);
+
+        $this->get(route('booking.checkout', [$reservation, 'payment_option' => 'full']))
+            ->assertOk()
+            ->assertViewHas('paymentAmount', 550.0);
+        $payment = $reservation->payments()->sole();
+        $this->get(route('booking.confirmation', ['session_id' => $payment->provider_session_id]))
+            ->assertOk();
+        $this->get(route('booking.confirmation', ['session_id' => $payment->provider_session_id]))
+            ->assertOk();
+
+        $this->assertDatabaseHas('reservations', ['id' => $reservation->id, 'payment_status' => 'paid', 'paid_amount' => 1500]);
+    }
+
     public function test_confirmation_page_renders_premium_summary_for_a_paid_booking(): void
     {
         $reservation = Reservation::factory()->create();

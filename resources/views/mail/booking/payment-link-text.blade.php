@@ -1,6 +1,11 @@
 Hi {{ $firstName }},
 
+@if ($isBalancePayment)
+Thank you for your payment of £{{ number_format((float) $reservation->paid_amount, 2) }}. Please pay the remaining balance of £{{ number_format($paymentAmount, 2) }} for your stay at {{ $roomName }} ({{ $checkIn->format('D d M Y') }} to {{ $checkOut->format('D d M Y') }}) here:
+@else
 Thanks for choosing Corner House. To confirm your stay at {{ $roomName }} ({{ $checkIn->format('D d M Y') }} to {{ $checkOut->format('D d M Y') }}), please settle your refundable security deposit of £{{ number_format($deposit, 2) }} here:
+
+@endif
 
 {{ $paymentUrl }}
 
