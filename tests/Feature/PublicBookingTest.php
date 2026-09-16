@@ -207,7 +207,10 @@ class PublicBookingTest extends TestCase
         $response->assertJsonPath('redirect_url', route('booking.requested', ['enquiry' => $enquiry->id]));
         $this->get($response->json('redirect_url'))
             ->assertOk()
-            ->assertSee('Your booking request has been received')
+            ->assertSee('Thank you for your enquiry')
+            ->assertSee('Your booking is not confirmed yet.')
+            ->assertSee('temporarily held until')
+            ->assertDontSee('refundable &pound;950 deposit', false)
             ->assertSee('Request reference')
             ->assertSee('#'.$enquiry->id);
         $hold = $enquiry->bookingHold;
