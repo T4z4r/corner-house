@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Website;
 
 use App\Http\Controllers\Controller;
+use App\Mail\NewBookingRequestMail;
 use App\Models\AddOn;
 use App\Models\Enquiry;
 use App\Models\PaymentLink;
@@ -404,33 +405,14 @@ class BookingController extends Controller
         try {
             $mailConfigurationService->apply();
 
-            $holdHours = (int) Setting::getValue('booking_request_hold_hours', 48);
-            $deposit = (float) Setting::getValue('damage_deposit', 950);
+            $recipient = Setting::getValue('booking_notify_email', Setting::getValue('admin_notification_email', config('mail.from.address')));
 
-            $lines = [
-                'New booking request (direct)',
-                '---',
-                "Name: {$enquiry->name}",
-                "Email: {$enquiry->email}",
-                $enquiry->phone ? "Phone: {$enquiry->phone}" : '',
-                "Room: {$room->name}",
-                "Check in: {$enquiry->check_in->format('d M Y')}",
-                "Check out: {$enquiry->check_out->format('d M Y')}",
-                "Nights: {$enquiry->nights}",
-                "Guests: {$enquiry->guests}",
-                'Quoted total: £'.number_format((float) $quote['total'], 2),
-                $enquiry->drinks_package ? 'Drinks package: requested' : '',
-                $enquiry->terms_accepted ? 'Terms and house rules: accepted' : '',
-                "Dates held until {$expiresAt->format('d M Y H:i')} ({$holdHours} hours).",
-                'Payment: email the guest a payment link (refundable £'.number_format($deposit, 0).' deposit) once ID and the signed rental agreement are received.',
-                '---',
-                $enquiry->message ?: 'No message.',
-            ];
-
-            Mail::raw(implode("\n", array_filter($lines)), function ($message): void {
-                $message->to(Setting::getValue('booking_notify_email', Setting::getValue('admin_notification_email', config('mail.from.address'))))
-                    ->subject('Booking request');
-            });
+            Mail::to($recipient)->send(new NewBookingRequestMail(
+                $enquiry,
+                $room,
+                $expiresAt,
+                (float) $quote['total'],
+            ));
         } catch (Throwable $e) {
             Log::warning("Booking request email could not be sent for enquiry {$enquiry->id}.", [
                 'error' => $e->getMessage(),

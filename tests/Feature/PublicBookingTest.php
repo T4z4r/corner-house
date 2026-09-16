@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\NewBookingRequestMail;
 use App\Models\Enquiry;
 use App\Models\Payment;
 use App\Models\PricingRule;
@@ -13,6 +14,7 @@ use App\Services\Booking\BookingService;
 use App\Services\Payment\PaymentGatewayInterface;
 use App\Services\Payment\PaymentLinkService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class PublicBookingTest extends TestCase
@@ -202,6 +204,47 @@ class PublicBookingTest extends TestCase
         $this->assertNotNull($hold);
         $this->assertTrue($hold->expires_at->gt(now()->addHours(47)));
         $this->assertTrue($hold->expires_at->lt(now()->addHours(49)));
+    }
+
+    public function test_booking_request_emails_the_booking_team_a_styled_enquiry_without_payment_instruction(): void
+    {
+        Mail::fake();
+
+        $recipient = 'bookings@cornerhouse.test';
+        Setting::updateOrCreate(['key' => 'booking_notify_email'], ['value' => $recipient, 'group' => 'booking']);
+
+        $room = Room::factory()->create(['base_rate' => 80, 'status' => 'active', 'name' => 'Lion Bedroom']);
+        $checkIn = now()->addDays(14)->toDateString();
+        $checkOut = now()->addDays(16)->toDateString();
+
+        $this->postJson(route('booking.request'), [
+            'roomId' => $room->id,
+            'checkIn' => $checkIn,
+            'checkOut' => $checkOut,
+            'name' => 'Jane Doe',
+            'email' => 'jane@example.com',
+            'phone' => '+44 7700 900123',
+            'guests' => 2,
+            'message' => 'Celebrating a birthday.',
+            'agree' => true,
+        ])->assertOk();
+
+        $enquiry = Enquiry::query()->first();
+        $this->assertNotNull($enquiry);
+
+        Mail::assertSent(NewBookingRequestMail::class, function (NewBookingRequestMail $mail) use ($enquiry, $recipient): bool {
+            if (! $mail->hasTo($recipient) || $mail->enquiry->id !== $enquiry->id || $mail->room->id !== $enquiry->room_id) {
+                return false;
+            }
+
+            $mail->assertSeeInHtml('New direct booking request');
+            $mail->assertSeeInHtml('Jane Doe');
+            $mail->assertSeeInHtml('Celebrating a birthday.');
+            $mail->assertDontSeeInHtml('email the guest a payment link');
+            $mail->assertDontSeeInHtml('signed rental agreement');
+
+            return true;
+        });
     }
 
     public function test_details_page_total_includes_damage_deposit(): void
