@@ -39,13 +39,6 @@
                 </a>
             </li>
         @endcan
-        @can('enquiries.view')
-            <li class="nav-item">
-                <a href="{{ route('admin.enquiries.index') }}" class="nav-link {{ request()->routeIs('admin.enquiries.*') ? 'active' : '' }}">
-                    <i class="bi bi-inbox me-2"></i><span class="nav-text">Enquiries</span>
-                </a>
-            </li>
-        @endcan
 
         <li class="sidebar-heading">Management</li>
         @can('properties.view')
@@ -66,6 +59,13 @@
             <li class="nav-item">
                 <a href="{{ route('admin.guests.index') }}" class="nav-link {{ request()->routeIs('admin.guests.*') ? 'active' : '' }}">
                     <i class="bi bi-people me-2"></i><span class="nav-text">Guests</span>
+                </a>
+            </li>
+        @endcan
+        @can('enquiries.view')
+            <li class="nav-item">
+                <a href="{{ route('admin.enquiries.index') }}" class="nav-link {{ request()->routeIs('admin.enquiries.*') ? 'active' : '' }}">
+                    <i class="bi bi-inbox me-2"></i><span class="nav-text">Enquiries</span>
                 </a>
             </li>
         @endcan
@@ -222,13 +222,6 @@
                     </a>
                 </li>
             @endcan
-            @can('enquiries.view')
-                <li class="nav-item">
-                    <a href="{{ route('admin.enquiries.index') }}" class="nav-link {{ request()->routeIs('admin.enquiries.*') ? 'active' : '' }}">
-                        <i class="bi bi-inbox me-2"></i><span class="nav-text">Enquiries</span>
-                    </a>
-                </li>
-            @endcan
             @can('channels.view')
                 <li class="nav-item">
                     <a href="{{ route('admin.channels.integrations') }}" class="nav-link {{ request()->routeIs('admin.channels.integrations') ? 'active' : '' }}">
@@ -248,6 +241,13 @@
                 <li class="nav-item">
                     <a href="{{ route('admin.channels.setup.page') }}" class="nav-link {{ request()->routeIs('admin.channels.setup.page') ? 'active' : '' }}">
                         <i class="bi bi-key me-2"></i><span class="nav-text">Beds24 setup</span>
+                    </a>
+                </li>
+            @endcan
+            @can('enquiries.view')
+                <li class="nav-item">
+                    <a href="{{ route('admin.enquiries.index') }}" class="nav-link {{ request()->routeIs('admin.enquiries.*') ? 'active' : '' }}">
+                        <i class="bi bi-inbox me-2"></i><span class="nav-text">Enquiries</span>
                     </a>
                 </li>
             @endcan
