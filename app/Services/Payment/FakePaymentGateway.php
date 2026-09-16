@@ -12,6 +12,11 @@ class FakePaymentGateway implements PaymentGatewayInterface
 
     public bool $paid = true;
 
+    public function retrieveBalance(): array
+    {
+        return ['livemode' => false, 'available' => [], 'pending' => []];
+    }
+
     public function createCheckoutSession(array $payload): array
     {
         $id = 'cs_test_'.uniqid();

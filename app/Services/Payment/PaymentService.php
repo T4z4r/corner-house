@@ -23,6 +23,28 @@ class PaymentService
         private readonly SystemNotificationService $systemNotifications,
     ) {}
 
+    /**
+     * @return array{livemode: bool, available: array<array{currency: string, formatted: string}>, pending: array<array{currency: string, formatted: string}>}
+     */
+    public function balance(): array
+    {
+        $balance = $this->gateway->retrieveBalance();
+
+        foreach (['available', 'pending'] as $type) {
+            $balance[$type] = array_map(function (array $entry): array {
+                $currency = strtolower($entry['currency']);
+                $decimals = in_array($currency, ['bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf', 'vnd', 'vuv', 'xaf', 'xof', 'xpf'], true) ? 0 : 2;
+
+                return [
+                    'currency' => strtoupper($currency),
+                    'formatted' => number_format($entry['amount'] / (10 ** $decimals), $decimals),
+                ];
+            }, $balance[$type]);
+        }
+
+        return $balance;
+    }
+
     public function startCheckout(Reservation $reservation, string $successUrl, string $cancelUrl, ?float $amount = null): Payment
     {
         $chargeAmount = $amount ?? (float) $reservation->total_amount;

@@ -10,6 +10,17 @@ class StripePaymentGateway implements PaymentGatewayInterface
 {
     public function __construct(private readonly StripeClient $client) {}
 
+    public function retrieveBalance(): array
+    {
+        $balance = $this->client->balance->retrieve();
+
+        return [
+            'livemode' => (bool) $balance->livemode,
+            'available' => array_map(fn ($entry): array => ['amount' => (int) $entry->amount, 'currency' => (string) $entry->currency], $balance->available),
+            'pending' => array_map(fn ($entry): array => ['amount' => (int) $entry->amount, 'currency' => (string) $entry->currency], $balance->pending),
+        ];
+    }
+
     public function createCheckoutSession(array $payload): array
     {
         $sessionParams = [

@@ -5,6 +5,11 @@ namespace App\Services\Payment;
 interface PaymentGatewayInterface
 {
     /**
+     * @return array{livemode: bool, available: array<array{amount: int, currency: string}>, pending: array<array{amount: int, currency: string}>}
+     */
+    public function retrieveBalance(): array;
+
+    /**
      * @param  array{
      *     amount: float,
      *     currency: string,

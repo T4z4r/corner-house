@@ -9,6 +9,49 @@
     </div>
 </div>
 
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <span>Stripe account balance
+            @if ($stripeBalance !== null)
+                <span class="badge {{ $stripeBalance['livemode'] ? 'bg-success' : 'bg-warning text-dark' }} ms-2">{{ $stripeBalance['livemode'] ? 'Live mode' : 'Test mode' }}</span>
+            @endif
+        </span>
+        <a href="{{ route('admin.payments.index', request()->only('status')) }}" class="btn btn-sm btn-outline-primary">Refresh balance</a>
+    </div>
+    <div class="card-body">
+        @if ($stripeBalance === null)
+            <div class="alert alert-warning mb-0" role="alert">Stripe balance is currently unavailable. Check your Stripe configuration or refresh to try again.</div>
+        @else
+            <ul class="nav nav-tabs" role="tablist" aria-label="Stripe balances">
+                @foreach (['available' => 'Available balance', 'pending' => 'Pending balance'] as $type => $label)
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {{ $loop->first ? 'active' : '' }}" id="balance-{{ $type }}-tab" data-bs-toggle="tab" data-bs-target="#balance-{{ $type }}" type="button" role="tab" aria-controls="balance-{{ $type }}" aria-selected="{{ $loop->first ? 'true' : 'false' }}">{{ $label }}</button>
+                    </li>
+                @endforeach
+            </ul>
+            <div class="tab-content pt-3">
+                @foreach (['available', 'pending'] as $type)
+                    <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="balance-{{ $type }}" role="tabpanel" aria-labelledby="balance-{{ $type }}-tab" tabindex="0">
+                        <p class="text-muted">{{ $type === 'available' ? 'Funds available for payout.' : 'Funds awaiting settlement before becoming available.' }}</p>
+                        <div class="row g-3">
+                            @forelse ($stripeBalance[$type] as $entry)
+                                <div class="col-sm-6 col-lg-3">
+                                    <div class="border rounded p-3">
+                                        <div class="text-muted small">{{ $entry['currency'] }}</div>
+                                        <div class="fs-4 fw-bold">{{ $entry['formatted'] }}</div>
+                                    </div>
+                                </div>
+                            @empty
+                                <p class="text-muted mb-0">No {{ $type }} balances reported by Stripe.</p>
+                            @endforelse
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </div>
+</div>
+
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="card border-0 shadow-sm">

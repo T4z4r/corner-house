@@ -11,8 +11,6 @@ use Illuminate\View\View;
 
 class PaymentController extends Controller
 {
-    public function __construct(private readonly PaymentService $payments) {}
-
     public function index(Request $request): View
     {
         $query = Payment::query()->with(['reservation.guest', 'guest'])->latest();
@@ -28,9 +26,17 @@ class PaymentController extends Controller
             'refunded' => Payment::query()->where('status', 'refunded')->count(),
         ];
 
+        $stripeBalance = null;
+        try {
+            $stripeBalance = app(PaymentService::class)->balance();
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
+
         return view('admin.payments.index', [
             'payments' => $query->paginate(20)->withQueryString(),
             'stats' => $stats,
+            'stripeBalance' => $stripeBalance,
         ]);
     }
 
@@ -41,7 +47,7 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function refund(Request $request, Payment $payment): RedirectResponse
+    public function refund(Request $request, Payment $payment, PaymentService $payments): RedirectResponse
     {
         $data = $request->validate([
             'amount' => ['nullable', 'numeric', 'min:0.01'],
@@ -49,7 +55,7 @@ class PaymentController extends Controller
         ]);
 
         try {
-            $this->payments->refund(
+            $payments->refund(
                 $payment,
                 isset($data['amount']) ? (float) $data['amount'] : null,
                 $data['reason'] ?? null,
