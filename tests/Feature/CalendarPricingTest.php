@@ -57,6 +57,34 @@ class CalendarPricingTest extends TestCase
             ->assertJsonPath('prices.2026-01-06.0.price', 650);
     }
 
+    public function test_room_calendar_has_price_display_and_room_specific_editor(): void
+    {
+        $room = Room::factory()->create();
+        $this->actingAs($this->actingAsSuperAdmin())->get(route('admin.rooms.show', $room))
+            ->assertOk()->assertSee('id="roomNightlyPrice"', false)
+            ->assertSee('id="roomPriceForm"', false)->assertSee('Edit price')
+            ->assertSee('name="room_id" value="'.$room->id.'"', false)
+            ->assertSee(route('admin.calendar.prices'))
+            ->assertSee(route('admin.calendar.prices.store'));
+    }
+
+    public function test_room_calendar_viewer_cannot_edit_prices(): void
+    {
+        $room = Room::factory()->create();
+        $user = User::factory()->create();
+        $user->givePermissionTo(['rooms.view', 'calendar.view']);
+        $this->actingAs($user)->get(route('admin.rooms.show', $room))
+            ->assertOk()->assertSee('id="roomNightlyPrice"', false)
+            ->assertDontSee('id="roomPriceForm"', false);
+        $this->postJson(route('admin.calendar.prices.store'), [
+            'property_id' => $room->property_id,
+            'room_id' => $room->id,
+            'start_date' => '2026-10-01',
+            'end_date' => '2026-10-01',
+            'rate' => 250,
+        ])->assertForbidden();
+    }
+
     public function test_no_room_selected_returns_prices_for_all_active_rooms_of_the_property(): void
     {
         $property = Property::factory()->create();

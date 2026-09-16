@@ -271,6 +271,29 @@
                     <div class="small text-muted">Tap a day to inspect bookings and blocks.</div>
                 </div>
                 <div class="card-body" id="dayDetail"></div>
+                @can('calendar.view')
+                    <div class="card-body border-top">
+                        <div id="roomNightlyPrice" class="fw-semibold">Loading nightly price…</div>
+                        <div id="roomPriceStatus" class="small text-muted mt-2" role="status"></div>
+                        @can('calendar.manage')
+                            <details class="mt-3">
+                                <summary class="text-primary">Edit price</summary>
+                                <form id="roomPriceForm" class="mt-3" data-skip-loading-state>
+                                    @csrf
+                                    <input type="hidden" name="property_id" value="{{ $room->property_id }}">
+                                    <input type="hidden" name="room_id" value="{{ $room->id }}">
+                                    <label class="form-label" for="roomPriceStart">From</label>
+                                    <input class="form-control mb-2" id="roomPriceStart" type="date" name="start_date" required>
+                                    <label class="form-label" for="roomPriceEnd">To (inclusive)</label>
+                                    <input class="form-control mb-2" id="roomPriceEnd" type="date" name="end_date" required>
+                                    <label class="form-label" for="roomPriceRate">Price per night (£)</label>
+                                    <input class="form-control mb-2" id="roomPriceRate" type="number" name="rate" min="0" max="999999" step="0.01" required>
+                                    <button class="btn btn-ch-primary" type="submit">Save price</button>
+                                </form>
+                            </details>
+                        @endcan
+                    </div>
+                @endcan
             </div>
 
             <div class="card border-0 shadow-sm mb-4">
@@ -381,6 +404,12 @@
     const propertyId = {{ $room->property_id }};
     const eventsUrl = '{{ route('admin.calendar.events') }}';
     const blocksStoreUrl = '{{ route('admin.calendar.blocks.store') }}';
+    const pricesUrl = '{{ route('admin.calendar.prices') }}';
+    const pricesStoreUrl = '{{ route('admin.calendar.prices.store') }}';
+    const canViewPrices = @json(auth()->user()->can('calendar.view'));
+    const priceStatus = document.getElementById('roomPriceStatus');
+    const priceForm = document.getElementById('roomPriceForm');
+    const currency = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' });
 
     const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const weekdaysEl = document.getElementById('rcWeekdays');
@@ -394,6 +423,13 @@
     let visibleMonth = startOfMonth(today);
     let selectedDate = today;
     let events = [];
+    let prices = {};
+    let loadSequence = 0;
+
+    function nightlyPrice(key) {
+        const entry = (prices[key] || []).find(price => Number(price.room_id) === roomId);
+        return entry && entry.price !== null && Number.isFinite(Number(entry.price)) ? Number(entry.price) : null;
+    }
 
     function startOfDay(d) { const c = new Date(d); c.setHours(0,0,0,0); return c; }
     function startOfMonth(d) { const c = new Date(d); c.setDate(1); c.setHours(0,0,0,0); return c; }
@@ -455,6 +491,8 @@
                 return '<button type="button" class="room-cal-event ' + evClass(ev) + '" data-id="' + ev.id + '" title="' + ev.title + '"' + (roomOk ? '' : ' style="opacity:.4"') + '>' + ev.title + '</button>';
             }).join('');
             const extra = dayEvs.length > 3 ? '<div class="room-cal-day-meta">+' + (dayEvs.length-3) + ' more</div>' : '';
+            const price = nightlyPrice(k);
+            const priceMarkup = canViewPrices ? '<div class="small fw-semibold text-success mb-2">' + (price === null ? 'Price unavailable' : currency.format(price) + ' / night') + '</div>' : '';
 
             cells.push(
                 '<div class="room-cal-day' + (outside ? ' is-outside' : '') + (isToday ? ' is-today' : '') + (isSel ? ' is-selected' : '') + '" data-date="' + k + '">' +
@@ -462,7 +500,7 @@
                         '<div class="room-cal-day-number">' + d.getDate() + '</div>' +
                         '<div class="room-cal-day-meta">' + (outside ? new Intl.DateTimeFormat('en-GB',{month:'short'}).format(d) : '') + '</div>' +
                     '</div>' +
-                    '<div class="room-cal-events">' + evMarkup + '</div>' +
+                    priceMarkup + '<div class="room-cal-events">' + evMarkup + '</div>' +
                     extra +
                 '</div>'
             );
@@ -490,6 +528,14 @@
         });
 
         renderDayDetail();
+        const selectedPrice = nightlyPrice(dateKey(selectedDate));
+        const priceLabel = document.getElementById('roomNightlyPrice');
+        if (priceLabel) priceLabel.textContent = formatDay(selectedDate) + ': ' + (selectedPrice === null ? 'Price unavailable' : currency.format(selectedPrice) + ' / night');
+        if (priceForm) {
+            priceForm.elements.start_date.value = dateKey(selectedDate);
+            priceForm.elements.end_date.value = dateKey(selectedDate);
+            priceForm.elements.rate.value = selectedPrice === null ? '' : selectedPrice.toFixed(2);
+        }
     }
 
     function formatDay(d) { return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(d); }
@@ -543,18 +589,61 @@
         `;
     }
 
-    function loadEvents() {
-        const s = dateKey(startOfMonth(visibleMonth));
-        const e = dateKey(addDays(new Date(visibleMonth.getFullYear(), visibleMonth.getMonth()+1, 0), 1));
+    async function loadEvents() {
+        const sequence = ++loadSequence;
+        const first = startOfMonth(visibleMonth);
+        const gridStart = addDays(first, -((first.getDay() + 6) % 7));
+        const s = dateKey(gridStart);
+        const e = dateKey(addDays(gridStart, 42));
         const url = new URL(eventsUrl, window.location.origin);
         url.searchParams.set('start', s);
         url.searchParams.set('end', e);
         url.searchParams.set('property_id', propertyId);
         url.searchParams.set('room_id', roomId);
-        return fetch(url.toString(), { headers: { 'Accept': 'application/json' } })
-            .then(r => r.json())
-            .then(p => { events = Array.isArray(p) ? p : []; })
-            .catch(() => { events = []; });
+        const priceUrl = new URL(pricesUrl, window.location.origin);
+        priceUrl.search = url.search;
+        priceUrl.searchParams.set('end', dateKey(addDays(gridStart, 41)));
+        const readJson = async (endpoint) => {
+            const response = await fetch(endpoint, { headers: { 'Accept': 'application/json' } });
+            if (!response.ok) throw new Error('Unable to load calendar');
+            return response.json();
+        };
+        const [eventResult, priceResult] = await Promise.allSettled([
+            readJson(url.toString()),
+            canViewPrices ? readJson(priceUrl.toString()) : Promise.resolve({ prices: {} }),
+        ]);
+        if (sequence !== loadSequence) return;
+        events = eventResult.status === 'fulfilled' && Array.isArray(eventResult.value) ? eventResult.value : [];
+        prices = priceResult.status === 'fulfilled' ? (priceResult.value.prices || {}) : {};
+        if (priceStatus && priceResult.status === 'rejected') priceStatus.textContent = 'Prices could not be loaded. Refresh the page and check that your session is still active.';
+    }
+
+    if (priceForm) {
+        priceForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const button = priceForm.querySelector('button');
+            if (button.disabled) return;
+            button.disabled = true;
+            priceStatus.textContent = 'Saving price…';
+            try {
+                const response = await fetch(pricesStoreUrl, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' },
+                    body: new FormData(priceForm),
+                });
+                const data = await response.json();
+                if (!response.ok || !data.ok) {
+                    throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Unable to save price.'));
+                }
+                priceStatus.textContent = 'Price saved successfully.';
+                await loadEvents();
+                render();
+            } catch (error) {
+                priceStatus.textContent = error.message || 'Unable to save price. Please try again.';
+            } finally {
+                button.disabled = false;
+            }
+        });
     }
 
     function syncUrl() {
