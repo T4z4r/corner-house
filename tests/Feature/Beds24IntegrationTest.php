@@ -18,13 +18,16 @@ use App\Models\Room;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\Beds24\Beds24ChannelProvider;
+use App\Services\Beds24\Beds24PricingPublisher;
 use App\Services\Beds24\Beds24SyncService;
 use App\Services\Booking\BookingService;
 use App\Services\Channel\ChannelManager;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Database\Schema\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -2190,8 +2193,26 @@ class Beds24IntegrationTest extends TestCase
             && (float) ($request->data()[0]['calendar'][0]['price1'] ?? 0) === 110.0);
     }
 
-    public function test_pricing_override_can_be_published_from_integrations_page(): void
+    /**
+     * @return array<string, array{bool, float}>
+     */
+    public static function overridePublishRates(): array
     {
+        return [
+            'without uplift' => [false, 125.0],
+            'with five percent uplift' => [true, 131.25],
+        ];
+    }
+
+    #[DataProvider('overridePublishRates')]
+    public function test_pricing_override_can_be_published_from_integrations_page(bool $upliftEnabled, float $expectedRate): void
+    {
+        Setting::updateOrCreate(['key' => 'holiday_weekend_uplift_enabled'], ['value' => $upliftEnabled ? '1' : '0']);
+        Setting::updateOrCreate(['key' => 'holiday_weekend_uplift'], ['value' => '5']);
+        Setting::updateOrCreate(['key' => 'school_holiday_periods'], [
+            'value' => json_encode([['start' => '2026-10-23', 'end' => '2026-10-25']]),
+            'cast' => 'json',
+        ]);
         $account = ChannelAccount::factory()->create([
             'provider' => 'beds24',
             'status' => 'active',
@@ -2218,8 +2239,8 @@ class Beds24IntegrationTest extends TestCase
         ]);
         $override = PricingOverride::create([
             'room_id' => $room->id,
-            'start_date' => now()->addDays(16)->toDateString(),
-            'end_date' => now()->addDays(18)->toDateString(),
+            'start_date' => '2026-10-23',
+            'end_date' => '2026-10-25',
             'rate' => 125,
             'minimum_stay' => 2,
             'notes' => 'Weekend uplift',
@@ -2238,7 +2259,7 @@ class Beds24IntegrationTest extends TestCase
 
         Http::assertSent(fn ($request) => str_contains($request->url(), 'inventory/rooms/calendar')
             && (int) ($request->data()[0]['roomId'] ?? 0) === 77
-            && (float) ($request->data()[0]['calendar'][0]['price1'] ?? 0) === 125.0);
+            && (float) ($request->data()[0]['calendar'][0]['price1'] ?? 0) === $expectedRate);
     }
 
     public function test_sync_updates_existing_beds24_booking_dates(): void

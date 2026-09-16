@@ -7,11 +7,11 @@ use App\Models\ChannelMapping;
 use App\Models\PricingOverride;
 use App\Models\PricingRule;
 use App\Models\Room;
+use App\Models\Setting;
 use App\Services\Pricing\PricingEngine;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-use App\Models\Setting;
 
 class Beds24PricingPublisher
 {
@@ -212,9 +212,7 @@ class Beds24PricingPublisher
                 'roomId' => $externalRoomId,
                 'from' => $cursor->toDateString(),
                 'to' => $cursor->toDateString(),
-                'price1' => $source instanceof PricingOverride
-                    ? (float) $source->rate
-                    : $nightlyRate,
+                'price1' => $nightlyRate,
                 'minStay' => $source instanceof PricingOverride
                     ? ($source->minimum_stay ?? $quote['minimum_stay'])
                     : $quote['minimum_stay'],
