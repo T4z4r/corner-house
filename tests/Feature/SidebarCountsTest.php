@@ -15,6 +15,23 @@ class SidebarCountsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_admin_quick_tour_is_available_and_permission_aware(): void
+    {
+        $this->seed(RoleAndPermissionSeeder::class);
+        $user = User::factory()->create();
+        $user->givePermissionTo('guests.view');
+        $this->actingAs($user)->get(route('admin.guests.index'))->assertOk()
+            ->assertSee('Start quick tour')->assertSee('id="adminQuickTour"', false)
+            ->assertSee('Find your guests')->assertDontSee('Track payments')
+            ->assertDontSee('Set up notifications and background jobs');
+
+        $user->assignRole('Super Admin');
+        $this->get(route('admin.guests.index'))->assertOk()
+            ->assertSee('Track payments')->assertSee('Review enquiries')
+            ->assertSee('Check availability and prices')->assertSee('Set up notifications and background jobs')
+            ->assertSee('id="adminTourBack"', false)->assertSee('id="adminTourFinish"', false);
+    }
+
     public function test_sidebar_counts_totals_and_pending_items(): void
     {
         $this->seed(RoleAndPermissionSeeder::class);

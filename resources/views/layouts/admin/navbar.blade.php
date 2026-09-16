@@ -14,6 +14,9 @@
     </button>
     <span class="navbar-brand mb-0 h6 d-md-none">{{ $propertyName }}</span>
     <div class="ms-auto d-flex align-items-center gap-2">
+        <button class="btn btn-light" type="button" data-bs-toggle="modal" data-bs-target="#adminQuickTour" aria-label="Start quick tour" title="Quick tour">
+            <i class="bi bi-question-circle me-1"></i><span class="d-none d-sm-inline">Quick tour</span>
+        </button>
         <div class="dropdown d-none d-md-inline-block" id="deviceSwitcher">
             <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Device preview">
                 <i class="bi bi-phone me-1"></i><span class="d-none d-lg-inline">Device</span>
