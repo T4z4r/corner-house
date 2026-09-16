@@ -27,8 +27,8 @@
                 <li>
                     <h2>Occupancy</h2>
                     <p>Overnight occupancy is limited to 12 adults and 2 children. This limit arises from our insurance and fire risk assessment and may not be exceeded in any circumstances. Additional guests may attend during the day, by prior arrangement, but may not stay overnight.</p>
-                    <p>The lead guest must be at least 21 years old and must stay at the property throughout the booking. We may ask for a full guest list before arrival, and we may decline any booking where the information given proves to be inaccurate.</p>
-                    <p>If we find that the gathering exceeds the permitted number, or differs materially from the guest list provided, we may require the additional guests to leave or may end the booking immediately under clause 9.</p>
+                    <p>The lead guest must be at least 21 years old and must stay at the property throughout the booking. We may decline any booking where the information provided proves to be inaccurate.</p>
+                    <p>If we find that the gathering exceeds the permitted number, we may require the additional guests to leave or may end the booking immediately under clause 9.</p>
                 </li>
                 <li>
                     <h2>Identification</h2>

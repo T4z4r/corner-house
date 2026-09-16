@@ -248,7 +248,6 @@ class SettingsSeeder extends Seeder
                     'Bookings made directly with us are 10% cheaper than the same dates on Airbnb, Booking.com or Vrbo.',
                     'Overnight occupancy is capped at 12 adults and 2 children. This is a fire and insurance limit and cannot be exceeded.',
                     'Additional guests are welcome during the day for an event or gathering. Please tell us the expected numbers when you book.',
-                    'We ask for a full guest list, with names and ages of any children, before arrival.',
                 ],
             ],
             [

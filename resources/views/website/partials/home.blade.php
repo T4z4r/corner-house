@@ -106,24 +106,6 @@
         </div>
     </div>
 
-    @foreach ($site['linkedProperties'] as $linked)
-        <div class="section">
-            <div class="wrap">
-                <div class="feature-row flip">
-                    @php
-                        $linkedPhoto = $linked->images->firstWhere('is_primary', true) ?? $linked->images->first();
-                    @endphp
-                    <div class="photo">@if($linkedPhoto)<img src="{{ asset('storage/'.$linkedPhoto->path) }}" alt="{{ $linkedPhoto->alt ?: $linked->name }}">@else<img src="{{ asset('images/front_enhanced.png') }}" alt="{{ $linked->name }}">@endif</div>
-                    <div>
-                        <h2>Also booking via {{ $linked->name }}</h2>
-                        <p>{{ $linked->short_description ?: $linked->description ?: 'Corner House is a 175-year-old period home a few footsteps from Braunston Marina — five ensuite bedrooms, a 25ft kitchen built for entertaining, a games room and plenty of outside space, for family and friends to socialise and enjoy.' }}</p>
-                        <a class="btn btn-outline" href="https://cornerhousebraunston.uk/#book">Check availability for this listing</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endforeach
-
     <section class="reviews">
         <div class="reviews-head">
             <div>

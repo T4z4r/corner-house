@@ -252,7 +252,7 @@ class LinkedPropertiesTest extends TestCase
         $this->assertSame(100.0, app(PricingEngine::class)->calculateRateForDate($mainRoom, $date));
     }
 
-    public function test_home_page_advertises_the_linked_property_listing(): void
+    public function test_home_page_no_longer_advertises_the_linked_property_listing(): void
     {
         [$main, $partner] = $this->linkedProperties();
         $partner->update(['short_description' => 'Listed here too for returning guests.']);
@@ -260,9 +260,9 @@ class LinkedPropertiesTest extends TestCase
 
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee('Also booking via '.$partner->name, false)
-            ->assertSee('Listed here too for returning guests.')
-            ->assertSee(route('booking.search', ['property_id' => $partner->getRouteKey()]), false);
+            ->assertDontSee('Also booking via '.$partner->name, false)
+            ->assertDontSee('Listed here too for returning guests.')
+            ->assertDontSee(route('booking.search', ['property_id' => $partner->getRouteKey()]), false);
     }
 
     public function test_admin_calendar_events_merge_reservations_from_the_linked_property(): void
