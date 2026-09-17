@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\Payment;
+use App\Mail\PaymentLinkMail;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Services\Booking\BookingService;
 use App\Services\Payment\PaymentGatewayInterface;
+use App\Services\Payment\PaymentLinkService;
 use App\Services\Payment\PaymentService;
 use App\Services\Payment\SecurityDepositService;
 use App\Services\Payment\StripePaymentGateway;
@@ -131,6 +132,42 @@ class SecurityDepositHoldTest extends TestCase
         $this->post(route('admin.reservations.security-deposit', $reservation))->assertForbidden();
     }
 
+    public function test_failed_release_keeps_the_hold_record_and_booking_unchanged(): void
+    {
+        $this->actingAs($this->financeUser())->withConfirmedPassword();
+        $service = app(SecurityDepositService::class);
+        $payment = $service->prepare($service->requestHold($this->reservation()));
+        $service->sync($payment);
+        $this->mock(PaymentGatewayInterface::class)->shouldReceive('releaseHold')->once()->andThrow(new \RuntimeException('Stripe unavailable'));
+
+        $this->post(route('admin.payments.release-hold', $payment))->assertSessionHasErrors('error');
+        $this->assertSame('processing', $payment->fresh()->status);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'payments.hold_released']);
+    }
+
+    public function test_mismatched_stripe_amount_cannot_authorise_the_hold(): void
+    {
+        $service = app(SecurityDepositService::class);
+        $payment = $service->prepare($service->requestHold($this->reservation()));
+        $gateway = app(PaymentGatewayInterface::class);
+        $gateway->intents[$payment->provider_payment_id]['amount'] = 1;
+
+        $this->get($service->guestUrl($payment))->assertSee('Stripe hold amount or currency does not match');
+        $this->assertSame('pending', $payment->fresh()->status);
+    }
+
+    public function test_new_booking_email_does_not_request_the_security_deposit_as_payment(): void
+    {
+        $reservation = $this->reservation();
+        $reservation->update(['paid_amount' => 0, 'payment_status' => 'unpaid']);
+        $link = app(PaymentLinkService::class)->createForReservation($reservation);
+        $mail = new PaymentLinkMail($reservation, $link);
+
+        $mail->assertSeeInHtml('booking balance of &pound;1,200.00', false);
+        $mail->assertSeeInHtml('separate card hold requested near arrival');
+        $mail->assertDontSeeInHtml('nothing else is due today');
+    }
+
     public function test_webhook_reconciles_expired_holds_without_counting_them_as_paid(): void
     {
         $reservation = $this->reservation();
@@ -157,6 +194,10 @@ class SecurityDepositHoldTest extends TestCase
             ->assertViewHas('paymentAmount', 1200.0)
             ->assertViewHas('paymentOption', 'full')
             ->assertSee('separate card hold near arrival')
+            ->assertSee('Set up Apple Pay')
+            ->assertSee('Set up Google Pay')
+            ->assertSee('https://wallet.google.com/', false)
+            ->assertSee('Refresh wallet options')
             ->assertDontSee('Choose how much to pay');
         $this->assertSame('1200.00', $reservation->payments()->sole()->amount);
     }

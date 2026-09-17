@@ -10,8 +10,8 @@ use App\Models\Refund;
 use App\Models\Reservation;
 use App\Services\Audit\AuditLogger;
 use App\Services\Booking\BookingService;
-use App\Services\Notification\SystemNotificationService;
 use App\Services\Notification\NotificationService;
+use App\Services\Notification\SystemNotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -440,7 +440,6 @@ class PaymentService
             $this->auditLogger->log('payments.refunded', 'payments', 'payment', (string) $locked->id);
 
             $communication = $this->notifications->prepareRefund($refund);
-
 
             return $refund;
         });

@@ -28,7 +28,7 @@
             <p>The late cancellation fee takes priority within the final {{ $lateHours }} hours. Cancellation fees are not added together. Any refund is limited to the amount you have paid, less the applicable fee.</p>
 
             <h2>The security deposit</h2>
-            <p>The &pound;950 security deposit is always refunded in full on cancellation, whenever you cancel. It is separate from the accommodation cost and is never treated as part of a cancellation charge.</p>
+            <p>The security deposit is returned in full on cancellation, whenever you cancel. An uncaptured card hold is released; a deposit that has already been charged is refunded. It is separate from the accommodation cost and is never treated as part of a cancellation charge. Your bank controls when released funds become available again.</p>
 
             <h2>If we cancel</h2>
             <p>If we cancel your booking for any reason, or the property becomes unavailable through damage, essential repair or an event outside our reasonable control, you receive a full refund of everything you have paid, including the booking fee. We will tell you as soon as we know, and will help you find somewhere else where we can.</p>

@@ -35,8 +35,8 @@ use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Website\BookingController;
-use App\Http\Controllers\Website\SecurityDepositController;
 use App\Http\Controllers\Website\IcalController;
+use App\Http\Controllers\Website\SecurityDepositController;
 use App\Http\Controllers\Website\WebsiteController;
 use Illuminate\Support\Facades\Route;
 

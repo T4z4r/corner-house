@@ -20,8 +20,9 @@
                 </li>
                 <li>
                     <h2>Security deposit</h2>
-                    <p>A refundable security deposit of &pound;950 is payable no later than 7 days before arrival, by bank transfer or card pre-authorisation.</p>
-                    <p>The deposit is returned in full within 7 days of departure, less any deduction for: damage or breakage beyond fair wear and tear; missing items; additional cleaning required beyond a normal changeover; a breach of the house rules; or a late departure that delays the changeover.</p>
+                    <p>The refundable security deposit shown in your booking summary is separate from the accommodation payment. We request a temporary card authorisation from one day before arrival. This reserves funds on your card without charging them.</p>
+                    <p>Card authorisations usually expire within seven days. If your stay exceeds the authorisation period, we may ask you to authorise a new hold. We release the hold after the check-out inspection, subject to any agreed deductions. Your bank controls when released funds become available again.</p>
+                    <p>Where a deposit has already been charged, it is refunded within 7 days of departure, less any deduction for: damage or breakage beyond fair wear and tear; missing items; additional cleaning required beyond a normal changeover; a breach of the house rules; or a late departure that delays the changeover. These same grounds apply to deductions from an authorised hold.</p>
                     <p>We will notify you of any proposed deduction, with photographs and a written explanation, before it is made. The security deposit is a contribution towards loss and not a limit on your liability. Where loss or damage exceeds the deposit, the lead guest remains liable for the balance.</p>
                 </li>
                 <li>

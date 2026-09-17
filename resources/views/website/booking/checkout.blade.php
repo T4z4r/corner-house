@@ -363,6 +363,7 @@
   gap: .35rem;
 }
 .ch-chip svg { width: 14px; height: 14px; }
+#express-checkout-status.text-danger { color: #b42318; }
 .ch-chip-recommended {
   background: var(--ch-terracotta);
   border-color: var(--ch-terracotta);
@@ -604,9 +605,29 @@
                 @if ($paymentIntentSecret)
                     <div id="express-checkout-section" style="margin-bottom:1.5rem;">
                         <p class="ch-form-label">Apple Pay or Google Pay</p>
+                        <div class="ch-chip-row" aria-label="Wallet options">
+                            <span class="ch-chip">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M17.05 12.54c.03 3.19 2.8 4.25 2.83 4.26-.02.07-.44 1.52-1.46 3.02-.88 1.29-1.8 2.58-3.24 2.61-1.41.03-1.87-.84-3.48-.84-1.61 0-2.12.82-3.45.87-1.38.05-2.43-1.4-3.31-2.68-1.81-2.62-3.19-7.4-1.33-10.64.93-1.61 2.58-2.63 4.37-2.66 1.36-.03 2.65.92 3.48.92.84 0 2.4-1.14 4.05-.97.69.03 2.62.28 3.86 2.1-.1.06-2.31 1.34-2.29 4.01ZM14.4 4.7c.73-.88 1.22-2.1 1.08-3.32-1.05.04-2.32.7-3.07 1.58-.67.78-1.26 2.03-1.1 3.23 1.16.09 2.35-.6 3.09-1.49Z"/></svg>
+                                Apple Pay
+                            </span>
+                            <span class="ch-chip">
+                                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.89-1.74 2.98-4.3 2.98-7.36Z"/><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.41l-3.24-2.51c-.9.6-2.04.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H3.07v2.59A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.41 13.92a6 6 0 0 1 0-3.84V7.49H3.07a10 10 0 0 0 0 9.02l3.34-2.59Z"/><path fill="#EA4335" d="M12 5.96c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.62 9.62 0 0 0 12 2a10 10 0 0 0-8.93 5.49l3.34 2.59C7.2 7.72 9.4 5.96 12 5.96Z"/></svg>
+                                Google Pay
+                            </span>
+                        </div>
                         <p class="ch-field-help">Pay &pound;{{ number_format($paymentAmount, 2) }} securely using your wallet.</p>
                         <div id="express-checkout-element" aria-label="Pay with Apple Pay or Google Pay"></div>
                         <p id="express-checkout-status" class="ch-field-help" role="status">Checking wallet availability&hellip;</p>
+                        <details class="ch-field-help" style="margin-top:1rem;">
+                            <summary style="cursor:pointer;font-weight:700;">Set up or manage your wallet</summary>
+                            <p style="margin-top:.75rem;">Add a supported card with Apple or Google, then return here and refresh this page. Wallet availability depends on your device, browser and card.</p>
+                            <div class="ch-chip-row">
+                                <a class="ch-chip" href="https://support.apple.com/guide/iphone/set-up-cards-and-passes-iph9b7f53382/ios" target="_blank" rel="noopener noreferrer">Set up Apple Pay &nearr;</a>
+                                <a class="ch-chip" href="https://wallet.google.com/" target="_blank" rel="noopener noreferrer">Set up Google Pay &nearr;</a>
+                                <button type="button" class="ch-chip" onclick="window.location.reload()">Refresh wallet options</button>
+                            </div>
+                            <p>Setup opens in a new tab. Use the wallet payment button above once it becomes available.</p>
+                        </details>
                         <p class="ch-field-help" style="text-align:center; margin-top:1rem;">Or enter your card details below</p>
                     </div>
                     <form id="directCardForm" method="POST" action="{{ route('booking.checkout.confirm', $reservation) }}" novalidate data-skip-loading-state>

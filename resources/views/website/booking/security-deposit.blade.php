@@ -2,6 +2,16 @@
 @section('title', 'Security Deposit Hold')
 @section('robots', 'noindex, nofollow')
 @section('content')
+<style>
+.deposit-card { background:#fff; border:1px solid rgba(31,56,38,.15); border-radius:16px; padding:clamp(1.25rem,4vw,2.5rem); box-shadow:0 16px 40px rgba(31,56,38,.08); }
+.deposit-card h2, .deposit-card h3 { color:#1f3826; font-family:"Fraunces",Georgia,serif; }
+.deposit-card p { margin:1rem 0; line-height:1.7; }
+.deposit-card .text-danger { color:#b42318; }
+.deposit-consent { display:flex; gap:.75rem; align-items:flex-start; margin:1.25rem 0; }
+.deposit-consent input { margin-top:.3rem; flex-shrink:0; }
+#deposit-submit { width:100%; }
+#deposit-submit:disabled { opacity:.55; cursor:wait; }
+</style>
 <section class="ch-page-hero">
     <div class="wrap">
         <p class="ch-kicker">{{ $payment->reservation->reference }}</p>
@@ -10,7 +20,7 @@
     </div>
 </section>
 <div class="wrap" style="max-width:720px;padding-top:2rem;padding-bottom:4rem;">
-    <div class="card border-0 shadow-sm p-4">
+    <div class="deposit-card">
         <h2>{{ $payment->currency }} {{ number_format($payment->amount, 2) }}</h2>
         @if ($error)
             <p class="text-danger" role="alert">{{ $error }}</p>
@@ -31,7 +41,7 @@
             <form id="deposit-form" data-skip-loading-state>
                 <div id="deposit-payment-element" class="mb-3"></div>
                 <p id="deposit-error" class="text-danger" role="alert" hidden></p>
-                <label class="d-flex gap-2 mb-3">
+                <label class="deposit-consent">
                     <input id="deposit-consent" type="checkbox" required>
                     <span>I authorise a temporary security deposit hold of {{ $payment->currency }} {{ number_format($payment->amount, 2) }} under the rental agreement.</span>
                 </label>

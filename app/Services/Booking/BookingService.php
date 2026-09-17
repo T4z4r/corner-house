@@ -12,9 +12,9 @@ use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\Setting;
 use App\Services\Availability\AvailabilityService;
-use App\Services\Pricing\PricingEngine;
-use App\Services\Notification\NotificationService;
 use App\Services\Mail\MailDispatchService;
+use App\Services\Notification\NotificationService;
+use App\Services\Pricing\PricingEngine;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 

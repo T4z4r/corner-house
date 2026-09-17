@@ -305,7 +305,9 @@ class PublicWebsiteTest extends TestCase
             ->assertOk()
             ->assertSee('Terms and conditions', false)
             ->assertSee('Parties and the agreement', false)
-            ->assertSee('Security deposit', false);
+            ->assertSee('Security deposit', false)
+            ->assertSee('temporary card authorisation from one day before arrival')
+            ->assertSee('An uncaptured card hold is released');
     }
 
     public function test_home_page_refunds_section_has_configured_cancellation_fees(): void

@@ -54,7 +54,9 @@
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
                 <td style="font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#1e211c;">
-                    @if ($isBalancePayment ?? false)
+                    @if (isset($reservation) && $reservation->security_deposit_amount !== null)
+                        Pay your <strong>booking balance of &pound;{{ number_format($paymentAmount, 2) }}</strong> below. The security deposit is a separate card hold requested near arrival.
+                    @elseif ($isBalancePayment ?? false)
                         You have already paid <strong>&pound;{{ number_format((float) $reservation->paid_amount, 2) }}</strong>. Pay your <strong>remaining balance of &pound;{{ number_format($paymentAmount, 2) }}</strong> below to complete payment for your booking.
                     @else
                         To confirm your booking, pay your <strong>refundable security deposit of &pound;{{ number_format($deposit, 2) }}</strong> below. Once settled, your dates are locked in and nothing else is due today.

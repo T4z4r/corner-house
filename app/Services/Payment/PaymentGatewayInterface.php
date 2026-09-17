@@ -37,14 +37,16 @@ interface PaymentGatewayInterface
      *     currency: string,
      *     description: string,
      *     customer_email: ?string,
-     *     metadata: array<string, string>
+     *     metadata: array<string, string>,
+     *     capture_method?: string,
+     *     idempotency_key?: string
      * }  $payload
      * @return array{id: string, client_secret: string, status: string}
      */
     public function createPaymentIntent(array $payload): array;
 
     /**
-     * @return array{id: string, status: string, amount: int}
+     * @return array{id: string, status: string, amount: int, currency: string, capture_before: ?int}
      */
     public function retrievePaymentIntent(string $paymentIntentId): array;
 
