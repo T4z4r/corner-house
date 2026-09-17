@@ -198,6 +198,8 @@ class SecurityDepositHoldTest extends TestCase
             ->assertSee('Set up Google Pay')
             ->assertSee('https://wallet.google.com/', false)
             ->assertSee('Refresh wallet options')
+            ->assertSee('<details open style="margin-bottom:1.5rem;">', false)
+            ->assertSee('<details open class="ch-field-help"', false)
             ->assertDontSee('Choose how much to pay');
         $this->assertSame('1200.00', $reservation->payments()->sole()->amount);
     }

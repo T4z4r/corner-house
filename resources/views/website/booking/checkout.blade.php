@@ -561,7 +561,7 @@
 
             <!-- Hosted Stripe Checkout option -->
             @if ($checkoutUrl)
-                <details style="margin-bottom:1.5rem;">
+                <details open style="margin-bottom:1.5rem;">
                     <summary style="cursor:pointer;">Prefer Stripe’s hosted payment page?</summary>
                 <div class="ch-card-premium ch-card-hosted">
                     <div class="ch-hosted-head">
@@ -618,7 +618,7 @@
                         <p class="ch-field-help">Pay &pound;{{ number_format($paymentAmount, 2) }} securely using your wallet.</p>
                         <div id="express-checkout-element" aria-label="Pay with Apple Pay or Google Pay"></div>
                         <p id="express-checkout-status" class="ch-field-help" role="status">Checking wallet availability&hellip;</p>
-                        <details class="ch-field-help" style="margin-top:1rem;">
+                        <details open class="ch-field-help" style="margin-top:1rem;">
                             <summary style="cursor:pointer;font-weight:700;">Set up or manage your wallet</summary>
                             <p style="margin-top:.75rem;">Add a supported card with Apple or Google, then return here and refresh this page. Wallet availability depends on your device, browser and card.</p>
                             <div class="ch-chip-row">
