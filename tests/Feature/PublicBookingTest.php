@@ -398,7 +398,7 @@ class PublicBookingTest extends TestCase
             'guests' => 1,
         ])
             ->assertUnprocessable()
-            ->assertJsonPath('error', 'Room unavailable: Overlapping reservation');
+            ->assertJsonPath('error', 'Room unavailable: Overlapping confirmed or pending reservation');
 
         $this->assertSame(1, Reservation::query()->count());
         $this->assertDatabaseCount('enquiries', 0);
