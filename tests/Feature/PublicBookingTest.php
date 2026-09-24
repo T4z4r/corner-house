@@ -375,6 +375,36 @@ class PublicBookingTest extends TestCase
         $this->assertDatabaseMissing('booking_holds', ['room_id' => $room->id]);
     }
 
+    public function test_booking_request_rejects_unavailable_dates_before_creating_a_hold(): void
+    {
+        $room = Room::factory()->create(['base_rate' => 80, 'status' => 'active']);
+        $checkIn = now()->addDays(10)->toDateString();
+        $checkOut = now()->addDays(12)->toDateString();
+
+        app(BookingService::class)->create([
+            'room_id' => $room->id,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'guests_count' => 1,
+            'status' => 'confirmed',
+        ]);
+
+        $this->postJson(route('booking.request'), [
+            'roomId' => $room->id,
+            'checkIn' => $checkIn,
+            'checkOut' => $checkOut,
+            'name' => 'Alex Guest',
+            'email' => 'alex@example.com',
+            'guests' => 1,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('error', 'Room unavailable: Overlapping reservation');
+
+        $this->assertSame(1, Reservation::query()->count());
+        $this->assertDatabaseCount('enquiries', 0);
+        $this->assertDatabaseCount('booking_holds', 0);
+    }
+
     public function test_guest_can_pay_the_refundable_deposit_then_confirm_from_session(): void
     {
         $room = Room::factory()->create(['base_rate' => 80, 'status' => 'active']);

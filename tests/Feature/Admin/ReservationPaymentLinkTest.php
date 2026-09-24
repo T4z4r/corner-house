@@ -112,7 +112,18 @@ class ReservationPaymentLinkTest extends TestCase
         $mail->assertSeeInHtml('remaining balance of &pound;550.00', false);
         $mail->assertSeeInHtml('Proceed to Pay');
         $mail->assertDontSeeInHtml('Pay Refundable Deposit');
+        $mail->assertSeeInHtml('Please check your junk or spam folder');
         $mail->assertSeeInText('remaining balance of £550.00');
+    }
+
+    public function test_payment_link_text_email_reminds_guests_to_check_junk_or_spam(): void
+    {
+        $reservation = Reservation::factory()->create(['total_amount' => 1500, 'paid_amount' => 950, 'payment_status' => 'partial']);
+        $link = app(PaymentLinkService::class)->createForReservation($reservation);
+
+        $mail = new PaymentLinkMail($reservation, $link);
+
+        $mail->assertSeeInText('Please check your junk or spam folder');
     }
 
     public function test_a_fully_paid_booking_cannot_receive_another_payment_request(): void

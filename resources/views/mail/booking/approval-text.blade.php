@@ -22,5 +22,7 @@ After your deposit is paid we'll send your confirmation and arrival details. Hav
 With best wishes,
 The Corner House Team
 
+@include('mail.booking.partials.inbox-reminder-text')
+
 Corner house, old road, Braunston, Daventry, NN11 7JB
 https://cornerhousebraunston.uk

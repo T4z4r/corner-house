@@ -122,6 +122,7 @@ class GuestEmailTest extends TestCase
         $this->assertStringContainsString('#1f3826', $html);
         $this->assertStringContainsString('#b4552b', $html);
         $this->assertStringContainsString('data:image/png;base64,', $html);
+        $this->assertStringContainsString('Please check your junk or spam folder', $html);
         $this->assertStringContainsString('Enjoy your stay.', $html);
     }
 }

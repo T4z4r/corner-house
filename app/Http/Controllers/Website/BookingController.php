@@ -284,6 +284,12 @@ class BookingController extends Controller
             return $this->requestFailure($request, 'Maximum '.$maxAdults.' adults allowed.');
         }
 
+        $available = $this->availability->isRoomAvailable($room, $checkIn, $checkOut);
+
+        if (! $available['available']) {
+            return $this->requestFailure($request, 'Room unavailable: '.implode('; ', $available['conflicts']));
+        }
+
         $quote = $this->pricing->calculateForRange($room, $checkIn, $checkOut, $guestCount, null, true);
 
         if ($checkIn->diffInDays($checkOut) < $quote['minimum_stay']) {
