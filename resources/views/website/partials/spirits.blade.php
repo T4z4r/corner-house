@@ -1,6 +1,7 @@
 <section class="page" id="page-spirits" data-page="spirits">
     <div class="section">
         <div class="wrap">
+            <p class="notice" role="status"><strong>Coming soon</strong></p>
             <div class="serengeti-mark">
                 @php $spiritsLogo = \App\Models\Setting::getValue('website_spirits_logo'); @endphp
                 @if($spiritsLogo)<img src="{{ asset('storage/'.$spiritsLogo) }}" alt="Serengeti Spirits">@else<img src="{{ asset('images/serengeti-logo.png') }}" alt="Serengeti Spirits">@endif

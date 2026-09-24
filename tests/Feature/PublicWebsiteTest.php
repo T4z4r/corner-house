@@ -282,7 +282,8 @@ class PublicWebsiteTest extends TestCase
             ->assertSee('Stock the house', false)
             ->assertSee('Custom bottles for the occasion', false)
             ->assertSee('Drinks package', false)
-            ->assertSee('shop.serengetispirits.com', false);
+            ->assertSee('shop.serengetispirits.com', false)
+            ->assertSee('Coming soon', false);
     }
 
     public function test_home_page_foundation_section_has_wright_foundation_content(): void
